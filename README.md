@@ -18,7 +18,7 @@ Open `http://127.0.0.1:4173`.
 2. In repository Settings, choose Pages and set the source to GitHub Actions.
 3. The included `.github/workflows/pages.yml` publishes the installable PWA.
 
-GitHub Pages hosts the offline/local coach. It does not run the optional AI function.
+GitHub Pages hosts the offline/local coach and can use optional keyless Puter AI directly from the browser.
 
 ### Cloudflare Pages with optional AI
 
@@ -28,6 +28,10 @@ GitHub Pages hosts the offline/local coach. It does not run the optional AI func
 4. Deploy. The `functions/api/coach.js` endpoint uses Cloudflare's daily free Workers AI allocation while available.
 
 Cloud AI is explicit opt-in. Only a derived numeric summary and the user's question are sent.
+
+### Keyless AI on GitHub Pages
+
+BALA uses Puter.js as its optional hosted AI path. It requires no developer API key or BALA server. Puter's user-pays model gives authenticated users their own allocation; users may be asked to sign in or cover usage beyond that allocation. The deterministic local coach remains available without an account.
 
 ## Free local mode
 

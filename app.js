@@ -254,18 +254,55 @@ function buildRecommendation(metrics) {
   };
 }
 
-function coachResponse(metrics) {
-  if (!metrics) {
-    return "I’m still showing demo data. Add today’s metrics or import Apple Health export.xml, then I can explain the recommendation using your local values.";
-  }
-  const recommendation = buildRecommendation(metrics);
-  const known = [
-    metrics.sleep && `${metrics.sleep.toFixed(1)} hours of sleep`,
-    metrics.rhr && `${Math.round(metrics.rhr)} bpm resting heart rate`,
-    metrics.hrv && `${Math.round(metrics.hrv)} ms HRV`,
-    metrics.steps !== undefined && `${Math.round(metrics.steps).toLocaleString()} steps`,
+function metricEvidence(metrics) {
+  return [
+    metrics?.sleep && `${metrics.sleep.toFixed(1)} hours of sleep`,
+    metrics?.rhr && `${Math.round(metrics.rhr)} bpm resting heart rate`,
+    metrics?.hrv && `${Math.round(metrics.hrv)} ms HRV`,
+    metrics?.spo2 && `${Math.round(metrics.spo2)}% SpO2`,
+    metrics?.steps !== undefined && `${Math.round(metrics.steps).toLocaleString()} steps`,
+    metrics?.exercise !== undefined && `${Math.round(metrics.exercise)} exercise minutes`,
   ].filter(Boolean);
-  return `${recommendation.title}. I based this on ${known.join(", ") || "the values you recorded"}. This is wellness guidance from local trend rules, not a diagnosis.`;
+}
+
+function coachResponse(question, metrics) {
+  if (!metrics) {
+    return "I’m still showing demo data. Add today’s metrics or import your Apple Health ZIP, then I can explain your local values.";
+  }
+  const normalized = question.toLowerCase();
+  const evidence = metricEvidence(metrics).join(", ") || "the values you recorded";
+
+  if (/sleep|bed|tired|fatigue/.test(normalized)) {
+    const duration = metrics.sleep ? `${metrics.sleep.toFixed(1)} hours` : "no recent sleep duration";
+    const durationContext = metrics.sleep < 6
+      ? "That is well below the usual 7–9 hour range for most adults."
+      : metrics.sleep < 7
+        ? "That is a little below the usual 7–9 hour range for most adults."
+        : "Duration alone does not look unusually short.";
+    return `Your latest record shows ${duration}. ${durationContext} Keep one consistent wake time, stop caffeine by early afternoon, and begin a quiet wind-down 30–60 minutes before bed. If poor sleep or marked daytime sleepiness persists, discuss it with a clinician.`;
+  }
+
+  if (/hrv|variability/.test(normalized)) {
+    if (!metrics.hrv) return "No HRV value was found in your latest import. HRV is most useful against your own multi-week baseline, measured under similar conditions.";
+    return `Your latest HRV is ${Math.round(metrics.hrv)} ms. HRV varies widely between people, so compare it with your own baseline rather than another person’s number. Sleep, illness, alcohol, stress, and hard training can lower it. Use the trend with resting heart rate and how you feel.`;
+  }
+
+  if (/heart|rhr|pulse/.test(normalized)) {
+    if (!metrics.rhr) return "No resting heart-rate value was found in your latest import. A multi-day trend is more useful than one reading.";
+    return `Your latest resting heart rate is ${Math.round(metrics.rhr)} bpm. One high day can reflect short sleep, stress, dehydration, illness, alcohol, or recent exertion. Recheck the trend and how you feel. Seek medical care for concerning symptoms or a persistently unusual rate.`;
+  }
+
+  if (/readiness|recover|score/.test(normalized)) {
+    return `Your BALA readiness estimate is ${scoreMetrics(metrics)}. It combines sleep, HRV, and movement from ${evidence}. It is a wellness estimate, not a medical score; today, use it to choose a comfortable effort and protect sleep tonight.`;
+  }
+
+  if (/step|walk|activity|exercise|workout|today|do/.test(normalized)) {
+    const recommendation = buildRecommendation(metrics);
+    return `${recommendation.title}. ${recommendation.copy} I used ${evidence}. Stop activity and seek appropriate care if you feel unwell.`;
+  }
+
+  const recommendation = buildRecommendation(metrics);
+  return `${recommendation.title}. I based this on ${evidence}. Ask specifically about sleep, HRV, resting heart rate, readiness, or activity for a more focused explanation. This is wellness guidance, not a diagnosis.`;
 }
 
 function coachSummary(metrics) {
@@ -284,15 +321,29 @@ function coachSummary(metrics) {
 }
 
 async function requestAiCoach(question, metrics) {
-  const response = await fetch("./api/coach", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ question, summary: coachSummary(metrics) }),
+  if (!window.puter?.ai?.chat) throw new Error("Puter AI did not load");
+  const summary = coachSummary(metrics);
+  const prompt = [
+    "You are BALA, a cautious wellness guide.",
+    "Use only the supplied derived metric summary.",
+    "Do not diagnose, prescribe, claim certainty, or provide emergency triage.",
+    "Explain the likely pattern plainly and recommend one conservative next action.",
+    "Mention that wearable data may be incomplete and advise professional care for persistent concerns or concerning symptoms.",
+    "Keep the answer under 110 words.",
+    `Summary: ${JSON.stringify(summary)}`,
+    `Question: ${question}`,
+  ].join("\n");
+  const result = await window.puter.ai.chat(prompt, {
+    model: "gpt-5.4-nano",
+    temperature: 0.2,
+    max_tokens: 180,
   });
-  if (!response.ok) throw new Error("AI coach unavailable");
-  const result = await response.json();
-  if (!result.answer) throw new Error("AI coach returned no answer");
-  return result.answer;
+  const content = typeof result === "string" ? result : result?.message?.content ?? result?.text;
+  const answer = Array.isArray(content)
+    ? content.map((part) => part?.text || "").join("").trim()
+    : String(content || "").trim();
+  if (!answer) throw new Error("Puter AI returned no answer");
+  return answer;
 }
 
 function updateDashboard(metrics) {
@@ -674,19 +725,23 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   user.textContent = question;
   const response = document.createElement("div");
   response.className = "coach-message";
-  response.innerHTML = `<p>${coachResponse(getLocalMetrics())}</p>`;
+  const answerText = document.createElement("p");
+  answerText.textContent = coachResponse(question, getLocalMetrics());
+  response.append(answerText);
   coachMessages.append(user, response);
   coachInput.value = "";
   coachMessages.scrollTop = coachMessages.scrollHeight;
   if (aiConsent.checked) {
+    const note = document.createElement("small");
+    note.className = "ai-source";
+    note.textContent = "Asking Puter AI…";
+    response.append(note);
     try {
       const answer = await requestAiCoach(question, getLocalMetrics());
-      response.innerHTML = `<p>${answer}</p><small class="ai-source">Optional server AI · derived summary only</small>`;
+      answerText.textContent = answer;
+      note.textContent = "Puter AI · derived summary only";
     } catch {
-      const note = document.createElement("small");
-      note.className = "ai-source";
-      note.textContent = "Cloud AI is unavailable; showing private offline guidance.";
-      response.append(note);
+      note.textContent = "Puter AI was unavailable; showing private offline guidance.";
     }
   }
 });
