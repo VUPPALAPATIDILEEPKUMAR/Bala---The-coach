@@ -262,6 +262,13 @@ function scoreMetrics(metrics) {
   return Math.round(sleepScore * 0.45 + recoveryScore * 0.35 + movementScore * 0.2);
 }
 
+function scoreStatus(score) {
+  if (score >= 80) return { label: "Strong day", level: "strong" };
+  if (score >= 65) return { label: "Take it easy", level: "steady" };
+  if (score >= 50) return { label: "Recovery needed", level: "recover" };
+  return { label: "Check your signals", level: "check" };
+}
+
 function averageValues(values) {
   const valid = values.filter(Number.isFinite);
   return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : undefined;
@@ -443,8 +450,11 @@ function coachResponse(question, metrics) {
 function updateDashboard(metrics) {
   if (!metrics) return;
   const score = scoreMetrics(metrics);
+  const status = scoreStatus(score);
   document.querySelector(".score-ring strong").textContent = score;
   document.querySelector(".score-ring").setAttribute("aria-label", `Bala score ${score} out of 100`);
+  document.querySelector("#score-status").textContent = status.label;
+  document.querySelector("#score-status").dataset.level = status.level;
   document.querySelector("#readiness-value").textContent = score;
   document.querySelector("#readiness-note").textContent = "From your local entries";
 

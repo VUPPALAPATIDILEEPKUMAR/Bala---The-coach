@@ -70,15 +70,15 @@
         <header class="page-header">
           <div class="hero-copy">
             <p class="eyebrow">A calm guide for everyday awareness</p>
-            <h1>Your daily health guide from your own wearable data.</h1>
-            <span>BALA turns sleep, heart, recovery, activity, and symptom signals into simple daily guidance — free, private, and easy to understand.</span>
+            <h1>Your daily health guide from your own body signals.</h1>
+            <span>BALA turns sleep, heart, recovery, activity, and symptom data into simple guidance — free, private, and easy to understand.</span>
             <div class="hero-actions" aria-label="Get started with BALA">
               <button class="hero-primary" id="demo-button" type="button"><span aria-hidden="true">▶</span> Try Demo</button>
               <button id="hero-import-button" type="button">Import Health Data</button>
               <button class="hero-coral" id="hero-ask-button" type="button">Ask BALA</button>
               <button id="hero-report-button" type="button">Generate Report</button>
             </div>
-            <p class="hero-privacy"><span aria-hidden="true">●</span> Your health data stays on your device. No account needed for demo mode.</p>
+            <p class="hero-privacy"><span aria-hidden="true">●</span> Private by design. No account needed for demo.</p>
           </div>
           <button class="sync-button" id="sync-button" type="button">
             <span class="device-dots" aria-hidden="true"><i></i><i></i></span>
@@ -96,10 +96,10 @@
               <circle class="ring-track" cx="75" cy="75" r="62" />
               <circle class="ring-value" cx="75" cy="75" r="62" />
             </svg>
-            <span><small>Bala score</small><strong>82</strong><em>Good</em></span>
+            <span><small>BALA score</small><strong>82</strong><em id="score-status">Strong day</em></span>
           </div>
           <div class="score-insight">
-            <p class="section-label">Today's readiness</p>
+            <p class="section-label">Today's Guide</p>
             <h2 id="score-heading">You’re ready for a steady day</h2>
             <p>
               Your sleep and recovery are near your usual range. Keep activity moderate and
@@ -115,6 +115,13 @@
             See today’s plan
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
           </button>
+        </section>
+
+        <section class="trust-strip" aria-label="BALA privacy and safety principles">
+          <span><i aria-hidden="true">✓</i> Private by design</span>
+          <span><i aria-hidden="true">✓</i> No account needed for demo</span>
+          <span><i aria-hidden="true">✓</i> Your data stays on your device where possible</span>
+          <span><i aria-hidden="true">✓</i> Built for awareness, not diagnosis</span>
         </section>
 
         <section class="capture-panel" aria-labelledby="capture-title">
@@ -329,7 +336,7 @@
             <span class="action-icon" aria-hidden="true">▤</span>
             <div>
               <p class="section-label">Share useful context</p>
-              <h2>Doctor-ready summary</h2>
+              <h2>Doctor-Ready Summary</h2>
               <p>Generate a clean summary of supported metrics, trends, and symptom check-ins.</p>
               <button id="report-card-button" type="button">Generate Report</button>
             </div>
@@ -359,9 +366,34 @@
           </article>
         </section>
 
+        <section class="future-vision" aria-labelledby="future-vision-title">
+          <div class="future-copy">
+            <p class="section-label">Future Vision</p>
+            <h2 id="future-vision-title">A caring guide that fits into everyday life.</h2>
+            <p>BALA’s next chapter is permission-based wearable sync, clearer personal trends, multilingual voice guidance, and summaries that make conversations with health professionals easier.</p>
+          </div>
+          <div class="future-steps">
+            <article>
+              <span>01</span>
+              <strong>Automatic wearable sync</strong>
+              <small>Native Apple Health and Android Health Connect companions, with explicit user permission.</small>
+            </article>
+            <article>
+              <span>02</span>
+              <strong>Personal pattern awareness</strong>
+              <small>Calm explanations based on changes from each person’s own recent baseline.</small>
+            </article>
+            <article>
+              <span>03</span>
+              <strong>Voice in your language</strong>
+              <small>Optional, respectful guidance across Indian languages and accessible formats.</small>
+            </article>
+          </div>
+        </section>
+
         <aside class="medical-note" aria-label="Medical safety notice">
           <span aria-hidden="true">i</span>
-          <p>BALA is not a medical device and does not diagnose or treat conditions. If you have chest pain, fainting, severe shortness of breath, or emergency symptoms, seek medical help immediately.</p>
+          <p>BALA is not a medical device and does not diagnose, treat, or prevent any condition. If you have chest pain, fainting, severe shortness of breath, severe dizziness, or emergency symptoms, seek medical help immediately.</p>
         </aside>
 
         <footer>Built for awareness, recovery, balance, and better conversations with professionals. <a href="./privacy.html">Privacy</a></footer>
