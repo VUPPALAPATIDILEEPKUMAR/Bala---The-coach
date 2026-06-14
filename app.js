@@ -271,10 +271,22 @@ function metricEvidence(metrics) {
 }
 
 function coachResponse(question, metrics) {
+  const normalized = question.toLowerCase().trim();
+  if (/^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening)[!. ]*$/.test(normalized)) {
+    return "Hi! I’m BALA, your private health guide. Ask me about your sleep, HRV, resting heart rate, blood oxygen, readiness, stress, hydration, steps, or what to do today.";
+  }
+  if (/^(thanks|thank you|thx|okay|ok|cool|great)[!. ]*$/.test(normalized)) {
+    return "You’re welcome. I’m here whenever you want to understand a health signal or choose one sensible next step.";
+  }
+  if (/who are you|what are you|your name/.test(normalized)) {
+    return "I’m BALA, a private on-device wellness coach. I explain supported wearable metrics and suggest conservative actions. I’m not a doctor and I don’t diagnose conditions.";
+  }
+  if (/what can you do|help me|how can you help/.test(normalized)) {
+    return "I can explain sleep, HRV, resting heart rate, SpO₂, readiness, stress, hydration, steps, and exercise using your imported metrics. Try asking, “Why is my sleep low?” or “What should I do today?”";
+  }
   if (!metrics) {
     return "I’m still showing demo data. Add today’s metrics or import your Apple Health ZIP, then I can explain your local values.";
   }
-  const normalized = question.toLowerCase();
   const evidence = metricEvidence(metrics).join(", ") || "the values you recorded";
 
   if (/sleep|bed|tired|fatigue/.test(normalized)) {
@@ -320,7 +332,7 @@ function coachResponse(question, metrics) {
   }
 
   const recommendation = buildRecommendation(metrics);
-  return `${recommendation.title}. I based this on ${evidence}. Ask specifically about sleep, HRV, resting heart rate, readiness, or activity for a more focused explanation. This is wellness guidance, not a diagnosis.`;
+  return `I’m not sure how to answer that yet. I can help with sleep, HRV, resting heart rate, blood oxygen, readiness, stress, hydration, steps, exercise, or today’s plan. Your latest values remain private on this device.`;
 }
 
 function updateDashboard(metrics) {
