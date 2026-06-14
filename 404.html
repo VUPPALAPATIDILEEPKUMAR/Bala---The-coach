@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Returning to BALA</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f7f6f1;
+        color: #171817;
+        font: 16px/1.5 system-ui, sans-serif;
+      }
+    </style>
+    <script>
+      const appRoot = location.hostname.endsWith(".github.io") ? "/Bala---The-coach/" : "/";
+      const callback = {
+        path: location.pathname,
+        search: location.search,
+        hash: location.hash,
+      };
+      sessionStorage.setItem("bala-callback", JSON.stringify(callback));
+      location.replace(`${appRoot}${location.search}${location.hash}`);
+    </script>
+  </head>
+  <body>
+    <p>Returning to BALA…</p>
+  </body>
+</html>

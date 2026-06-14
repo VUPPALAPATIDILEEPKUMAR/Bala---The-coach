@@ -33,6 +33,8 @@ Cloud AI is explicit opt-in. Only a derived numeric summary and the user's quest
 
 BALA uses Puter.js as its optional hosted AI path. It requires no developer API key or BALA server. Puter's user-pays model gives authenticated users their own allocation; users may be asked to sign in or cover usage beyond that allocation. The deterministic local coach remains available without an account.
 
+The repository also includes a GitHub Pages `404.html` callback fallback so mobile authentication cannot strand users on GitHub's default missing-file page.
+
 ## Free local mode
 
 - Manual capture for sleep, resting heart rate, HRV, SpO2, steps, and exercise minutes

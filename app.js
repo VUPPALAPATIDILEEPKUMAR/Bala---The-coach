@@ -334,7 +334,7 @@ async function requestAiCoach(question, metrics) {
     `Question: ${question}`,
   ].join("\n");
   const result = await window.puter.ai.chat(prompt, {
-    model: "gpt-5.4-nano",
+    model: "openai/gpt-5.4-nano",
     temperature: 0.2,
     max_tokens: 180,
   });
@@ -734,9 +734,14 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   if (aiConsent.checked) {
     const note = document.createElement("small");
     note.className = "ai-source";
-    note.textContent = "Asking Puter AI…";
+    note.textContent = "Connecting to Puter AI…";
     response.append(note);
     try {
+      if (!window.puter?.auth?.isSignedIn?.()) {
+        note.textContent = "Complete the Puter sign-in window to continue…";
+        await window.puter.auth.signIn({ attempt_temp_user_creation: true });
+      }
+      note.textContent = "Asking Puter AI…";
       const answer = await requestAiCoach(question, getLocalMetrics());
       answerText.textContent = answer;
       note.textContent = "Puter AI · derived summary only";
