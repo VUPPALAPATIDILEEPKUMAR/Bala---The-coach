@@ -419,10 +419,10 @@
       </div>
       <form id="coach-form">
         <label for="coach-input">Ask about your data</label>
-        <label class="ai-consent">
-          <input id="ai-consent" type="checkbox" />
-          <span>Use free Puter AI with a derived metric summary</span>
-        </label>
+        <div class="ai-consent" role="status">
+          <span class="local-ai-dot" aria-hidden="true"></span>
+          <span>Private on-device coach · no account or API key</span>
+        </div>
         <div>
           <input id="coach-input" autocomplete="off" placeholder="What changed this week?" />
           <button type="submit" aria-label="Send question">
@@ -430,11 +430,10 @@
           </button>
         </div>
       </form>
-      <small class="coach-note">Offline guidance is always available. Puter AI is opt-in, may ask you to sign in, and receives only the displayed numeric summary, never your imported file.</small>
+      <small class="coach-note">BALA interprets supported questions on this device. Your imported file and metric summary are not sent to an AI provider.</small>
     </aside>
 
     <script src="./vendor/fflate.min.js"></script>
-    <script src="https://js.puter.com/v2/"></script>
     <script src="./app.js"></script>
   </body>
 </html>

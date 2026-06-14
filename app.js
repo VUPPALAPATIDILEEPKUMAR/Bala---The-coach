@@ -73,7 +73,6 @@ const addButton = document.querySelector("#add-button");
 const coachDrawer = document.querySelector("#coach-drawer");
 const coachMessages = document.querySelector("#coach-messages");
 const coachInput = document.querySelector("#coach-input");
-const aiConsent = document.querySelector("#ai-consent");
 const captureDialog = document.querySelector("#capture-dialog");
 const captureForm = document.querySelector("#capture-form");
 const healthFile = document.querySelector("#health-file");
@@ -292,6 +291,19 @@ function coachResponse(question, metrics) {
     return `Your latest resting heart rate is ${Math.round(metrics.rhr)} bpm. One high day can reflect short sleep, stress, dehydration, illness, alcohol, or recent exertion. Recheck the trend and how you feel. Seek medical care for concerning symptoms or a persistently unusual rate.`;
   }
 
+  if (/oxygen|spo2|blood oxygen/.test(normalized)) {
+    if (!metrics.spo2) return "No blood-oxygen estimate was found in your latest import. Wearable SpO2 is a wellness estimate and can be affected by fit, movement, skin temperature, and circulation.";
+    return `Your latest wearable SpO2 estimate is ${Math.round(metrics.spo2)}%. Treat it as a trend rather than a diagnosis. Recheck watch fit and measurement conditions. Seek medical advice for persistent unusual readings or symptoms such as shortness of breath, chest pain, confusion, or blue lips.`;
+  }
+
+  if (/stress|anxious|calm|relax/.test(normalized)) {
+    return `Your latest record includes ${evidence}. Wearables cannot measure stress directly, but short sleep, a higher resting heart rate, and lower-than-usual HRV can accompany strain. Take five slow minutes, hydrate, and choose light movement. Persistent anxiety or concerning symptoms deserve professional support.`;
+  }
+
+  if (/hydr|water|drink/.test(normalized)) {
+    return "BALA does not have enough data to calculate an exact fluid target. Drink regularly with meals and activity, use thirst and pale-yellow urine as practical cues, and increase fluids during heat or prolonged exercise. Medical conditions can change fluid needs.";
+  }
+
   if (/readiness|recover|score/.test(normalized)) {
     return `Your BALA readiness estimate is ${scoreMetrics(metrics)}. It combines sleep, HRV, and movement from ${evidence}. It is a wellness estimate, not a medical score; today, use it to choose a comfortable effort and protect sleep tonight.`;
   }
@@ -303,47 +315,6 @@ function coachResponse(question, metrics) {
 
   const recommendation = buildRecommendation(metrics);
   return `${recommendation.title}. I based this on ${evidence}. Ask specifically about sleep, HRV, resting heart rate, readiness, or activity for a more focused explanation. This is wellness guidance, not a diagnosis.`;
-}
-
-function coachSummary(metrics) {
-  if (!metrics) return { source: "demo", metrics: {} };
-  return {
-    source: metrics.source || "local",
-    metrics: {
-      sleepHours: metrics.sleep,
-      restingHeartRate: metrics.rhr,
-      hrvMs: metrics.hrv,
-      spo2Percent: metrics.spo2,
-      steps: metrics.steps,
-      exerciseMinutes: metrics.exercise,
-    },
-  };
-}
-
-async function requestAiCoach(question, metrics) {
-  if (!window.puter?.ai?.chat) throw new Error("Puter AI did not load");
-  const summary = coachSummary(metrics);
-  const prompt = [
-    "You are BALA, a cautious wellness guide.",
-    "Use only the supplied derived metric summary.",
-    "Do not diagnose, prescribe, claim certainty, or provide emergency triage.",
-    "Explain the likely pattern plainly and recommend one conservative next action.",
-    "Mention that wearable data may be incomplete and advise professional care for persistent concerns or concerning symptoms.",
-    "Keep the answer under 110 words.",
-    `Summary: ${JSON.stringify(summary)}`,
-    `Question: ${question}`,
-  ].join("\n");
-  const result = await window.puter.ai.chat(prompt, {
-    model: "openai/gpt-5.4-nano",
-    temperature: 0.2,
-    max_tokens: 180,
-  });
-  const content = typeof result === "string" ? result : result?.message?.content ?? result?.text;
-  const answer = Array.isArray(content)
-    ? content.map((part) => part?.text || "").join("").trim()
-    : String(content || "").trim();
-  if (!answer) throw new Error("Puter AI returned no answer");
-  return answer;
 }
 
 function updateDashboard(metrics) {
@@ -731,24 +702,10 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   coachMessages.append(user, response);
   coachInput.value = "";
   coachMessages.scrollTop = coachMessages.scrollHeight;
-  if (aiConsent.checked) {
-    const note = document.createElement("small");
-    note.className = "ai-source";
-    note.textContent = "Connecting to Puter AI…";
-    response.append(note);
-    try {
-      if (!window.puter?.auth?.isSignedIn?.()) {
-        note.textContent = "Complete the Puter sign-in window to continue…";
-        await window.puter.auth.signIn({ attempt_temp_user_creation: true });
-      }
-      note.textContent = "Asking Puter AI…";
-      const answer = await requestAiCoach(question, getLocalMetrics());
-      answerText.textContent = answer;
-      note.textContent = "Puter AI · derived summary only";
-    } catch {
-      note.textContent = "Puter AI was unavailable; showing private offline guidance.";
-    }
-  }
+  const note = document.createElement("small");
+  note.className = "ai-source";
+  note.textContent = "BALA on-device coach · private";
+  response.append(note);
 });
 
 renderChart("recovery");

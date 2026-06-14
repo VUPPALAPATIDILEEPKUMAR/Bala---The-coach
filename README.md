@@ -18,7 +18,7 @@ Open `http://127.0.0.1:4173`.
 2. In repository Settings, choose Pages and set the source to GitHub Actions.
 3. The included `.github/workflows/pages.yml` publishes the installable PWA.
 
-GitHub Pages hosts the offline/local coach and can use optional keyless Puter AI directly from the browser.
+GitHub Pages hosts the private on-device coach with no account, API key, or AI provider.
 
 ### Cloudflare Pages with optional AI
 
@@ -29,11 +29,9 @@ GitHub Pages hosts the offline/local coach and can use optional keyless Puter AI
 
 Cloud AI is explicit opt-in. Only a derived numeric summary and the user's question are sent.
 
-### Keyless AI on GitHub Pages
+### Embedded coach on GitHub Pages
 
-BALA uses Puter.js as its optional hosted AI path. It requires no developer API key or BALA server. Puter's user-pays model gives authenticated users their own allocation; users may be asked to sign in or cover usage beyond that allocation. The deterministic local coach remains available without an account.
-
-The repository also includes a GitHub Pages `404.html` callback fallback so mobile authentication cannot strand users on GitHub's default missing-file page.
+BALA interprets supported health and activity questions locally using imported metrics and a built-in wellness knowledge base. This avoids third-party login screens, exposed API keys, unstable anonymous endpoints, and transmission of personal metric summaries.
 
 ## Free local mode
 

@@ -34,4 +34,4 @@ Deduplication should prefer original sensor records, exact provider identifiers,
 
 ## AI boundary
 
-Raw health files and record histories stay local by default. Optional cloud AI receives only a user-approved derived summary and question. The deterministic local coach remains the fallback.
+Raw health files, record histories, metric summaries, and coach questions stay local. The embedded coach uses deterministic wellness rules and a built-in knowledge base.
