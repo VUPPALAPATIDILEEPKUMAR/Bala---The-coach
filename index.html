@@ -423,14 +423,20 @@
           <span class="local-ai-dot" aria-hidden="true"></span>
           <span>Private on-device coach · no account or API key</span>
         </div>
-        <div>
+        <div class="coach-input-row">
           <input id="coach-input" autocomplete="off" placeholder="What changed this week?" />
+          <button class="voice-button" id="voice-input" type="button" aria-label="Speak your question" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm-7-3a7 7 0 0 0 14 0M12 19v3m-4 0h8" /></svg>
+          </button>
           <button type="submit" aria-label="Send question">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
           </button>
         </div>
+        <button class="voice-mode" id="voice-mode" type="button" aria-pressed="true">
+          <span aria-hidden="true">◖))</span> Spoken replies on · Indian English
+        </button>
       </form>
-      <small class="coach-note">BALA interprets supported questions on this device. Your imported file and metric summary are not sent to an AI provider.</small>
+      <small class="coach-note" id="voice-status">Tap the microphone and allow access once. Speech recognition may use your browser’s speech service; health metrics stay local.</small>
     </aside>
 
     <script src="./vendor/fflate.min.js"></script>

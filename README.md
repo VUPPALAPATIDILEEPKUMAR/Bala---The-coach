@@ -38,6 +38,7 @@ BALA interprets supported health and activity questions locally using imported m
 - Manual capture for sleep, resting heart rate, HRV, SpO2, steps, and exercise minutes
 - Local Apple Health ZIP or `export.xml` import
 - Explainable recommendations generated in the browser
+- Voice questions and Indian-English spoken replies using browser speech features
 - Browser-local persistence with a clear-data control
 - Installable PWA shell with offline loading
 - No paid model API or cloud health database required

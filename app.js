@@ -73,6 +73,9 @@ const addButton = document.querySelector("#add-button");
 const coachDrawer = document.querySelector("#coach-drawer");
 const coachMessages = document.querySelector("#coach-messages");
 const coachInput = document.querySelector("#coach-input");
+const voiceInputButton = document.querySelector("#voice-input");
+const voiceModeButton = document.querySelector("#voice-mode");
+const voiceStatus = document.querySelector("#voice-status");
 const captureDialog = document.querySelector("#capture-dialog");
 const captureForm = document.querySelector("#capture-form");
 const healthFile = document.querySelector("#health-file");
@@ -85,6 +88,9 @@ const providerDetail = document.querySelector("#provider-detail");
 const appleImportDialog = document.querySelector("#apple-import-dialog");
 const STORAGE_KEY = "bala-local-health-v1";
 let deferredInstallPrompt = null;
+let voiceRepliesEnabled = true;
+let speechRecognition = null;
+let isListening = false;
 
 const providerGuides = {
   apple: {
@@ -667,12 +673,92 @@ function openCoach(prompt = "") {
 }
 
 function closeCoach() {
+  speechRecognition?.stop();
+  window.speechSynthesis?.cancel();
   coachDrawer.classList.remove("open");
   coachDrawer.setAttribute("aria-hidden", "true");
 }
 
+function preferredIndianVoice() {
+  const voices = window.speechSynthesis?.getVoices() || [];
+  return voices.find((voice) => voice.lang.toLowerCase() === "en-in" && /rishi|veena|indian/i.test(voice.name))
+    || voices.find((voice) => voice.lang.toLowerCase() === "en-in")
+    || voices.find((voice) => /india|indian/i.test(`${voice.name} ${voice.lang}`))
+    || voices.find((voice) => voice.lang.toLowerCase().startsWith("en"))
+    || voices[0];
+}
+
+function speakCoachAnswer(text) {
+  if (!voiceRepliesEnabled || !window.speechSynthesis || !text) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  const voice = preferredIndianVoice();
+  if (voice) utterance.voice = voice;
+  utterance.lang = voice?.lang || "en-IN";
+  utterance.rate = 0.94;
+  utterance.pitch = 0.9;
+  window.speechSynthesis.speak(utterance);
+}
+
+function setListening(active, status) {
+  isListening = active;
+  voiceInputButton.classList.toggle("listening", active);
+  voiceInputButton.setAttribute("aria-pressed", String(active));
+  voiceInputButton.setAttribute("aria-label", active ? "Stop listening" : "Speak your question");
+  if (status) voiceStatus.textContent = status;
+}
+
+function setupSpeechRecognition() {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition) {
+    voiceInputButton.disabled = true;
+    voiceInputButton.title = "Voice input is not supported in this browser";
+    voiceStatus.textContent = "Spoken replies are available. Voice input is not supported here, so type your question.";
+    return;
+  }
+
+  speechRecognition = new Recognition();
+  speechRecognition.lang = "en-IN";
+  speechRecognition.interimResults = true;
+  speechRecognition.continuous = false;
+  speechRecognition.onstart = () => setListening(true, "Listening in Indian English…");
+  speechRecognition.onresult = (event) => {
+    const results = Array.from(event.results);
+    const transcript = results.map((result) => result[0].transcript).join("");
+    coachInput.value = transcript;
+    if (results[results.length - 1].isFinal) {
+      setListening(false, "Got it. BALA is answering…");
+      document.querySelector("#coach-form").requestSubmit();
+    }
+  };
+  speechRecognition.onerror = (event) => {
+    const message = event.error === "not-allowed"
+      ? "Microphone permission was not allowed. Enable it in browser settings or type your question."
+      : "I could not hear that clearly. Tap the microphone and try again.";
+    setListening(false, message);
+  };
+  speechRecognition.onend = () => {
+    if (isListening) setListening(false, "Tap the microphone to speak again.");
+  };
+}
+
 document.querySelector("#ask-button").addEventListener("click", () => openCoach());
 document.querySelector("#coach-close").addEventListener("click", closeCoach);
+voiceInputButton.addEventListener("click", () => {
+  window.speechSynthesis?.cancel();
+  if (!speechRecognition) {
+    voiceStatus.textContent = "Voice input is not supported in this browser.";
+    return;
+  }
+  if (isListening) speechRecognition.stop();
+  else speechRecognition.start();
+});
+voiceModeButton.addEventListener("click", () => {
+  voiceRepliesEnabled = !voiceRepliesEnabled;
+  voiceModeButton.setAttribute("aria-pressed", String(voiceRepliesEnabled));
+  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies ${voiceRepliesEnabled ? "on · Indian English" : "off"}`;
+  if (!voiceRepliesEnabled) window.speechSynthesis?.cancel();
+});
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
     document.querySelectorAll(".nav-item").forEach((nav) => nav.classList.toggle("active", nav === item));
@@ -706,8 +792,10 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   note.className = "ai-source";
   note.textContent = "BALA on-device coach · private";
   response.append(note);
+  speakCoachAnswer(answerText.textContent);
 });
 
+setupSpeechRecognition();
 renderChart("recovery");
 updateDashboard(getLocalMetrics());
 
