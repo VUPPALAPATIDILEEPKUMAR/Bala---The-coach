@@ -57,10 +57,16 @@ function sanitizeHistory(history) {
     .filter((item) => item.content);
 }
 
-function systemPrompt(language) {
+function systemPrompt(language, tone) {
   const languageName = LANGUAGE_NAMES[language] || LANGUAGE_NAMES["en-IN"];
+  const toneInstruction = {
+    "warm-family": "Use the warmth, patience, affectionate directness, and everyday phrasing of a caring Indian elder or family guide. Never claim to be a real relative or deceased person.",
+    "friendly-coach": "Be upbeat, friendly, practical, and lightly informal, like a trusted Indian health coach.",
+    "calm-clinical": "Be calm, concise, precise, and reassuring without sounding cold.",
+  }[tone] || "Be warm, friendly, and practical.";
   return [
     "You are BALA, a warm, practical Indian wellness companion.",
+    toneInstruction,
     `Reply naturally in ${languageName}. Match the user's script and code-mixing. If they use romanized Telugu, Hindi, or Tamil, you may reply in the same friendly romanized style unless native script would be clearer.`,
     "Sound like a thoughtful trusted guide from India: friendly and conversational, never theatrical, patronizing, or overly formal.",
     "First answer the user's actual question. Then, when useful, ask one short follow-up question that helps you understand their situation.",
@@ -91,7 +97,7 @@ async function callSarvam(env, messages) {
 }
 
 async function callGemini(env, messages) {
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const model = env.GEMINI_MODEL || "gemini-3.5-flash";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
     {
@@ -122,10 +128,11 @@ export async function onRequest(context) {
   if (!question) return json({ error: "Question is required" }, 400, origin);
 
   const language = LANGUAGE_NAMES[body?.language] ? body.language : "en-IN";
+  const tone = ["warm-family", "friendly-coach", "calm-clinical"].includes(body?.tone) ? body.tone : "warm-family";
   const summary = sanitizeSummary(body?.summary);
   const history = sanitizeHistory(body?.history);
   const messages = [
-    { role: "system", content: systemPrompt(language) },
+    { role: "system", content: systemPrompt(language, tone) },
     ...history,
     { role: "user", content: `Private derived context: ${JSON.stringify(summary)}\n\nUser: ${question}` },
   ];
@@ -133,12 +140,12 @@ export async function onRequest(context) {
   try {
     let answer;
     let provider;
-    if (context.env.SARVAM_API_KEY) {
-      answer = await callSarvam(context.env, messages);
-      provider = "Sarvam";
-    } else if (context.env.GEMINI_API_KEY) {
+    if (context.env.GEMINI_API_KEY) {
       answer = await callGemini(context.env, messages);
       provider = "Gemini";
+    } else if (context.env.SARVAM_API_KEY) {
+      answer = await callSarvam(context.env, messages);
+      provider = "Sarvam";
     } else if (context.env.AI) {
       const result = await context.env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         messages,

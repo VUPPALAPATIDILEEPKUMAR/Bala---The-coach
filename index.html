@@ -116,6 +116,7 @@
             <button class="capture-secondary install-button" id="install-button" type="button">Install BALA</button>
             <button class="capture-secondary" id="devices-button" type="button">Connect devices</button>
             <button class="capture-secondary" id="import-button" type="button">Import Health export</button>
+            <button class="capture-secondary" id="shortcut-button" type="button">Daily iPhone sync</button>
             <button class="capture-primary" id="capture-button" type="button">Add today’s metrics</button>
             <input id="health-file" type="file" accept=".zip,.xml,application/zip,application/x-zip-compressed,text/xml,application/xml" hidden />
           </div>
@@ -415,6 +416,26 @@
       </form>
     </dialog>
 
+    <dialog id="shortcut-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="Close daily sync guide">×</button>
+        <p class="section-label">Free automatic bridge</p>
+        <h2>Sync with an Apple Shortcut</h2>
+        <div class="import-steps">
+          <ol>
+            <li><span>1</span><div><strong>Create a Shortcut</strong><small>Use Find Health Samples for today’s sleep, resting heart rate, HRV, SpO₂, steps, and exercise.</small></div></li>
+            <li><span>2</span><div><strong>Build the BALA link</strong><small>Open the generated template below and replace each example number with the matching Shortcut variable.</small></div></li>
+            <li><span>3</span><div><strong>Add Open URLs</strong><small>The health values are placed after <code>#</code>, so browsers do not send them to GitHub or an API.</small></div></li>
+            <li><span>4</span><div><strong>Automate daily</strong><small>In Shortcuts → Automation, run it after waking or at a chosen time. iOS controls whether confirmation is required.</small></div></li>
+          </ol>
+        </div>
+        <label class="shortcut-template">Private BALA sync template
+          <textarea id="shortcut-template" readonly></textarea>
+        </label>
+        <button class="dialog-primary" id="copy-shortcut-link" type="button">Copy template link</button>
+      </form>
+    </dialog>
+
     <aside class="coach-drawer" id="coach-drawer" aria-hidden="true" aria-labelledby="coach-title">
       <header>
         <div class="mini-orb" aria-hidden="true"><i></i><i></i></div>
@@ -443,6 +464,13 @@
             <option value="ml-IN">മലയാളം</option>
             <option value="mr-IN">मराठी</option>
             <option value="bn-IN">বাংলা</option>
+          </select>
+        </label>
+        <label class="language-picker">Conversation style
+          <select id="coach-tone">
+            <option value="warm-family">Warm family guide</option>
+            <option value="friendly-coach">Friendly Indian coach</option>
+            <option value="calm-clinical">Calm and precise</option>
           </select>
         </label>
         <div class="ai-consent" role="status">

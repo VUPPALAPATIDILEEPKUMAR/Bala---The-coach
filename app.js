@@ -77,10 +77,13 @@ const voiceInputButton = document.querySelector("#voice-input");
 const voiceModeButton = document.querySelector("#voice-mode");
 const voiceStatus = document.querySelector("#voice-status");
 const coachLanguage = document.querySelector("#coach-language");
+const coachTone = document.querySelector("#coach-tone");
 const symptomDialog = document.querySelector("#symptom-dialog");
 const symptomForm = document.querySelector("#symptom-form");
 const coachModeLabel = document.querySelector("#coach-mode-label");
 const cloudConsent = document.querySelector("#cloud-consent");
+const shortcutDialog = document.querySelector("#shortcut-dialog");
+const shortcutTemplate = document.querySelector("#shortcut-template");
 const captureDialog = document.querySelector("#capture-dialog");
 const captureForm = document.querySelector("#capture-form");
 const healthFile = document.querySelector("#health-file");
@@ -334,6 +337,7 @@ async function requestConversationalCoach(question, metrics) {
     body: JSON.stringify({
       question,
       language: coachLanguage.value,
+      tone: coachTone.value,
       summary: coachSummary(metrics),
       history: conversation.slice(-8),
     }),
@@ -741,6 +745,19 @@ document.querySelectorAll(".device-card button").forEach((button) => {
   button.addEventListener("click", () => showProviderGuide(button.closest(".device-card").dataset.provider));
 });
 document.querySelector("#import-button").addEventListener("click", () => appleImportDialog.showModal());
+document.querySelector("#shortcut-button").addEventListener("click", () => {
+  shortcutTemplate.value = `${location.origin}${location.pathname}#sync=1&sleep=7.5&rhr=62&hrv=45&spo2=97&steps=8000&exercise=30`;
+  shortcutDialog.showModal();
+});
+document.querySelector("#copy-shortcut-link").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(shortcutTemplate.value);
+    document.querySelector("#copy-shortcut-link").textContent = "Template copied";
+  } catch {
+    shortcutTemplate.select();
+    document.querySelector("#copy-shortcut-link").textContent = "Select and copy the link";
+  }
+});
 document.querySelector("#choose-health-file").addEventListener("click", () => healthFile.click());
 document.querySelector("#clear-button").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
@@ -970,6 +987,10 @@ coachLanguage.addEventListener("change", () => {
   voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies ${voiceRepliesEnabled ? `on · ${label}` : "off"}`;
   voiceStatus.textContent = `Voice language changed to ${label}.`;
 });
+coachTone.addEventListener("change", () => {
+  localStorage.setItem("bala-tone", coachTone.value);
+  voiceStatus.textContent = "Conversation style saved.";
+});
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
     document.querySelectorAll(".nav-item").forEach((nav) => nav.classList.toggle("active", nav === item));
@@ -1023,6 +1044,7 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
 });
 
 coachLanguage.value = localStorage.getItem("bala-language") || "en-IN";
+coachTone.value = localStorage.getItem("bala-tone") || "warm-family";
 voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies on · ${coachLanguage.options[coachLanguage.selectedIndex].text}`;
 setupSpeechRecognition();
 renderChart("recovery");
@@ -1045,6 +1067,33 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
 }
 
+function importShortcutSync() {
+  if (!location.hash.startsWith("#sync=")) return;
+  const values = new URLSearchParams(location.hash.slice(1));
+  const number = (name) => {
+    const value = Number(values.get(name));
+    return Number.isFinite(value) ? value : undefined;
+  };
+  const metrics = {
+    source: "Apple Shortcut daily sync",
+    sleep: number("sleep"),
+    rhr: number("rhr"),
+    hrv: number("hrv"),
+    spo2: number("spo2"),
+    steps: number("steps"),
+    exercise: number("exercise"),
+  };
+  if (Object.values(metrics).some((value) => Number.isFinite(value))) {
+    saveMetrics(metrics);
+    history.replaceState(null, "", `${location.pathname}${location.search}`);
+    dialogLabel.textContent = "Daily sync complete";
+    dialogTitle.textContent = "Today’s Health summary is in BALA";
+    dialogContentNode.innerHTML = `<div class="source-list"><p>The Apple Shortcut values were processed locally. They were not sent to GitHub or an AI provider.</p></div>`;
+    dialog.showModal();
+  }
+}
+
 const launchAction = new URLSearchParams(window.location.search).get("action");
 if (launchAction === "capture") captureDialog.showModal();
 if (launchAction === "coach") openCoach();
+importShortcutSync();

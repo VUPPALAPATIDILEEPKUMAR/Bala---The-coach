@@ -23,16 +23,26 @@ Use a Cloudflare Worker as the only public endpoint and store a Gemini API key a
 ### Recommended conversational stack
 
 1. Deploy the repository as Cloudflare Pages project `bala-health-guide`.
-2. Add `SARVAM_API_KEY` as a Pages secret. Sarvam-30B is the primary model because it supports native, romanized, and code-mixed Indian languages.
-3. Optionally add `GEMINI_API_KEY` as fallback.
+2. Add `GEMINI_API_KEY` as a Pages secret. Gemini 3.5 Flash is primary because its current developer free tier and multilingual coverage are the strongest default.
+3. Optionally add `SARVAM_API_KEY` as an India-focused fallback for native, romanized, and code-mixed languages.
 4. The GitHub Pages app calls `https://bala-health-guide.pages.dev/api/coach`.
 5. Only the current question, eight recent chat messages, and derived numeric metrics are sent. The Apple Health file and raw history are never sent.
 
 The GitHub workflow requires repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, plus repository variable `ENABLE_CLOUDFLARE_DEPLOY=true`. Add the Sarvam secret in Cloudflare:
 
 ```powershell
-npx wrangler pages secret put SARVAM_API_KEY --project-name bala-health-guide
+npx wrangler pages secret put GEMINI_API_KEY --project-name bala-health-guide
 ```
+
+## Free iPhone daily bridge
+
+Until the native HealthKit companion is signed and distributed, an Apple Shortcut can query selected daily Health samples and open BALA with a URL fragment:
+
+```text
+https://vuppalapatidileepkumar.github.io/Bala---The-coach/#sync=1&sleep=7.5&rhr=62&hrv=45&spo2=97&steps=8000&exercise=30
+```
+
+Shortcut variables replace the example values. URL fragments are processed by BALA locally and are not included in the HTTP request to GitHub Pages. A personal automation can run the Shortcut daily, subject to iOS automation rules.
 
 ## Release gates
 

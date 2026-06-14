@@ -313,6 +313,8 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .symptom-grid label { padding: 11px; border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 8px; align-items: center; font-size: 11px; }
 .symptom-note { margin-top: 14px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
 .symptom-note textarea { min-height: 80px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; resize: vertical; font: inherit; }
+.shortcut-template { margin-top: 15px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
+.shortcut-template textarea { min-height: 92px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; resize: none; font: 10px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }
 .platform-summary { margin-bottom: 18px; }
 .platform-summary p, .connection-note p { color: var(--muted); font-size: 12px; line-height: 1.55; }
 .status-badge { display: inline-flex; padding: 6px 9px; border-radius: 20px; color: var(--green); background: var(--green-pale); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
