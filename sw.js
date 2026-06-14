@@ -1,9 +1,10 @@
-const CACHE_NAME = "bala-shell-v3";
+const CACHE_NAME = "bala-shell-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./vendor/fflate.min.js",
   "./privacy.html",
   "./manifest.webmanifest",
   "./icons/bala-icon.svg",

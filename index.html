@@ -109,7 +109,7 @@
           <div>
             <span class="local-status"><i aria-hidden="true"></i> No paid AI required</span>
             <h2 id="capture-title">Bring your real metrics into BALA</h2>
-            <p>Enter a quick daily check-in or import Apple Health’s <code>export.xml</code>. Analysis stays in this browser.</p>
+            <p>Enter a quick daily check-in or import Apple Health’s ZIP export. Analysis stays in this browser.</p>
           </div>
           <div class="capture-actions">
             <button class="capture-clear" id="clear-button" type="button" hidden>Clear local data</button>
@@ -117,7 +117,7 @@
             <button class="capture-secondary" id="devices-button" type="button">Connect devices</button>
             <button class="capture-secondary" id="import-button" type="button">Import Health export</button>
             <button class="capture-primary" id="capture-button" type="button">Add today’s metrics</button>
-            <input id="health-file" type="file" accept=".xml,.csv,.json,text/xml,application/xml" hidden />
+            <input id="health-file" type="file" accept=".zip,.xml,application/zip,application/x-zip-compressed,text/xml,application/xml" hidden />
           </div>
         </section>
 
@@ -389,15 +389,15 @@
           <ol>
             <li><span>1</span><div><strong>Open Health on your iPhone</strong><small>Tap Summary, then your picture or initials in the top-right corner.</small></div></li>
             <li><span>2</span><div><strong>Export all health data</strong><small>Scroll down, tap Export All Health Data, wait for Apple to prepare it, then choose Save to Files.</small></div></li>
-            <li><span>3</span><div><strong>Unzip the export</strong><small>Open Files, find <code>apple_health_export.zip</code>, then tap it once. iPhone creates an <code>apple_health_export</code> folder.</small></div></li>
-            <li><span>4</span><div><strong>Select export.xml below</strong><small>Open the new folder and choose <code>export.xml</code>. Large health histories may take a little while to process.</small></div></li>
+            <li><span>3</span><div><strong>Select the ZIP in BALA</strong><small>Choose <code>apple_health_export.zip</code> directly. BALA extracts only <code>export.xml</code> locally.</small></div></li>
+            <li><span>4</span><div><strong>Keep BALA open</strong><small>Large health histories may take a little while to process. Nothing is uploaded.</small></div></li>
           </ol>
           <div class="connection-note">
             <strong>This is not automatic syncing</strong>
             <p>Installed web apps cannot ask Apple Health for permission. Automatic Apple Watch updates require BALA’s native iPhone HealthKit companion.</p>
           </div>
         </div>
-        <button class="dialog-primary" id="choose-health-file" type="button">Choose export.xml</button>
+        <button class="dialog-primary" id="choose-health-file" type="button">Choose Health ZIP</button>
       </form>
     </dialog>
 
@@ -433,6 +433,7 @@
       <small class="coach-note">Offline guidance is always available. Cloud AI is opt-in and never receives your imported file.</small>
     </aside>
 
+    <script src="./vendor/fflate.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

@@ -32,7 +32,7 @@ Cloud AI is explicit opt-in. Only a derived numeric summary and the user's quest
 ## Free local mode
 
 - Manual capture for sleep, resting heart rate, HRV, SpO2, steps, and exercise minutes
-- Local Apple Health `export.xml` import
+- Local Apple Health ZIP or `export.xml` import
 - Explainable recommendations generated in the browser
 - Browser-local persistence with a clear-data control
 - Installable PWA shell with offline loading

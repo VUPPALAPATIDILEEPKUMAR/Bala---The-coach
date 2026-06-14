@@ -361,7 +361,7 @@ function recordAttributes(tag) {
   return attributes;
 }
 
-async function parseAppleHealthFile(file) {
+async function parseAppleHealthStream(stream) {
   const supportedTypes = new Set([
     "HKQuantityTypeIdentifierStepCount",
     "HKQuantityTypeIdentifierRestingHeartRate",
@@ -371,7 +371,7 @@ async function parseAppleHealthFile(file) {
     "HKCategoryTypeIdentifierSleepAnalysis",
   ]);
   const days = new Map();
-  const reader = file.stream().getReader();
+  const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let recordCount = 0;
@@ -447,6 +447,66 @@ async function parseAppleHealthFile(file) {
     steps: day.steps,
     exercise: day.exercise,
   };
+}
+
+function appleHealthXmlStream(zipFile) {
+  if (!window.fflate) throw new Error("The ZIP reader did not load. Refresh BALA and try again.");
+
+  return new ReadableStream({
+    start(controller) {
+      let foundExport = false;
+      let finished = false;
+      const fail = (error) => {
+        if (finished) return;
+        finished = true;
+        controller.error(error instanceof Error ? error : new Error(String(error)));
+      };
+
+      const unzip = new window.fflate.Unzip((entry) => {
+        const path = entry.name.replaceAll("\\", "/").toLowerCase();
+        if (path !== "export.xml" && !path.endsWith("/export.xml")) return;
+
+        foundExport = true;
+        entry.ondata = (error, chunk, final) => {
+          if (error) {
+            fail(error);
+            return;
+          }
+          if (chunk?.length) controller.enqueue(chunk);
+          if (final && !finished) {
+            finished = true;
+            controller.close();
+          }
+        };
+        entry.start();
+      });
+      unzip.register(window.fflate.AsyncUnzipInflate);
+
+      (async () => {
+        try {
+          const reader = zipFile.stream().getReader();
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+              unzip.push(new Uint8Array(), true);
+              if (!foundExport) fail(new Error("This ZIP does not contain Apple Health export.xml."));
+              break;
+            }
+            unzip.push(value, false);
+          }
+        } catch (error) {
+          fail(error);
+        }
+      })();
+    },
+  });
+}
+
+function parseAppleHealthFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".zip")) return parseAppleHealthStream(appleHealthXmlStream(file));
+  if (name.endsWith(".xml")) return parseAppleHealthStream(file.stream());
+  throw new Error("Choose apple_health_export.zip or export.xml.");
 }
 
 function openSignalDetail(key) {
@@ -548,12 +608,10 @@ healthFile.addEventListener("change", async () => {
   if (!file) return;
   try {
     appleImportDialog.close();
-    if (!file.name.toLowerCase().endsWith(".xml")) {
-      throw new Error("For now, select the export.xml file inside your Apple Health export.");
-    }
+    if (!/\.(zip|xml)$/i.test(file.name)) throw new Error("Choose apple_health_export.zip or export.xml.");
     dialogLabel.textContent = "Reading Apple Health";
     dialogTitle.textContent = "Processing your export locally";
-    dialogContentNode.innerHTML = `<div class="source-list"><p>BALA is scanning ${(file.size / 1024 / 1024).toFixed(1)} MB record-by-record. Keep the app open until this finishes.</p></div>`;
+    dialogContentNode.innerHTML = `<div class="source-list"><p>BALA is reading ${(file.size / 1024 / 1024).toFixed(1)} MB locally. Keep the app open until this finishes.</p></div>`;
     dialog.showModal();
     const metrics = saveMetrics(await parseAppleHealthFile(file));
     const count = Object.entries(metrics)
@@ -566,7 +624,7 @@ healthFile.addEventListener("change", async () => {
   } catch (error) {
     dialogLabel.textContent = "Import could not finish";
     dialogTitle.textContent = "Check the selected file";
-    dialogContentNode.innerHTML = `<div class="source-list"><p>${error.message}</p><p>Choose the <strong>export.xml</strong> file inside the unzipped <strong>apple_health_export</strong> folder, not the ZIP file.</p></div>`;
+    dialogContentNode.innerHTML = `<div class="source-list"><p>${error.message}</p><p>Choose <strong>apple_health_export.zip</strong> directly, or the <strong>export.xml</strong> inside its unzipped folder.</p></div>`;
     if (!dialog.open) dialog.showModal();
   } finally {
     healthFile.value = "";
