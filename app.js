@@ -101,6 +101,24 @@ let voiceRepliesEnabled = true;
 let speechRecognition = null;
 let isListening = false;
 const conversation = [];
+const DEMO_METRICS = {
+  source: "BALA demo",
+  sleep: 7.4,
+  rhr: 61,
+  hrv: 46,
+  spo2: 97,
+  steps: 6842,
+  exercise: 32,
+  history: [
+    { date: "2026-06-08", sleep: 6.8, rhr: 65, hrv: 40, spo2: 97, steps: 5900, exercise: 18 },
+    { date: "2026-06-09", sleep: 7.1, rhr: 64, hrv: 42, spo2: 97, steps: 7600, exercise: 27 },
+    { date: "2026-06-10", sleep: 6.6, rhr: 66, hrv: 39, spo2: 96, steps: 5100, exercise: 14 },
+    { date: "2026-06-11", sleep: 7.3, rhr: 62, hrv: 45, spo2: 97, steps: 8900, exercise: 36 },
+    { date: "2026-06-12", sleep: 7.6, rhr: 61, hrv: 48, spo2: 98, steps: 9400, exercise: 41 },
+    { date: "2026-06-13", sleep: 7.2, rhr: 62, hrv: 44, spo2: 97, steps: 7200, exercise: 29 },
+    { date: "2026-06-14", sleep: 7.4, rhr: 61, hrv: 46, spo2: 97, steps: 6842, exercise: 32 },
+  ],
+};
 
 const providerGuides = {
   apple: {
@@ -453,7 +471,7 @@ function updateDashboard(metrics) {
 
   const recommendation = buildRecommendation(metrics);
   document.querySelector("#score-heading").textContent = recommendation.title;
-  document.querySelector(".score-insight > p:last-child").textContent = recommendation.copy;
+  document.querySelector(".score-insight > p:not(.section-label)").textContent = recommendation.copy;
   document.querySelector("#suggestion-title").textContent = recommendation.title;
   document.querySelector(".suggestion-panel > p:not(.section-label)").textContent = recommendation.copy;
   document.querySelector("#source-title").textContent = metrics.source || "Local check-in";
@@ -733,6 +751,14 @@ document.querySelectorAll("[data-signal]").forEach((button) => {
 });
 
 document.querySelector("#plan-button").addEventListener("click", () => openDialog("plan"));
+document.querySelector("#demo-button").addEventListener("click", () => {
+  saveMetrics(DEMO_METRICS);
+  document.querySelector("#demo-button").textContent = "Demo ready";
+  document.querySelector(".score-panel").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+document.querySelector("#hero-import-button").addEventListener("click", () => appleImportDialog.showModal());
+document.querySelector("#hero-ask-button").addEventListener("click", () => openCoach());
+document.querySelector("#hero-report-button").addEventListener("click", () => document.querySelector("#report-button").click());
 document.querySelector("#sync-button").addEventListener("click", platformGuide);
 document.querySelector("#all-data-button").addEventListener("click", () => openDialog("data"));
 document.querySelector("#privacy-button").addEventListener("click", () => openDialog("privacy"));
@@ -765,6 +791,10 @@ document.querySelector("#clear-button").addEventListener("click", () => {
   window.location.reload();
 });
 document.querySelector("#symptom-button").addEventListener("click", () => symptomDialog.showModal());
+document.querySelector("#symptom-card-button").addEventListener("click", () => symptomDialog.showModal());
+document.querySelector("#coach-card-button").addEventListener("click", () => openCoach());
+document.querySelector("#report-card-button").addEventListener("click", () => document.querySelector("#report-button").click());
+document.querySelector("#voice-preview-button").addEventListener("click", () => openCoach());
 document.querySelector("#symptom-close").addEventListener("click", () => symptomDialog.close());
 symptomForm.addEventListener("submit", (event) => {
   event.preventDefault();

@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="BALA" />
-    <title>BALA — your daily health guide</title>
+    <title>BALA - Your daily health guide</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/bala-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/bala-icon-192.png" />
@@ -68,10 +68,17 @@
 
       <main>
         <header class="page-header">
-          <div>
-            <p id="date-label">Saturday, June 13</p>
-            <h1>Good morning, Chintu</h1>
-            <span>Here’s what your body is telling us.</span>
+          <div class="hero-copy">
+            <p class="eyebrow">A calm guide for everyday awareness</p>
+            <h1>Your daily health guide from your own wearable data.</h1>
+            <span>BALA turns sleep, heart, recovery, activity, and symptom signals into simple daily guidance — free, private, and easy to understand.</span>
+            <div class="hero-actions" aria-label="Get started with BALA">
+              <button class="hero-primary" id="demo-button" type="button"><span aria-hidden="true">▶</span> Try Demo</button>
+              <button id="hero-import-button" type="button">Import Health Data</button>
+              <button class="hero-coral" id="hero-ask-button" type="button">Ask BALA</button>
+              <button id="hero-report-button" type="button">Generate Report</button>
+            </div>
+            <p class="hero-privacy"><span aria-hidden="true">●</span> Your health data stays on your device. No account needed for demo mode.</p>
           </div>
           <button class="sync-button" id="sync-button" type="button">
             <span class="device-dots" aria-hidden="true"><i></i><i></i></span>
@@ -92,12 +99,17 @@
             <span><small>Bala score</small><strong>82</strong><em>Good</em></span>
           </div>
           <div class="score-insight">
-            <p class="section-label">Today’s guide</p>
+            <p class="section-label">Today's readiness</p>
             <h2 id="score-heading">You’re ready for a steady day</h2>
             <p>
               Your sleep and recovery are near your usual range. Keep activity moderate and
               consistent.
             </p>
+            <ul class="score-checks" aria-label="Today's signal summary">
+              <li>Recovery is steady</li>
+              <li>Heart signals are near your pattern</li>
+              <li>Activity is balanced</li>
+            </ul>
           </div>
           <button class="primary-action" id="plan-button" type="button">
             See today’s plan
@@ -109,13 +121,13 @@
           <div>
             <span class="local-status"><i aria-hidden="true"></i> No paid AI required</span>
             <h2 id="capture-title">Bring your real metrics into BALA</h2>
-            <p>Enter a quick daily check-in or import Apple Health’s ZIP export. Analysis stays in this browser.</p>
+            <p>Enter a quick daily check-in, use a private iPhone Shortcut, or import an Apple Health ZIP. Analysis stays in this browser.</p>
           </div>
           <div class="capture-actions">
             <button class="capture-clear" id="clear-button" type="button" hidden>Clear local data</button>
             <button class="capture-secondary install-button" id="install-button" type="button">Install BALA</button>
             <button class="capture-secondary" id="devices-button" type="button">Connect devices</button>
-            <button class="capture-secondary" id="import-button" type="button">Import Health export</button>
+            <button class="capture-secondary" id="import-button" type="button">Import Health ZIP</button>
             <button class="capture-secondary" id="shortcut-button" type="button">Daily iPhone sync</button>
             <button class="capture-primary" id="capture-button" type="button">Add today’s metrics</button>
             <input id="health-file" type="file" accept=".zip,.xml,application/zip,application/x-zip-compressed,text/xml,application/xml" hidden />
@@ -132,8 +144,8 @@
             <strong id="baseline-days">0 days</strong>
             <span id="baseline-level">Baseline not ready</span>
           </div>
-          <button id="symptom-button" type="button">Add symptoms</button>
-          <button id="report-button" type="button">Doctor-ready report</button>
+          <button id="symptom-button" type="button">Symptoms check</button>
+          <button id="report-button" type="button">Generate report</button>
         </section>
 
         <section class="source-rail" aria-labelledby="source-rail-title">
@@ -153,11 +165,17 @@
           <button id="source-details-button" type="button">See source rules</button>
         </section>
 
-        <section class="metric-strip" aria-label="Today’s key metrics">
+        <section class="section-intro" aria-labelledby="signals-overview-title">
+          <p class="section-label">Your day, distilled</p>
+          <h2 id="signals-overview-title">Four signals. One clear next step.</h2>
+          <p>BALA compares the latest values with your own recent pattern, then explains what matters in plain language.</p>
+        </section>
+
+        <section class="metric-strip" aria-label="Today's key health areas">
           <button class="metric-item" type="button" data-signal="readiness">
             <span class="metric-icon recovery" aria-hidden="true">↗</span>
             <span>
-              <small>Readiness</small>
+              <small>Today's Readiness</small>
               <strong id="readiness-value">82</strong>
               <em id="readiness-note">Near your usual</em>
             </span>
@@ -165,7 +183,7 @@
           <button class="metric-item" type="button" data-signal="sleep">
             <span class="metric-icon sleep" aria-hidden="true">☾</span>
             <span>
-              <small>Sleep</small>
+              <small>Sleep Recovery</small>
               <strong id="sleep-value">7h 24m</strong>
               <em id="sleep-note">Score 79</em>
             </span>
@@ -173,7 +191,7 @@
           <button class="metric-item" type="button" data-signal="heart">
             <span class="metric-icon heart" aria-hidden="true">♥</span>
             <span>
-              <small>Resting heart rate</small>
+              <small>Heart Signals</small>
               <strong><span id="heart-value">61</span> <b>bpm</b></strong>
               <em id="heart-note">2 below your average</em>
             </span>
@@ -181,7 +199,7 @@
           <button class="metric-item" type="button" data-signal="cardio">
             <span class="metric-icon cardio" aria-hidden="true">◒</span>
             <span>
-              <small>Weekly cardio</small>
+              <small>Activity Balance</small>
               <strong id="activity-value">74%</strong>
               <em id="activity-note">12 load to target</em>
             </span>
@@ -288,7 +306,65 @@
           </div>
         </section>
 
-        <footer>Wellness guidance, not medical advice. BALA does not diagnose conditions. <a href="./privacy.html">Privacy</a></footer>
+        <section class="action-grid" aria-label="BALA guidance tools">
+          <article class="action-card symptom-card">
+            <span class="action-icon" aria-hidden="true">+</span>
+            <div>
+              <p class="section-label">Add human context</p>
+              <h2>Symptoms Check</h2>
+              <p>Tell BALA how you feel so numbers are interpreted with more care and context.</p>
+              <button id="symptom-card-button" type="button">Start check-in</button>
+            </div>
+          </article>
+          <article class="action-card coach-card">
+            <span class="action-icon" aria-hidden="true">◌</span>
+            <div>
+              <p class="section-label">Friendly guidance</p>
+              <h2>Ask BALA Coach</h2>
+              <p>Ask about sleep, recovery, heart trends, activity, habits, or what to do today.</p>
+              <button id="coach-card-button" type="button">Ask BALA</button>
+            </div>
+          </article>
+          <article class="action-card report-card">
+            <span class="action-icon" aria-hidden="true">▤</span>
+            <div>
+              <p class="section-label">Share useful context</p>
+              <h2>Doctor-ready summary</h2>
+              <p>Generate a clean summary of supported metrics, trends, and symptom check-ins.</p>
+              <button id="report-card-button" type="button">Generate Report</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="story-grid">
+          <article class="founder-story">
+            <p class="section-label">Why I built BALA</p>
+            <h2>Care that starts with listening.</h2>
+            <p>Built after losing my father to cardiac arrest, BALA is my attempt to help people listen to their body earlier.</p>
+            <span>In memory of Balaji</span>
+          </article>
+          <article class="voice-preview">
+            <div>
+              <p class="section-label">Optional, always in your control</p>
+              <h2>BALA Voice Coach</h2>
+              <p>Hear calm guidance and ask questions in a natural way. Voice stays optional and can be turned off anytime.</p>
+              <div class="language-tags" aria-label="Planned voice languages">
+                <span>English</span><span>हिन्दी</span><span>తెలుగు</span><span>தமிழ்</span>
+              </div>
+            </div>
+            <button id="voice-preview-button" type="button" aria-label="Open BALA Voice Coach">
+              <span aria-hidden="true">♩</span>
+              Try voice
+            </button>
+          </article>
+        </section>
+
+        <aside class="medical-note" aria-label="Medical safety notice">
+          <span aria-hidden="true">i</span>
+          <p>BALA is not a medical device and does not diagnose or treat conditions. If you have chest pain, fainting, severe shortness of breath, or emergency symptoms, seek medical help immediately.</p>
+        </aside>
+
+        <footer>Built for awareness, recovery, balance, and better conversations with professionals. <a href="./privacy.html">Privacy</a></footer>
       </main>
     </div>
 
