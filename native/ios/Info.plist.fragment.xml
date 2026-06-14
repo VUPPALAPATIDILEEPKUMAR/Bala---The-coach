@@ -1,0 +1,4 @@
+<key>NSHealthShareUsageDescription</key>
+<string>BALA reads the health metrics you select to explain daily wellness and activity trends.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>BALA only writes health data when you explicitly choose a supported logging feature.</string>
