@@ -68,3 +68,5 @@ Every imported record should keep its original app/device provenance. BALA selec
 Publishing in the Apple App Store and Google Play is not free for the developer. Installing the PWA directly from the browser is free for users.
 
 BALA provides wellness guidance, not medical advice.
+
+See [`docs/PRODUCTION-PLAN.md`](docs/PRODUCTION-PLAN.md) for the native sync, secured optional AI, safety, and release path.

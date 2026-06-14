@@ -163,6 +163,13 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 34px clamp(24px,
 .capture-secondary { border: 1px solid var(--line); background: var(--white); }
 .capture-primary { border: 1px solid var(--ink); color: var(--white); background: var(--ink); }
 .capture-clear { border: 0; color: var(--coral); background: transparent; }
+.baseline-panel { margin-top: 14px; padding: 20px 24px; border: 1px solid var(--line); border-radius: 22px; display: grid; grid-template-columns: minmax(260px, 1fr) auto auto auto; align-items: center; gap: 14px; background: var(--white); }
+.baseline-panel h2 { margin: 3px 0 7px; font-size: 20px; }
+.baseline-panel p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.baseline-status { min-width: 120px; display: grid; gap: 3px; }
+.baseline-status strong { font-size: 18px; }
+.baseline-status span { color: var(--green); font-size: 9px; font-weight: 750; }
+.baseline-panel button { min-height: 40px; padding: 0 13px; border: 1px solid var(--line); border-radius: 11px; background: var(--canvas); cursor: pointer; font-size: 10px; font-weight: 700; }
 
 .source-rail {
   margin-top: 18px;
@@ -302,6 +309,10 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .metric-form-grid label { display: grid; gap: 7px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .metric-form-grid input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--canvas); font-size: 14px; }
 .form-note { margin: 17px 0 0; }
+.symptom-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.symptom-grid label { padding: 11px; border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 8px; align-items: center; font-size: 11px; }
+.symptom-note { margin-top: 14px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
+.symptom-note textarea { min-height: 80px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; resize: vertical; font: inherit; }
 .platform-summary { margin-bottom: 18px; }
 .platform-summary p, .connection-note p { color: var(--muted); font-size: 12px; line-height: 1.55; }
 .status-badge { display: inline-flex; padding: 6px 9px; border-radius: 20px; color: var(--green); background: var(--green-pale); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
@@ -366,6 +377,8 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .prompt-chips button { padding: 8px 10px; border: 1px solid var(--line); border-radius: 20px; background: var(--white); cursor: pointer; font-size: 10px; }
 #coach-form { border-top: 1px solid var(--line); padding-top: 16px; }
 #coach-form label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; }
+.language-picker { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; }
+.language-picker select { min-height: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--white); font-size: 10px; }
 .ai-consent { padding: 9px 0; display: flex !important; align-items: center; gap: 8px; line-height: 1.35; }
 .ai-consent input { accent-color: var(--green); }
 .local-ai-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px var(--green-pale); flex: 0 0 auto; }
@@ -417,6 +430,8 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .score-insight > p:last-child { font-size: 12px; }
   .primary-action { grid-column: 1 / -1; width: 100%; justify-content: center; }
   .capture-panel { align-items: stretch; flex-direction: column; }
+  .baseline-panel { grid-template-columns: 1fr 1fr; }
+  .baseline-panel > div:first-child { grid-column: 1 / -1; }
   .capture-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .source-rail { grid-template-columns: 1fr; gap: 13px; }
   .source-badges { justify-content: flex-start; }
@@ -437,6 +452,7 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .signal-row > .sparkline, .signal-row > .mini-progress { grid-column: 3; grid-row: 2; width: 68px; }
   .ask-button { right: 16px; bottom: 82px; }
   .metric-form-grid { grid-template-columns: 1fr; }
+  .symptom-grid { grid-template-columns: 1fr; }
   .platform-grid { grid-template-columns: 1fr; }
   .device-grid { grid-template-columns: 1fr 1fr; }
   .priority-table > div { grid-template-columns: 100px 1fr; }

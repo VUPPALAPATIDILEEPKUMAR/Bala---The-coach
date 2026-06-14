@@ -76,6 +76,9 @@ const coachInput = document.querySelector("#coach-input");
 const voiceInputButton = document.querySelector("#voice-input");
 const voiceModeButton = document.querySelector("#voice-mode");
 const voiceStatus = document.querySelector("#voice-status");
+const coachLanguage = document.querySelector("#coach-language");
+const symptomDialog = document.querySelector("#symptom-dialog");
+const symptomForm = document.querySelector("#symptom-form");
 const captureDialog = document.querySelector("#capture-dialog");
 const captureForm = document.querySelector("#capture-form");
 const healthFile = document.querySelector("#health-file");
@@ -87,6 +90,7 @@ const devicesDialog = document.querySelector("#devices-dialog");
 const providerDetail = document.querySelector("#provider-detail");
 const appleImportDialog = document.querySelector("#apple-import-dialog");
 const STORAGE_KEY = "bala-local-health-v1";
+const SYMPTOM_KEY = "bala-symptoms-v1";
 let deferredInstallPrompt = null;
 let voiceRepliesEnabled = true;
 let speechRecognition = null;
@@ -234,6 +238,32 @@ function scoreMetrics(metrics) {
   return Math.round(sleepScore * 0.45 + recoveryScore * 0.35 + movementScore * 0.2);
 }
 
+function averageValues(values) {
+  const valid = values.filter(Number.isFinite);
+  return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : undefined;
+}
+
+function baselineAnalysis(metrics) {
+  const history = Array.isArray(metrics?.history) ? metrics.history.slice(-30) : [];
+  const prior = history.slice(0, -1).slice(-14);
+  if (prior.length < 3) {
+    return { days: history.length, level: "Baseline building", copy: "Keep importing or checking in. BALA needs at least 4 days before comparing changes." };
+  }
+  const latest = history.at(-1) || metrics;
+  const sleepBase = averageValues(prior.map((day) => day.sleep));
+  const rhrBase = averageValues(prior.map((day) => day.rhr));
+  const hrvBase = averageValues(prior.map((day) => day.hrv));
+  const changes = [];
+  if (latest.sleep && sleepBase && latest.sleep < sleepBase - 1) changes.push(`sleep is ${(sleepBase - latest.sleep).toFixed(1)}h below baseline`);
+  if (latest.rhr && rhrBase && latest.rhr > rhrBase + 8) changes.push(`resting heart rate is ${Math.round(latest.rhr - rhrBase)} bpm above baseline`);
+  if (latest.hrv && hrvBase && latest.hrv < hrvBase * 0.75) changes.push("HRV is more than 25% below baseline");
+  return {
+    days: history.length,
+    level: changes.length >= 2 ? "Meaningful change" : changes.length ? "Watch the trend" : "Near your baseline",
+    copy: changes.length ? `Today, ${changes.join(" and ")}. Consider recovery and add symptoms for context.` : "Your latest supported signals are close to your recent personal pattern.",
+  };
+}
+
 function buildRecommendation(metrics) {
   if (metrics.sleep && metrics.sleep < 6.5) {
     return {
@@ -273,7 +303,16 @@ function metricEvidence(metrics) {
 function coachResponse(question, metrics) {
   const normalized = question.toLowerCase().trim();
   if (/^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening)[!. ]*$/.test(normalized)) {
-    return "Hi! I’m BALA, your private health guide. Ask me about your sleep, HRV, resting heart rate, blood oxygen, readiness, stress, hydration, steps, or what to do today.";
+    const greetings = {
+      "hi-IN": "नमस्ते! मैं BALA हूँ, आपका निजी स्वास्थ्य मार्गदर्शक। आप नींद, HRV, आराम की हृदय गति, ऑक्सीजन, तनाव या आज क्या करना है, पूछ सकते हैं।",
+      "te-IN": "నమస్తే! నేను BALA, మీ వ్యక్తిగత ఆరోగ్య మార్గదర్శిని. నిద్ర, HRV, విశ్రాంతి హృదయ స్పందన, ఆక్సిజన్, ఒత్తిడి లేదా ఈ రోజు ఏమి చేయాలో అడగండి.",
+      "ta-IN": "வணக்கம்! நான் BALA, உங்கள் தனிப்பட்ட நல வழிகாட்டி. தூக்கம், HRV, ஓய்வு இதயத் துடிப்பு, ஆக்சிஜன், மனஅழுத்தம் அல்லது இன்று என்ன செய்யலாம் என்று கேளுங்கள்.",
+      "kn-IN": "ನಮಸ್ಕಾರ! ನಾನು BALA, ನಿಮ್ಮ ಖಾಸಗಿ ಆರೋಗ್ಯ ಮಾರ್ಗದರ್ಶಿ. ನಿದ್ರೆ, HRV, ವಿಶ್ರಾಂತಿ ಹೃದಯಬಡಿತ, ಆಮ್ಲಜನಕ, ಒತ್ತಡ ಅಥವಾ ಇಂದು ಏನು ಮಾಡಬೇಕು ಎಂದು ಕೇಳಿ.",
+      "ml-IN": "നമസ്കാരം! ഞാൻ BALA, നിങ്ങളുടെ സ്വകാര്യ ആരോഗ്യ സഹായി. ഉറക്കം, HRV, വിശ്രമ ഹൃദയമിടിപ്പ്, ഓക്സിജൻ, സമ്മർദ്ദം, അല്ലെങ്കിൽ ഇന്ന് എന്ത് ചെയ്യണം എന്ന് ചോദിക്കാം.",
+      "mr-IN": "नमस्कार! मी BALA, तुमचा खाजगी आरोग्य मार्गदर्शक. झोप, HRV, विश्रांतीतील हृदयगती, ऑक्सिजन, ताण किंवा आज काय करावे ते विचारा.",
+      "bn-IN": "নমস্কার! আমি BALA, আপনার ব্যক্তিগত স্বাস্থ্য সহায়ক। ঘুম, HRV, বিশ্রামের হৃদস্পন্দন, অক্সিজেন, চাপ বা আজ কী করা উচিত জিজ্ঞাসা করুন।",
+    };
+    return greetings[coachLanguage.value] || "Hi! I’m BALA, your private health guide. Ask me about your sleep, HRV, resting heart rate, blood oxygen, readiness, stress, hydration, steps, or what to do today.";
   }
   if (/^(thanks|thank you|thx|okay|ok|cool|great)[!. ]*$/.test(normalized)) {
     return "You’re welcome. I’m here whenever you want to understand a health signal or choose one sensible next step.";
@@ -365,6 +404,8 @@ function updateDashboard(metrics) {
   }
 
   const recommendation = buildRecommendation(metrics);
+  document.querySelector("#score-heading").textContent = recommendation.title;
+  document.querySelector(".score-insight > p:last-child").textContent = recommendation.copy;
   document.querySelector("#suggestion-title").textContent = recommendation.title;
   document.querySelector(".suggestion-panel > p:not(.section-label)").textContent = recommendation.copy;
   document.querySelector("#source-title").textContent = metrics.source || "Local check-in";
@@ -372,6 +413,17 @@ function updateDashboard(metrics) {
   document.querySelector("#clear-button").hidden = false;
   document.querySelector("#chart-value").textContent = score;
   document.querySelector("#chart-copy").textContent = "Local wellness estimate";
+  const baseline = baselineAnalysis(metrics);
+  document.querySelector("#baseline-days").textContent = `${baseline.days} day${baseline.days === 1 ? "" : "s"}`;
+  document.querySelector("#baseline-level").textContent = baseline.level;
+  document.querySelector("#baseline-copy").textContent = baseline.copy;
+  if (metrics.history?.length) {
+    const recent = metrics.history.slice(-7);
+    chartData.recovery.values = recent.map(scoreMetrics);
+    chartData.recovery.value = String(scoreMetrics(metrics));
+    chartData.recovery.copy = `${recent.length}-day personal history`;
+    renderChart("recovery");
+  }
 }
 
 function numericFormValue(formData, name) {
@@ -381,7 +433,16 @@ function numericFormValue(formData, name) {
 
 function saveMetrics(metrics) {
   const existing = getLocalMetrics() || {};
-  const stored = { ...existing, ...metrics, updatedAt: new Date().toISOString() };
+  const today = new Date().toISOString().slice(0, 10);
+  const incomingHistory = Array.isArray(metrics.history) ? metrics.history : [];
+  const historyMap = new Map([...(existing.history || []), ...incomingHistory].map((day) => [day.date, day]));
+  if (!incomingHistory.length) historyMap.set(today, { date: today, ...metrics });
+  const stored = {
+    ...existing,
+    ...metrics,
+    history: [...historyMap.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90),
+    updatedAt: new Date().toISOString(),
+  };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   updateDashboard(stored);
   return stored;
@@ -473,10 +534,24 @@ async function parseAppleHealthStream(stream) {
   }
 
   if (!recordCount || !days.size) throw new Error("No supported Apple Health records were found.");
-  const latestDayKey = [...days.keys()].sort().at(-1);
+  const dayKeys = [...days.keys()].sort();
+  const latestDayKey = dayKeys.at(-1);
   const day = days.get(latestDayKey);
   const average = (total, count) => count ? total / count : undefined;
   const oxygen = average(day.spo2Total, day.spo2Count);
+  const summarizeDay = (key) => {
+    const item = days.get(key);
+    const oxygenValue = average(item.spo2Total, item.spo2Count);
+    return {
+      date: key,
+      sleep: item.sleepSeconds ? item.sleepSeconds / 3600 : undefined,
+      rhr: average(item.rhrTotal, item.rhrCount),
+      hrv: average(item.hrvTotal, item.hrvCount),
+      spo2: oxygenValue === undefined ? undefined : oxygenValue <= 1 ? oxygenValue * 100 : oxygenValue,
+      steps: item.steps,
+      exercise: item.exercise,
+    };
+  };
 
   return {
     source: `Apple Health import · ${latestDayKey}`,
@@ -486,6 +561,7 @@ async function parseAppleHealthStream(stream) {
     spo2: oxygen === undefined ? undefined : oxygen <= 1 ? oxygen * 100 : oxygen,
     steps: day.steps,
     exercise: day.exercise,
+    history: dayKeys.slice(-90).map(summarizeDay),
   };
 }
 
@@ -624,7 +700,61 @@ document.querySelector("#import-button").addEventListener("click", () => appleIm
 document.querySelector("#choose-health-file").addEventListener("click", () => healthFile.click());
 document.querySelector("#clear-button").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(SYMPTOM_KEY);
   window.location.reload();
+});
+document.querySelector("#symptom-button").addEventListener("click", () => symptomDialog.showModal());
+document.querySelector("#symptom-close").addEventListener("click", () => symptomDialog.close());
+symptomForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const formData = new FormData(symptomForm);
+  const symptoms = formData.getAll("symptom");
+  const note = String(formData.get("note") || "").trim();
+  const entry = { date: new Date().toISOString(), symptoms, note };
+  const history = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
+  localStorage.setItem(SYMPTOM_KEY, JSON.stringify([...history, entry].slice(-60)));
+  symptomDialog.close();
+  symptomForm.reset();
+  const urgent = symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item));
+  dialogLabel.textContent = urgent ? "Safety first" : "Context saved";
+  dialogTitle.textContent = urgent ? "Wearables cannot rule out an emergency" : "BALA will use this context";
+  dialogContentNode.innerHTML = urgent
+    ? `<div class="connection-note"><strong>Get urgent help now if symptoms are severe, new, or worsening.</strong><p>Call local emergency services. Do not wait for BALA or a wearable reading.</p></div>`
+    : `<div class="source-list"><p>Your symptom check-in was saved only on this device and will be included in your report.</p></div>`;
+  dialog.showModal();
+});
+document.querySelector("#report-button").addEventListener("click", () => {
+  const metrics = getLocalMetrics();
+  const symptoms = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
+  if (!metrics) {
+    dialogLabel.textContent = "Report unavailable";
+    dialogTitle.textContent = "Add health data first";
+    dialogContentNode.innerHTML = `<div class="source-list"><p>Import Apple Health or add a check-in before creating a report.</p></div>`;
+    dialog.showModal();
+    return;
+  }
+  const baseline = baselineAnalysis(metrics);
+  const lines = [
+    "BALA WELLNESS SUMMARY",
+    `Generated: ${new Date().toLocaleString()}`,
+    `Source: ${metrics.source || "Local check-in"}`,
+    `Baseline: ${baseline.days} days · ${baseline.level}`,
+    baseline.copy,
+    "",
+    "LATEST SUPPORTED METRICS",
+    ...metricEvidence(metrics).map((item) => `- ${item}`),
+    "",
+    "RECENT SYMPTOM CHECK-INS",
+    ...(symptoms.length ? symptoms.slice(-10).map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${entry.symptoms.join(", ") || "No listed symptom"}${entry.note ? ` · ${entry.note}` : ""}`) : ["- None recorded"]),
+    "",
+    "This report is informational wellness context, not a diagnosis. Discuss persistent concerns with a qualified clinician.",
+  ];
+  const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `bala-health-summary-${new Date().toISOString().slice(0, 10)}.txt`;
+  link.click();
+  URL.revokeObjectURL(url);
 });
 
 captureForm.addEventListener("submit", (event) => {
@@ -693,7 +823,10 @@ function closeCoach() {
 
 function preferredIndianVoice() {
   const voices = window.speechSynthesis?.getVoices() || [];
-  return voices.find((voice) => voice.lang.toLowerCase() === "en-in" && /rishi|veena|indian/i.test(voice.name))
+  const selectedLanguage = coachLanguage.value.toLowerCase();
+  return voices.find((voice) => voice.lang.toLowerCase() === selectedLanguage)
+    || voices.find((voice) => voice.lang.toLowerCase().startsWith(selectedLanguage.split("-")[0]))
+    || voices.find((voice) => voice.lang.toLowerCase() === "en-in" && /rishi|veena|indian/i.test(voice.name))
     || voices.find((voice) => voice.lang.toLowerCase() === "en-in")
     || voices.find((voice) => /india|indian/i.test(`${voice.name} ${voice.lang}`))
     || voices.find((voice) => voice.lang.toLowerCase().startsWith("en"))
@@ -706,7 +839,7 @@ function speakCoachAnswer(text) {
   const utterance = new SpeechSynthesisUtterance(text);
   const voice = preferredIndianVoice();
   if (voice) utterance.voice = voice;
-  utterance.lang = voice?.lang || "en-IN";
+  utterance.lang = voice?.lang || coachLanguage.value;
   utterance.rate = 0.94;
   utterance.pitch = 0.9;
   window.speechSynthesis.speak(utterance);
@@ -730,7 +863,7 @@ function setupSpeechRecognition() {
   }
 
   speechRecognition = new Recognition();
-  speechRecognition.lang = "en-IN";
+  speechRecognition.lang = coachLanguage.value;
   speechRecognition.interimResults = true;
   speechRecognition.continuous = false;
   speechRecognition.onstart = () => setListening(true, "Listening in Indian English…");
@@ -786,6 +919,13 @@ voiceModeButton.addEventListener("click", () => {
   voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies ${voiceRepliesEnabled ? "on · Indian English" : "off"}`;
   if (!voiceRepliesEnabled) window.speechSynthesis?.cancel();
 });
+coachLanguage.addEventListener("change", () => {
+  localStorage.setItem("bala-language", coachLanguage.value);
+  if (speechRecognition) speechRecognition.lang = coachLanguage.value;
+  const label = coachLanguage.options[coachLanguage.selectedIndex].text;
+  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies ${voiceRepliesEnabled ? `on · ${label}` : "off"}`;
+  voiceStatus.textContent = `Voice language changed to ${label}.`;
+});
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
     document.querySelectorAll(".nav-item").forEach((nav) => nav.classList.toggle("active", nav === item));
@@ -822,6 +962,7 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   speakCoachAnswer(answerText.textContent);
 });
 
+coachLanguage.value = localStorage.getItem("bala-language") || "en-IN";
 setupSpeechRecognition();
 renderChart("recovery");
 updateDashboard(getLocalMetrics());

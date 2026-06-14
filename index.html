@@ -121,6 +121,20 @@
           </div>
         </section>
 
+        <section class="baseline-panel" aria-labelledby="baseline-title">
+          <div>
+            <p class="section-label">Personal baseline</p>
+            <h2 id="baseline-title">Build a pattern, not panic from one reading</h2>
+            <p id="baseline-copy">Import multiple Apple Health days to compare today with your own recent pattern.</p>
+          </div>
+          <div class="baseline-status">
+            <strong id="baseline-days">0 days</strong>
+            <span id="baseline-level">Baseline not ready</span>
+          </div>
+          <button id="symptom-button" type="button">Add symptoms</button>
+          <button id="report-button" type="button">Doctor-ready report</button>
+        </section>
+
         <section class="source-rail" aria-labelledby="source-rail-title">
           <div>
             <p class="section-label">Source intelligence</p>
@@ -419,6 +433,18 @@
       </div>
       <form id="coach-form">
         <label for="coach-input">Ask about your data</label>
+        <label class="language-picker">Language
+          <select id="coach-language">
+            <option value="en-IN">English (India)</option>
+            <option value="hi-IN">हिन्दी</option>
+            <option value="te-IN">తెలుగు</option>
+            <option value="ta-IN">தமிழ்</option>
+            <option value="kn-IN">ಕನ್ನಡ</option>
+            <option value="ml-IN">മലയാളം</option>
+            <option value="mr-IN">मराठी</option>
+            <option value="bn-IN">বাংলা</option>
+          </select>
+        </label>
         <div class="ai-consent" role="status">
           <span class="local-ai-dot" aria-hidden="true"></span>
           <span>Private on-device coach · no account or API key</span>
@@ -438,6 +464,25 @@
       </form>
       <small class="coach-note" id="voice-status" role="status" aria-live="polite">Tap the microphone and allow access once. Speech recognition may use your browser’s speech service; health metrics stay local.</small>
     </aside>
+
+    <dialog id="symptom-dialog">
+      <form id="symptom-form">
+        <button class="dialog-close" type="button" id="symptom-close" aria-label="Close symptom check-in">×</button>
+        <p class="section-label">Add context</p>
+        <h2>How are you feeling?</h2>
+        <p class="form-intro">Wearable numbers make more sense beside symptoms. This stays on this device.</p>
+        <div class="symptom-grid">
+          <label><input type="checkbox" name="symptom" value="chest pain" /> Chest pain</label>
+          <label><input type="checkbox" name="symptom" value="shortness of breath" /> Shortness of breath</label>
+          <label><input type="checkbox" name="symptom" value="fainting or severe dizziness" /> Fainting / severe dizziness</label>
+          <label><input type="checkbox" name="symptom" value="palpitations" /> Palpitations</label>
+          <label><input type="checkbox" name="symptom" value="fever or illness" /> Fever / illness</label>
+          <label><input type="checkbox" name="symptom" value="unusual fatigue" /> Unusual fatigue</label>
+        </div>
+        <label class="symptom-note">Optional note<textarea name="note" maxlength="240" placeholder="Medicine change, stress, alcohol, hard workout…"></textarea></label>
+        <button class="dialog-primary" type="submit">Save check-in</button>
+      </form>
+    </dialog>
 
     <script src="./vendor/fflate.min.js"></script>
     <script src="./app.js"></script>
