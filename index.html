@@ -96,7 +96,7 @@
               <circle class="ring-track" cx="75" cy="75" r="62" />
               <circle class="ring-value" cx="75" cy="75" r="62" />
             </svg>
-            <span><small>BALA score</small><strong>82</strong><em id="score-status">Strong day</em></span>
+            <span><small>BALA score</small><strong>82</strong><em id="score-status"><b id="score-icon" aria-hidden="true">↑</b> Strong day</em></span>
           </div>
           <div class="score-insight">
             <p class="section-label">Today's Guide</p>
@@ -106,9 +106,9 @@
               consistent.
             </p>
             <ul class="score-checks" aria-label="Today's signal summary">
-              <li>Recovery is steady</li>
-              <li>Heart signals are near your pattern</li>
-              <li>Activity is balanced</li>
+              <li id="score-check-1">Recovery is steady</li>
+              <li id="score-check-2">Heart signals are near your pattern</li>
+              <li id="score-check-3">Activity is balanced</li>
             </ul>
           </div>
           <button class="primary-action" id="plan-button" type="button">
@@ -180,7 +180,7 @@
 
         <section class="metric-strip" aria-label="Today's key health areas">
           <button class="metric-item" type="button" data-signal="readiness">
-            <span class="metric-icon recovery" aria-hidden="true">↗</span>
+            <span class="metric-icon recovery" id="readiness-icon" aria-hidden="true">↑</span>
             <span>
               <small>Today's Readiness</small>
               <strong id="readiness-value">82</strong>
@@ -598,11 +598,11 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
           </button>
         </div>
-        <button class="voice-mode" id="voice-mode" type="button" aria-pressed="true">
-          <span aria-hidden="true">◖))</span> Spoken replies on · Indian English
+        <button class="voice-mode" id="voice-mode" type="button" aria-pressed="false">
+          <span aria-hidden="true">◖))</span> Live voice off · tap to continue hands-free
         </button>
       </form>
-      <small class="coach-note" id="voice-status" role="status" aria-live="polite">Tap the microphone and allow access once. Speech recognition may use your browser’s speech service; health metrics stay local.</small>
+      <small class="coach-note" id="voice-status" role="status" aria-live="polite">Tap the microphone to speak. BALA will transcribe, answer, and read the response aloud. Speech support depends on your browser.</small>
     </aside>
 
     <dialog id="symptom-dialog">

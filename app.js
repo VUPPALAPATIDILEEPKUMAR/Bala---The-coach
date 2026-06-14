@@ -98,8 +98,11 @@ const STORAGE_KEY = "bala-local-health-v1";
 const SYMPTOM_KEY = "bala-symptoms-v1";
 let deferredInstallPrompt = null;
 let voiceRepliesEnabled = true;
+let liveVoiceEnabled = false;
 let speechRecognition = null;
 let isListening = false;
+let voicePhase = "idle";
+let microphonePermissionGranted = false;
 const conversation = [];
 const DEMO_METRICS = {
   source: "BALA demo",
@@ -155,6 +158,20 @@ const providerGuides = {
 
 function openDialog(type) {
   const content = detailContent[type];
+  if (type === "plan") {
+    const metrics = getLocalMetrics() || DEMO_METRICS;
+    const recommendation = buildRecommendation(metrics, getRecentSymptoms());
+    dialogLabel.textContent = "Today’s guide";
+    dialogTitle.textContent = recommendation.title;
+    dialogContentNode.innerHTML = `
+      <ol class="plan-list">
+        <li><span>Start here</span><strong>${recommendation.title}</strong><small>${recommendation.copy}</small></li>
+        <li><span>During the day</span><strong>Keep the effort conversational</strong><small>Use your body signals and symptom check-in to adjust. Pause if you feel unwell.</small></li>
+        <li><span>Tonight</span><strong>Protect a consistent wind-down</strong><small>A regular sleep window gives tomorrow’s recovery view a cleaner comparison.</small></li>
+      </ol>`;
+    dialog.showModal();
+    return;
+  }
   dialogLabel.textContent = content.label;
   dialogTitle.textContent = content.title;
   dialogContentNode.innerHTML = content.html;
@@ -255,18 +272,89 @@ function getLocalMetrics() {
   }
 }
 
+function getRecentSymptoms() {
+  try {
+    const entries = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
+    const latest = entries.at(-1);
+    if (!latest) return null;
+    const age = Date.now() - new Date(latest.date).getTime();
+    return age <= 36 * 60 * 60 * 1000 ? latest : null;
+  } catch {
+    return null;
+  }
+}
+
+function scoreBreakdown(metrics, symptomContext = null) {
+  const history = Array.isArray(metrics?.history) ? metrics.history.slice(-15) : [];
+  const prior = history.slice(0, -1);
+  const hrvBase = averageValues(prior.map((day) => day.hrv));
+  const rhrBase = averageValues(prior.map((day) => day.rhr));
+  const parts = [];
+  const add = (key, label, score, weight, note) => {
+    if (!Number.isFinite(score)) return;
+    parts.push({ key, label, score: clamp(Math.round(score), 25, 100), weight, note });
+  };
+
+  if (Number.isFinite(metrics?.sleep)) {
+    const sleep = metrics.sleep;
+    const sleepScore = sleep >= 7 && sleep <= 9
+      ? 92 - Math.abs(8 - sleep) * 4
+      : sleep < 7
+        ? 92 - (7 - sleep) * 18
+        : 88 - (sleep - 9) * 10;
+    add("sleep", "Sleep", sleepScore, 32, `${sleep.toFixed(1)}h recorded`);
+  }
+
+  if (Number.isFinite(metrics?.hrv)) {
+    const hrvRatio = hrvBase ? metrics.hrv / hrvBase : null;
+    const hrvScore = hrvRatio
+      ? 75 + clamp((hrvRatio - 1) * 70, -40, 20)
+      : 75;
+    add("hrv", "HRV", hrvScore, 23, hrvBase ? `${Math.round((hrvRatio - 1) * 100)}% vs baseline` : "Baseline building");
+  }
+
+  if (Number.isFinite(metrics?.rhr)) {
+    const difference = rhrBase ? metrics.rhr - rhrBase : 0;
+    const rhrScore = rhrBase ? 82 - clamp(difference * 5, -10, 45) : 76;
+    add("rhr", "Resting heart rate", rhrScore, 20, rhrBase ? `${difference >= 0 ? "+" : ""}${Math.round(difference)} bpm vs baseline` : "Baseline building");
+  }
+
+  if (Number.isFinite(metrics?.steps) || Number.isFinite(metrics?.exercise)) {
+    const stepsScore = Number.isFinite(metrics.steps) ? clamp((metrics.steps / 8000) * 90, 35, 100) : 70;
+    const exerciseScore = Number.isFinite(metrics.exercise) ? clamp((metrics.exercise / 30) * 90, 35, 100) : 70;
+    add("activity", "Activity", stepsScore * 0.65 + exerciseScore * 0.35, 20, `${Math.round(metrics.steps || 0).toLocaleString()} steps`);
+  }
+
+  if (Number.isFinite(metrics?.spo2)) {
+    const spo2Score = metrics.spo2 >= 97 ? 90 : metrics.spo2 >= 95 ? 78 : metrics.spo2 >= 92 ? 62 : 45;
+    add("spo2", "SpO₂ estimate", spo2Score, 5, `${Math.round(metrics.spo2)}% wearable estimate`);
+  }
+
+  const weight = parts.reduce((sum, part) => sum + part.weight, 0);
+  let total = weight
+    ? Math.round(parts.reduce((sum, part) => sum + part.score * part.weight, 0) / weight)
+    : 70;
+  const symptoms = symptomContext?.symptoms || [];
+  const urgentSymptoms = symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item));
+  if (urgentSymptoms) {
+    total = Math.min(total, 45);
+    parts.unshift({ key: "symptoms", label: "Symptoms check", score: 45, weight: 0, note: "Put symptoms first" });
+  } else if (symptoms.length) {
+    total = Math.max(25, total - 8);
+    parts.unshift({ key: "symptoms", label: "Symptoms check", score: 60, weight: 0, note: symptoms.join(", ") });
+  }
+  return { total, parts: parts.sort((a, b) => a.score - b.score) };
+}
+
 function scoreMetrics(metrics) {
-  const sleepScore = metrics.sleep ? clamp(100 - Math.abs(8 - metrics.sleep) * 17, 35, 100) : 75;
-  const movementScore = metrics.steps ? clamp((metrics.steps / 8500) * 100, 30, 100) : 70;
-  const recoveryScore = metrics.hrv ? clamp((metrics.hrv / 50) * 90, 40, 100) : 75;
-  return Math.round(sleepScore * 0.45 + recoveryScore * 0.35 + movementScore * 0.2);
+  return scoreBreakdown(metrics).total;
 }
 
 function scoreStatus(score) {
-  if (score >= 80) return { label: "Strong day", level: "strong" };
-  if (score >= 65) return { label: "Take it easy", level: "steady" };
-  if (score >= 50) return { label: "Recovery needed", level: "recover" };
-  return { label: "Check your signals", level: "check" };
+  if (score >= 80) return { label: "Strong day", level: "strong", icon: "↑" };
+  if (score >= 65) return { label: "Take it easy", level: "steady", icon: "↔" };
+  if (score >= 50) return { label: "Recovery needed", level: "recover", icon: "↓" };
+  return { label: "Check your signals", level: "check", icon: "!" };
 }
 
 function averageValues(values) {
@@ -295,7 +383,20 @@ function baselineAnalysis(metrics) {
   };
 }
 
-function buildRecommendation(metrics) {
+function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
+  const symptoms = symptomContext?.symptoms || [];
+  if (symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item))) {
+    return {
+      title: "Pause and put your symptoms first",
+      copy: "Your latest check-in includes an urgent symptom. Stop routine coaching and seek timely medical help, especially if it is new, severe, or worsening.",
+    };
+  }
+  if (symptoms.length) {
+    return {
+      title: "Choose a gentler day and check in again",
+      copy: `You recorded ${symptoms.join(", ")}. Keep activity comfortable, support rest and hydration, and notice whether the symptom improves or persists.`,
+    };
+  }
   if (metrics.sleep && metrics.sleep < 6.5) {
     return {
       title: "Choose recovery over intensity today",
@@ -345,6 +446,7 @@ function coachSummary(metrics) {
       exerciseMinutes: metrics.exercise,
       baselineDays: baseline.days,
       baselineLevel: baseline.level,
+      recentSymptoms: getRecentSymptoms()?.symptoms || [],
     },
   };
 }
@@ -375,6 +477,9 @@ async function requestConversationalCoach(question, metrics) {
 
 function coachResponse(question, metrics) {
   const normalized = question.toLowerCase().trim();
+  const symptomContext = getRecentSymptoms();
+  const recentSymptoms = symptomContext?.symptoms || [];
+  const symptomText = recentSymptoms.length ? recentSymptoms.join(", ") : "";
   if (/^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening)[!. ]*$/.test(normalized)) {
     const greetings = {
       "hi-IN": "नमस्ते! मैं BALA हूँ, आपका निजी स्वास्थ्य मार्गदर्शक। आप नींद, HRV, आराम की हृदय गति, ऑक्सीजन, तनाव या आज क्या करना है, पूछ सकते हैं।",
@@ -400,6 +505,13 @@ function coachResponse(question, metrics) {
     return "I’m still showing demo data. Add today’s metrics or import your Apple Health ZIP, then I can explain your local values.";
   }
   const evidence = metricEvidence(metrics).join(", ") || "the values you recorded";
+
+  if (/symptom|feel|feeling|unwell|pain|dizz|faint|breath|palpitation|fatigue|fever/.test(normalized)) {
+    if (!recentSymptoms.length) return "I do not have a recent symptom check-in yet. Add one so I can consider how you feel alongside sleep, recovery, heart, and activity signals.";
+    const urgent = recentSymptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item));
+    if (urgent) return `Your latest check-in includes ${symptomText}. Put the symptom ahead of the wearable numbers. If it is new, severe, or worsening, seek urgent medical help now.`;
+    return `Your latest check-in includes ${symptomText}. Pair that with ${evidence}. Choose a lighter day, hydrate, rest, and check again later. If the symptom persists or worries you, contact a qualified clinician.`;
+  }
 
   if (/sleep|bed|tired|fatigue/.test(normalized)) {
     const duration = metrics.sleep ? `${metrics.sleep.toFixed(1)} hours` : "no recent sleep duration";
@@ -435,28 +547,43 @@ function coachResponse(question, metrics) {
   }
 
   if (/readiness|recover|score/.test(normalized)) {
-    return `Your BALA readiness estimate is ${scoreMetrics(metrics)}. It combines sleep, HRV, and movement from ${evidence}. It is a wellness estimate, not a medical score; today, use it to choose a comfortable effort and protect sleep tonight.`;
+    const breakdown = scoreBreakdown(metrics, symptomContext);
+    const lowest = breakdown.parts.slice(0, 2).map((part) => `${part.label.toLowerCase()} ${part.score}`).join(" and ");
+    const context = recentSymptoms.length ? ` Your recent check-in also includes ${symptomText}.` : "";
+    return `Your BALA score is ${breakdown.total}. It is calculated from the signals available today, with the most attention on sleep, HRV, resting heart rate, and activity. The lower contributors are ${lowest || "still building a baseline"}.${context} Use it to pace the day, not as a medical conclusion.`;
   }
 
   if (/step|walk|activity|exercise|workout|today|do/.test(normalized)) {
-    const recommendation = buildRecommendation(metrics);
+    const recommendation = buildRecommendation(metrics, symptomContext);
     return `${recommendation.title}. ${recommendation.copy} I used ${evidence}. Stop activity and seek appropriate care if you feel unwell.`;
   }
 
-  const recommendation = buildRecommendation(metrics);
-  return `I’m not sure how to answer that yet. I can help with sleep, HRV, resting heart rate, blood oxygen, readiness, stress, hydration, steps, exercise, or today’s plan. Your latest values remain private on this device.`;
+  const recommendation = buildRecommendation(metrics, symptomContext);
+  const symptomContextCopy = recentSymptoms.length ? ` Your recent check-in includes ${symptomText}.` : "";
+  return `${recommendation.title}. ${recommendation.copy} I based this on ${evidence}.${symptomContextCopy} Ask me about any one signal for a more focused explanation.`;
 }
 
 function updateDashboard(metrics) {
   if (!metrics) return;
-  const score = scoreMetrics(metrics);
+  const breakdown = scoreBreakdown(metrics, getRecentSymptoms());
+  const score = breakdown.total;
   const status = scoreStatus(score);
-  document.querySelector(".score-ring strong").textContent = score;
-  document.querySelector(".score-ring").setAttribute("aria-label", `Bala score ${score} out of 100`);
-  document.querySelector("#score-status").textContent = status.label;
+  const scoreRing = document.querySelector(".score-ring");
+  scoreRing.querySelector("strong").textContent = score;
+  scoreRing.setAttribute("aria-label", `Bala score ${score} out of 100, ${status.label}`);
+  scoreRing.dataset.level = status.level;
+  scoreRing.querySelector(".ring-value").style.strokeDashoffset = String(390 - (390 * score) / 100);
+  document.querySelector("#score-icon").textContent = status.icon;
+  document.querySelector("#score-status").lastChild.textContent = ` ${status.label}`;
   document.querySelector("#score-status").dataset.level = status.level;
+  document.querySelector("#readiness-icon").textContent = status.icon;
+  document.querySelector("#readiness-icon").dataset.level = status.level;
   document.querySelector("#readiness-value").textContent = score;
-  document.querySelector("#readiness-note").textContent = "From your local entries";
+  document.querySelector("#readiness-note").textContent = `${status.label} · deterministic`;
+  const checkCopy = breakdown.parts.slice(0, 3).map((part) => `${part.label}: ${part.note}`);
+  ["#score-check-1", "#score-check-2", "#score-check-3"].forEach((selector, index) => {
+    document.querySelector(selector).textContent = checkCopy[index] || "Add another signal for more context";
+  });
 
   if (metrics.sleep) {
     const hours = Math.floor(metrics.sleep);
@@ -702,14 +829,27 @@ function parseAppleHealthFile(file) {
 }
 
 function openSignalDetail(key) {
-  const [title, value, copy] = signalDetails[key];
+  const metrics = getLocalMetrics();
+  let [title, value, copy] = signalDetails[key];
+  if (metrics) {
+    if (key === "readiness") {
+      const breakdown = scoreBreakdown(metrics, getRecentSymptoms());
+      value = String(breakdown.total);
+      copy = `This deterministic score uses the signals available today. ${breakdown.parts.map((part) => `${part.label} ${part.score}`).join(", ")}. Missing signals are not guessed.`;
+    }
+    if (key === "sleep" && Number.isFinite(metrics.sleep)) value = `${metrics.sleep.toFixed(1)} hours`;
+    if (key === "heart" && Number.isFinite(metrics.rhr)) value = `${Math.round(metrics.rhr)} bpm`;
+    if (key === "hrv" && Number.isFinite(metrics.hrv)) value = `${Math.round(metrics.hrv)} ms`;
+    if (key === "spo2" && Number.isFinite(metrics.spo2)) value = `${Math.round(metrics.spo2)}%`;
+    if (key === "steps" && Number.isFinite(metrics.steps)) value = Math.round(metrics.steps).toLocaleString();
+  }
   dialogLabel.textContent = "Health signal";
   dialogTitle.textContent = title;
   dialogContentNode.innerHTML = `
     <div class="signal-detail">
       <strong>${value}</strong>
       <p>${copy}</p>
-      <small>Demo value · your personal range becomes more useful with consistent wear.</small>
+      <small>${metrics?.source || "Demo value"} · personal patterns become more useful with consistent wear.</small>
     </div>`;
   dialog.showModal();
 }
@@ -814,6 +954,7 @@ symptomForm.addEventListener("submit", (event) => {
   const entry = { date: new Date().toISOString(), symptoms, note };
   const history = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
   localStorage.setItem(SYMPTOM_KEY, JSON.stringify([...history, entry].slice(-60)));
+  updateDashboard(getLocalMetrics());
   symptomDialog.close();
   symptomForm.reset();
   const urgent = symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item));
@@ -916,6 +1057,10 @@ function openCoach(prompt = "") {
 }
 
 function closeCoach() {
+  liveVoiceEnabled = false;
+  voicePhase = "idle";
+  voiceModeButton.setAttribute("aria-pressed", "false");
+  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice off · tap to continue hands-free`;
   speechRecognition?.stop();
   window.speechSynthesis?.cancel();
   coachDrawer.classList.remove("open");
@@ -935,7 +1080,11 @@ function preferredIndianVoice() {
 }
 
 function speakCoachAnswer(text) {
-  if (!voiceRepliesEnabled || !window.speechSynthesis || !text) return;
+  if (!voiceRepliesEnabled || !window.speechSynthesis || !text) {
+    voicePhase = "idle";
+    voiceStatus.textContent = "Answer ready. Tap the microphone to ask another question.";
+    return;
+  }
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   const voice = preferredIndianVoice();
@@ -943,11 +1092,29 @@ function speakCoachAnswer(text) {
   utterance.lang = voice?.lang || coachLanguage.value;
   utterance.rate = 0.94;
   utterance.pitch = 0.9;
+  utterance.onstart = () => {
+    voicePhase = "speaking";
+    voiceStatus.textContent = "BALA is speaking…";
+  };
+  utterance.onend = () => {
+    voicePhase = "idle";
+    if (liveVoiceEnabled && coachDrawer.classList.contains("open")) {
+      voiceStatus.textContent = "Your turn. Listening again…";
+      window.setTimeout(() => startListening(), 350);
+    } else {
+      voiceStatus.textContent = "Answer complete. Tap the microphone to continue.";
+    }
+  };
+  utterance.onerror = () => {
+    voicePhase = "idle";
+    voiceStatus.textContent = "The answer is on screen. Spoken playback was unavailable.";
+  };
   window.speechSynthesis.speak(utterance);
 }
 
 function setListening(active, status) {
   isListening = active;
+  if (active) voicePhase = "listening";
   voiceInputButton.classList.toggle("listening", active);
   voiceInputButton.setAttribute("aria-pressed", String(active));
   voiceInputButton.setAttribute("aria-label", active ? "Stop listening" : "Speak your question");
@@ -959,6 +1126,7 @@ function setupSpeechRecognition() {
   if (!Recognition) {
     voiceInputButton.disabled = true;
     voiceInputButton.title = "Voice input is not supported in this browser";
+    voiceModeButton.disabled = true;
     voiceStatus.textContent = "Spoken replies are available. Voice input is not supported here, so type your question.";
     return;
   }
@@ -967,64 +1135,93 @@ function setupSpeechRecognition() {
   speechRecognition.lang = coachLanguage.value;
   speechRecognition.interimResults = true;
   speechRecognition.continuous = false;
-  speechRecognition.onstart = () => setListening(true, "Listening in Indian English…");
+  speechRecognition.onstart = () => {
+    const label = coachLanguage.options[coachLanguage.selectedIndex].text;
+    setListening(true, `Listening in ${label}… Speak naturally.`);
+  };
   speechRecognition.onresult = (event) => {
     const results = Array.from(event.results);
     const transcript = results.map((result) => result[0].transcript).join("");
     coachInput.value = transcript;
     if (results[results.length - 1].isFinal) {
-      setListening(false, "Got it. BALA is answering…");
+      voicePhase = "transcribing";
+      setListening(false, "Got it. BALA is using your latest signals and check-in…");
       document.querySelector("#coach-form").requestSubmit();
     }
   };
   speechRecognition.onerror = (event) => {
+    voicePhase = "idle";
     const message = event.error === "not-allowed"
       ? "Microphone permission was not allowed. Enable it in browser settings or type your question."
       : "I could not hear that clearly. Tap the microphone and try again.";
     setListening(false, message);
   };
   speechRecognition.onend = () => {
-    if (isListening) setListening(false, "Tap the microphone to speak again.");
+    if (isListening) {
+      voicePhase = "idle";
+      setListening(false, "Tap the microphone to speak again.");
+    }
   };
+}
+
+async function startListening() {
+  window.speechSynthesis?.cancel();
+  if (!speechRecognition) {
+    voiceStatus.textContent = "Voice input is not supported in this browser. Type your question instead.";
+    return;
+  }
+  if (isListening) return;
+  try {
+    setListening(true, microphonePermissionGranted ? "Starting the microphone…" : "Requesting microphone access…");
+    if (!microphonePermissionGranted && navigator.mediaDevices?.getUserMedia) {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      microphonePermissionGranted = true;
+    }
+    speechRecognition.lang = coachLanguage.value;
+    speechRecognition.start();
+  } catch (error) {
+    const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
+    liveVoiceEnabled = false;
+    voicePhase = "idle";
+    voiceModeButton.setAttribute("aria-pressed", "false");
+    setListening(false, denied
+      ? "Microphone is blocked. Allow microphone access in browser settings, then reopen BALA."
+      : `Microphone could not start${error?.name ? ` (${error.name})` : ""}. Type your question or try again.`);
+  }
 }
 
 document.querySelector("#ask-button").addEventListener("click", () => openCoach());
 document.querySelector("#coach-close").addEventListener("click", closeCoach);
 voiceInputButton.addEventListener("click", async () => {
-  window.speechSynthesis?.cancel();
-  if (!speechRecognition) {
-    voiceStatus.textContent = "Voice input is not supported in this browser.";
-    return;
-  }
   if (isListening) {
+    liveVoiceEnabled = false;
+    voiceModeButton.setAttribute("aria-pressed", "false");
     speechRecognition.stop();
     return;
   }
-  try {
-    setListening(true, "Requesting microphone access…");
-    if (navigator.mediaDevices?.getUserMedia) {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-    }
-    speechRecognition.start();
-  } catch (error) {
-    const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
-    setListening(false, denied
-      ? "Microphone is blocked. On iPhone: Settings → Safari → Microphone → Allow, then reopen BALA."
-      : `Microphone could not start${error?.name ? ` (${error.name})` : ""}. Reopen BALA and try again.`);
-  }
+  await startListening();
 });
 voiceModeButton.addEventListener("click", () => {
-  voiceRepliesEnabled = !voiceRepliesEnabled;
-  voiceModeButton.setAttribute("aria-pressed", String(voiceRepliesEnabled));
-  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies ${voiceRepliesEnabled ? "on · Indian English" : "off"}`;
-  if (!voiceRepliesEnabled) window.speechSynthesis?.cancel();
+  liveVoiceEnabled = !liveVoiceEnabled;
+  voiceRepliesEnabled = true;
+  voiceModeButton.setAttribute("aria-pressed", String(liveVoiceEnabled));
+  const label = coachLanguage.options[coachLanguage.selectedIndex].text;
+  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice ${liveVoiceEnabled ? `on · ${label}` : "off · tap to continue hands-free"}`;
+  if (liveVoiceEnabled) {
+    voiceStatus.textContent = "Live voice is on. BALA will listen again after each spoken answer.";
+    if (voicePhase === "idle") startListening();
+  } else {
+    speechRecognition?.stop();
+    window.speechSynthesis?.cancel();
+    voiceStatus.textContent = "Live voice is off. Tap the microphone for one question.";
+  }
 });
 coachLanguage.addEventListener("change", () => {
   localStorage.setItem("bala-language", coachLanguage.value);
   if (speechRecognition) speechRecognition.lang = coachLanguage.value;
   const label = coachLanguage.options[coachLanguage.selectedIndex].text;
-  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies ${voiceRepliesEnabled ? `on · ${label}` : "off"}`;
+  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice ${liveVoiceEnabled ? `on · ${label}` : "off · tap to continue hands-free"}`;
   voiceStatus.textContent = `Voice language changed to ${label}.`;
 });
 coachTone.addEventListener("change", () => {
@@ -1066,6 +1263,8 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   note.textContent = "BALA private fallback";
   response.append(note);
   conversation.push({ role: "user", content: question });
+  voicePhase = "answering";
+  voiceStatus.textContent = "BALA is preparing a response from your available signals…";
   try {
     if (!cloudConsent.checked) throw new Error("User selected private mode");
     note.textContent = "BALA is thinking…";
@@ -1085,7 +1284,7 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
 
 coachLanguage.value = localStorage.getItem("bala-language") || "en-IN";
 coachTone.value = localStorage.getItem("bala-tone") || "warm-family";
-voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies on · ${coachLanguage.options[coachLanguage.selectedIndex].text}`;
+voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice off · tap to continue hands-free`;
 setupSpeechRecognition();
 renderChart("recovery");
 updateDashboard(getLocalMetrics());

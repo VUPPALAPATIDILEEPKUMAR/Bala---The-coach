@@ -168,11 +168,15 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .score-ring svg { width: 100%; transform: rotate(-90deg); }
 .score-ring circle { fill: none; stroke-width: 10; }
 .ring-track { stroke: #e8efeb; }
-.ring-value { stroke: url(#scoreGradient); stroke: var(--green); stroke-dasharray: 390; stroke-dashoffset: 70; }
+.ring-value { stroke: var(--green); stroke-dasharray: 390; stroke-dashoffset: 70; transition: stroke 220ms ease, stroke-dashoffset 420ms ease; }
+.score-ring[data-level="steady"] .ring-value { stroke: #d59745; }
+.score-ring[data-level="recover"] .ring-value { stroke: var(--coral); }
+.score-ring[data-level="check"] .ring-value { stroke: #8a6650; }
 .score-ring > span { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
 .score-ring small { color: var(--muted); font-size: 10px; }
 .score-ring strong { font-size: 48px; line-height: .95; letter-spacing: -2px; }
 .score-ring em { margin-top: 5px; color: var(--green); font-size: 10px; font-style: normal; font-weight: 750; letter-spacing: -.1px; white-space: nowrap; }
+.score-ring em b { margin-right: 3px; font-size: 11px; }
 .score-ring em[data-level="steady"] { color: #b45b47; }
 .score-ring em[data-level="recover"] { color: #a44a40; }
 .score-ring em[data-level="check"] { color: #765a2d; }
@@ -293,6 +297,9 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .metric-item em { color: var(--green); font-size: 9px; font-style: normal; }
 .metric-icon { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 16px; font-weight: 800; }
 .metric-icon.recovery { color: var(--green); background: var(--green-pale); }
+.metric-icon.recovery[data-level="steady"] { color: #976524; background: #fff0d8; }
+.metric-icon.recovery[data-level="recover"] { color: #a94b3d; background: #ffe5dc; }
+.metric-icon.recovery[data-level="check"] { color: #765a2d; background: #f2e8dd; }
 .metric-icon.sleep { color: #517aa3; background: var(--blue-pale); }
 .metric-icon.heart { color: #c65d53; background: #fae4df; }
 .metric-icon.cardio { color: #7a6f32; background: #f4efcb; }
@@ -536,6 +543,7 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .voice-button.listening { color: var(--ink) !important; background: var(--lime) !important; animation: voice-pulse 1.15s ease-in-out infinite; }
 #coach-form .voice-mode { width: auto; height: auto; margin-top: 9px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; display: inline-flex; gap: 6px; color: var(--green); background: var(--white); font-size: 9px; }
 #coach-form .voice-mode[aria-pressed="false"] { color: var(--muted); }
+#coach-form .voice-mode[aria-pressed="true"] { color: #173d2e; border-color: #9fc9af; background: var(--green-pale); }
 .coach-note { margin-top: 10px; color: var(--muted); font-size: 9px; text-align: center; }
 @keyframes voice-pulse { 50% { box-shadow: 0 0 0 7px rgba(203, 255, 80, .28); } }
 
