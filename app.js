@@ -744,14 +744,29 @@ function setupSpeechRecognition() {
 
 document.querySelector("#ask-button").addEventListener("click", () => openCoach());
 document.querySelector("#coach-close").addEventListener("click", closeCoach);
-voiceInputButton.addEventListener("click", () => {
+voiceInputButton.addEventListener("click", async () => {
   window.speechSynthesis?.cancel();
   if (!speechRecognition) {
     voiceStatus.textContent = "Voice input is not supported in this browser.";
     return;
   }
-  if (isListening) speechRecognition.stop();
-  else speechRecognition.start();
+  if (isListening) {
+    speechRecognition.stop();
+    return;
+  }
+  try {
+    setListening(true, "Requesting microphone access…");
+    if (navigator.mediaDevices?.getUserMedia) {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    speechRecognition.start();
+  } catch (error) {
+    const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
+    setListening(false, denied
+      ? "Microphone is blocked. On iPhone: Settings → Safari → Microphone → Allow, then reopen BALA."
+      : `Microphone could not start${error?.name ? ` (${error.name})` : ""}. Reopen BALA and try again.`);
+  }
 });
 voiceModeButton.addEventListener("click", () => {
   voiceRepliesEnabled = !voiceRepliesEnabled;
