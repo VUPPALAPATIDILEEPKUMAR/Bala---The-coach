@@ -381,6 +381,8 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .language-picker select { min-height: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--white); font-size: 10px; }
 .ai-consent { padding: 9px 0; display: flex !important; align-items: center; gap: 8px; line-height: 1.35; }
 .ai-consent input { accent-color: var(--green); }
+.cloud-consent { padding: 4px 0 9px; display: flex !important; align-items: center; gap: 7px; cursor: pointer; }
+.cloud-consent input { accent-color: var(--green); }
 .local-ai-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px var(--green-pale); flex: 0 0 auto; }
 .coach-input-row { padding: 5px 5px 5px 13px; border: 1px solid var(--line); border-radius: 15px; display: flex; gap: 5px; }
 #coach-input { min-width: 0; flex: 1; border: 0; outline: 0; }

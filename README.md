@@ -70,3 +70,5 @@ Publishing in the Apple App Store and Google Play is not free for the developer.
 BALA provides wellness guidance, not medical advice.
 
 See [`docs/PRODUCTION-PLAN.md`](docs/PRODUCTION-PLAN.md) for the native sync, secured optional AI, safety, and release path.
+
+The conversational endpoint supports Sarvam-30B first, Gemini second, and Cloudflare Workers AI as a final fallback. Without a configured server secret, BALA automatically uses its private local coach.

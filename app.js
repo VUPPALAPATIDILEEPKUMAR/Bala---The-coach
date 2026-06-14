@@ -79,6 +79,8 @@ const voiceStatus = document.querySelector("#voice-status");
 const coachLanguage = document.querySelector("#coach-language");
 const symptomDialog = document.querySelector("#symptom-dialog");
 const symptomForm = document.querySelector("#symptom-form");
+const coachModeLabel = document.querySelector("#coach-mode-label");
+const cloudConsent = document.querySelector("#cloud-consent");
 const captureDialog = document.querySelector("#capture-dialog");
 const captureForm = document.querySelector("#capture-form");
 const healthFile = document.querySelector("#health-file");
@@ -95,6 +97,7 @@ let deferredInstallPrompt = null;
 let voiceRepliesEnabled = true;
 let speechRecognition = null;
 let isListening = false;
+const conversation = [];
 
 const providerGuides = {
   apple: {
@@ -298,6 +301,47 @@ function metricEvidence(metrics) {
     metrics?.steps !== undefined && `${Math.round(metrics.steps).toLocaleString()} steps`,
     metrics?.exercise !== undefined && `${Math.round(metrics.exercise)} exercise minutes`,
   ].filter(Boolean);
+}
+
+function coachSummary(metrics) {
+  if (!metrics) return { source: "demo", metrics: {} };
+  const baseline = baselineAnalysis(metrics);
+  return {
+    source: metrics.source || "local",
+    metrics: {
+      sleepHours: metrics.sleep,
+      restingHeartRate: metrics.rhr,
+      hrvMs: metrics.hrv,
+      spo2Percent: metrics.spo2,
+      steps: metrics.steps,
+      exerciseMinutes: metrics.exercise,
+      baselineDays: baseline.days,
+      baselineLevel: baseline.level,
+    },
+  };
+}
+
+async function requestConversationalCoach(question, metrics) {
+  const configured = String(window.BALA_CONFIG?.aiEndpoint || "").trim();
+  const endpoint = configured || (location.hostname.endsWith(".pages.dev") ? "./api/coach" : "");
+  if (!endpoint) throw new Error("Secure AI endpoint is not configured");
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 8000);
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    signal: controller.signal,
+    body: JSON.stringify({
+      question,
+      language: coachLanguage.value,
+      summary: coachSummary(metrics),
+      history: conversation.slice(-8),
+    }),
+  }).finally(() => window.clearTimeout(timeout));
+  if (!response.ok) throw new Error("Secure AI is unavailable");
+  const result = await response.json();
+  if (!result.answer) throw new Error("AI returned no answer");
+  return result;
 }
 
 function coachResponse(question, metrics) {
@@ -950,19 +994,36 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   const response = document.createElement("div");
   response.className = "coach-message";
   const answerText = document.createElement("p");
-  answerText.textContent = coachResponse(question, getLocalMetrics());
+  const localAnswer = coachResponse(question, getLocalMetrics());
+  answerText.textContent = localAnswer;
   response.append(answerText);
   coachMessages.append(user, response);
   coachInput.value = "";
   coachMessages.scrollTop = coachMessages.scrollHeight;
   const note = document.createElement("small");
   note.className = "ai-source";
-  note.textContent = "BALA on-device coach · private";
+  note.textContent = "BALA private fallback";
   response.append(note);
+  conversation.push({ role: "user", content: question });
+  try {
+    if (!cloudConsent.checked) throw new Error("User selected private mode");
+    note.textContent = "BALA is thinking…";
+    const result = await requestConversationalCoach(question, getLocalMetrics());
+    answerText.textContent = result.answer;
+    note.textContent = `${result.provider} secure AI · derived context only`;
+    coachModeLabel.textContent = `Conversational AI active · ${result.provider}`;
+  } catch {
+    answerText.textContent = localAnswer;
+    note.textContent = "BALA private fallback · secure AI not connected";
+    coachModeLabel.textContent = "Private coach · secure AI endpoint not connected";
+  }
+  conversation.push({ role: "assistant", content: answerText.textContent });
+  if (conversation.length > 12) conversation.splice(0, conversation.length - 12);
   speakCoachAnswer(answerText.textContent);
 });
 
 coachLanguage.value = localStorage.getItem("bala-language") || "en-IN";
+voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Spoken replies on · ${coachLanguage.options[coachLanguage.selectedIndex].text}`;
 setupSpeechRecognition();
 renderChart("recovery");
 updateDashboard(getLocalMetrics());

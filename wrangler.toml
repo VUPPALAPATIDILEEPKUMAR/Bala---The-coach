@@ -4,3 +4,8 @@ pages_build_output_dir = "."
 
 [ai]
 binding = "AI"
+
+# Recommended production secret:
+# npx wrangler pages secret put SARVAM_API_KEY --project-name bala-health-guide
+# Optional fallback:
+# npx wrangler pages secret put GEMINI_API_KEY --project-name bala-health-guide
