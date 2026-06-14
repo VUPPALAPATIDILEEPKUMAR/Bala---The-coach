@@ -53,7 +53,7 @@ const signalDetails = {
   heart: ["Resting heart rate", "61 bpm", "Two beats below your recent average. A single day matters less than a consistent trend."],
   cardio: ["Weekly cardio", "74%", "You are 12 load points below this week’s target. A moderate walk is enough to make useful progress."],
   hrv: ["Heart rate variability", "46 ms", "Within your personal range. HRV is most useful compared with your own baseline over time."],
-  spo2: ["SpO₂", "97%", "An overnight estimate from a compatible wearable. It is not a diagnosis or a substitute for a medical-grade measurement."],
+  spo2: ["SpO₂", "97%", "An overnight estimate from a compatible wearable. Use it for personal awareness and discuss persistent concerns with a qualified professional."],
   breathing: ["Breathing rate", "13 brpm", "Near your recent sleeping baseline. BALA looks for sustained changes rather than reacting to one night."],
   temperature: ["Skin-temperature variation", "+0.1°F", "Near baseline. Wearables measure skin-temperature variation, which is different from core body temperature."],
   steps: ["Steps", "6,842", "You are at 68% of a 10,000-step demo goal. Goals should match your ability and context."],
@@ -305,7 +305,7 @@ function buildRecommendation(metrics) {
   if (metrics.rhr && metrics.rhr >= 75 && metrics.hrv && metrics.hrv < 35) {
     return {
       title: "Keep today light and watch the trend",
-      copy: "Your recovery signals differ from this demo baseline. Avoid using one reading as a diagnosis; recheck how you feel and monitor the pattern.",
+      copy: "Your recovery signals differ from this demo baseline. Recheck how you feel, choose a lighter day, and watch the pattern over time.",
     };
   }
   if ((metrics.steps || 0) < 6000 || (metrics.exercise || 0) < 20) {
@@ -391,7 +391,7 @@ function coachResponse(question, metrics) {
     return "You’re welcome. I’m here whenever you want to understand a health signal or choose one sensible next step.";
   }
   if (/who are you|what are you|your name/.test(normalized)) {
-    return "I’m BALA, a private on-device wellness coach. I explain supported wearable metrics and suggest conservative actions. I’m not a doctor and I don’t diagnose conditions.";
+    return "I’m BALA, a private on-device wellness coach. I explain supported body signals and suggest small, conservative actions for health awareness.";
   }
   if (/what can you do|help me|how can you help/.test(normalized)) {
     return "I can explain sleep, HRV, resting heart rate, SpO₂, readiness, stress, hydration, steps, and exercise using your imported metrics. Try asking, “Why is my sleep low?” or “What should I do today?”";
@@ -423,7 +423,7 @@ function coachResponse(question, metrics) {
 
   if (/oxygen|spo2|blood oxygen/.test(normalized)) {
     if (!metrics.spo2) return "No blood-oxygen estimate was found in your latest import. Wearable SpO2 is a wellness estimate and can be affected by fit, movement, skin temperature, and circulation.";
-    return `Your latest wearable SpO2 estimate is ${Math.round(metrics.spo2)}%. Treat it as a trend rather than a diagnosis. Recheck watch fit and measurement conditions. Seek medical advice for persistent unusual readings or symptoms such as shortness of breath, chest pain, confusion, or blue lips.`;
+    return `Your latest wearable SpO2 estimate is ${Math.round(metrics.spo2)}%. Treat it as one body signal and look for a consistent pattern. Recheck watch fit and measurement conditions. Seek medical advice for persistent unusual readings or symptoms such as shortness of breath, chest pain, confusion, or blue lips.`;
   }
 
   if (/stress|anxious|calm|relax/.test(normalized)) {
@@ -848,7 +848,7 @@ document.querySelector("#report-button").addEventListener("click", () => {
     "RECENT SYMPTOM CHECK-INS",
     ...(symptoms.length ? symptoms.slice(-10).map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${entry.symptoms.join(", ") || "No listed symptom"}${entry.note ? ` · ${entry.note}` : ""}`) : ["- None recorded"]),
     "",
-    "This report is informational wellness context, not a diagnosis. Discuss persistent concerns with a qualified clinician.",
+    "This report is health-awareness context from supported body signals. Discuss persistent concerns with a qualified clinician.",
   ];
   const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain" }));
   const link = document.createElement("a");
