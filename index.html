@@ -115,7 +115,7 @@
             <button class="capture-clear" id="clear-button" type="button" hidden>Clear local data</button>
             <button class="capture-secondary install-button" id="install-button" type="button">Install BALA</button>
             <button class="capture-secondary" id="devices-button" type="button">Connect devices</button>
-            <button class="capture-secondary" id="import-button" type="button">Import Apple Health</button>
+            <button class="capture-secondary" id="import-button" type="button">Import Health export</button>
             <button class="capture-primary" id="capture-button" type="button">Add today’s metrics</button>
             <input id="health-file" type="file" accept=".xml,.csv,.json,text/xml,application/xml" hidden />
           </div>
@@ -377,6 +377,27 @@
           <div><span>Readiness</span><span>BALA calculates one transparent score from normalized raw signals.</span></div>
         </div>
         <button class="dialog-primary" value="close">Done</button>
+      </form>
+    </dialog>
+
+    <dialog id="apple-import-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="Close Apple Health import guide">×</button>
+        <p class="section-label">Apple Health import</p>
+        <h2>Use your Apple Watch data in BALA</h2>
+        <div class="import-steps">
+          <ol>
+            <li><span>1</span><div><strong>Open Health on your iPhone</strong><small>Tap Summary, then your picture or initials in the top-right corner.</small></div></li>
+            <li><span>2</span><div><strong>Export all health data</strong><small>Scroll down, tap Export All Health Data, wait for Apple to prepare it, then choose Save to Files.</small></div></li>
+            <li><span>3</span><div><strong>Unzip the export</strong><small>Open Files, find <code>apple_health_export.zip</code>, then tap it once. iPhone creates an <code>apple_health_export</code> folder.</small></div></li>
+            <li><span>4</span><div><strong>Select export.xml below</strong><small>Open the new folder and choose <code>export.xml</code>. Large health histories may take a little while to process.</small></div></li>
+          </ol>
+          <div class="connection-note">
+            <strong>This is not automatic syncing</strong>
+            <p>Installed web apps cannot ask Apple Health for permission. Automatic Apple Watch updates require BALA’s native iPhone HealthKit companion.</p>
+          </div>
+        </div>
+        <button class="dialog-primary" id="choose-health-file" type="button">Choose export.xml</button>
       </form>
     </dialog>
 

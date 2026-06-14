@@ -83,6 +83,7 @@ const installContent = document.querySelector("#install-content");
 const installButton = document.querySelector("#install-button");
 const devicesDialog = document.querySelector("#devices-dialog");
 const providerDetail = document.querySelector("#provider-detail");
+const appleImportDialog = document.querySelector("#apple-import-dialog");
 const STORAGE_KEY = "bala-local-health-v1";
 let deferredInstallPrompt = null;
 
@@ -346,44 +347,105 @@ function saveMetrics(metrics) {
   return stored;
 }
 
-function parseAppleHealthXml(text) {
-  const xml = new DOMParser().parseFromString(text, "application/xml");
-  if (xml.querySelector("parsererror")) throw new Error("This file is not valid Apple Health XML.");
-  const records = Array.from(xml.querySelectorAll("Record"));
-  if (!records.length) throw new Error("No Apple Health records were found.");
+function parseAppleDate(value) {
+  if (!value) return new Date(NaN);
+  const normalized = value
+    .replace(" ", "T")
+    .replace(/ ([+-]\d{2})(\d{2})$/, "$1:$2");
+  return new Date(normalized);
+}
 
-  const latestDay = records.reduce((latest, record) => {
-    const date = new Date(record.getAttribute("endDate") || record.getAttribute("startDate"));
-    return Number.isNaN(date.getTime()) || date < latest ? latest : date;
-  }, new Date(0));
-  const dayKey = latestDay.toDateString();
-  const onLatestDay = records.filter((record) => {
-    const date = new Date(record.getAttribute("endDate") || record.getAttribute("startDate"));
-    return !Number.isNaN(date.getTime()) && date.toDateString() === dayKey;
-  });
-  const values = (type) => onLatestDay
-    .filter((record) => record.getAttribute("type") === type)
-    .map((record) => Number(record.getAttribute("value")))
-    .filter(Number.isFinite);
-  const sum = (list) => list.reduce((total, value) => total + value, 0);
-  const average = (list) => list.length ? sum(list) / list.length : undefined;
-  const sleepSeconds = onLatestDay
-    .filter((record) => record.getAttribute("type") === "HKCategoryTypeIdentifierSleepAnalysis" && /Asleep/.test(record.getAttribute("value") || ""))
-    .reduce((total, record) => {
-      const start = new Date(record.getAttribute("startDate"));
-      const end = new Date(record.getAttribute("endDate"));
-      return total + Math.max(0, end - start) / 1000;
-    }, 0);
-  const oxygen = average(values("HKQuantityTypeIdentifierOxygenSaturation"));
+function recordAttributes(tag) {
+  const attributes = {};
+  for (const match of tag.matchAll(/(\w+)="([^"]*)"/g)) attributes[match[1]] = match[2];
+  return attributes;
+}
+
+async function parseAppleHealthFile(file) {
+  const supportedTypes = new Set([
+    "HKQuantityTypeIdentifierStepCount",
+    "HKQuantityTypeIdentifierRestingHeartRate",
+    "HKQuantityTypeIdentifierHeartRateVariabilitySDNN",
+    "HKQuantityTypeIdentifierOxygenSaturation",
+    "HKQuantityTypeIdentifierAppleExerciseTime",
+    "HKCategoryTypeIdentifierSleepAnalysis",
+  ]);
+  const days = new Map();
+  const reader = file.stream().getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let recordCount = 0;
+
+  const processTag = (tag) => {
+    const attributes = recordAttributes(tag);
+    if (!supportedTypes.has(attributes.type)) return;
+    const end = parseAppleDate(attributes.endDate || attributes.startDate);
+    if (Number.isNaN(end.getTime())) return;
+    const dayKey = (attributes.endDate || attributes.startDate).slice(0, 10);
+    const day = days.get(dayKey) || {
+      sleepSeconds: 0,
+      steps: 0,
+      exercise: 0,
+      rhrTotal: 0,
+      rhrCount: 0,
+      hrvTotal: 0,
+      hrvCount: 0,
+      spo2Total: 0,
+      spo2Count: 0,
+    };
+    const value = Number(attributes.value);
+
+    if (attributes.type === "HKQuantityTypeIdentifierStepCount" && Number.isFinite(value)) day.steps += value;
+    if (attributes.type === "HKQuantityTypeIdentifierAppleExerciseTime" && Number.isFinite(value)) day.exercise += value;
+    if (attributes.type === "HKQuantityTypeIdentifierRestingHeartRate" && Number.isFinite(value)) {
+      day.rhrTotal += value;
+      day.rhrCount += 1;
+    }
+    if (attributes.type === "HKQuantityTypeIdentifierHeartRateVariabilitySDNN" && Number.isFinite(value)) {
+      day.hrvTotal += value;
+      day.hrvCount += 1;
+    }
+    if (attributes.type === "HKQuantityTypeIdentifierOxygenSaturation" && Number.isFinite(value)) {
+      day.spo2Total += value;
+      day.spo2Count += 1;
+    }
+    if (attributes.type === "HKCategoryTypeIdentifierSleepAnalysis" && /Asleep/.test(attributes.value || "")) {
+      const start = parseAppleDate(attributes.startDate);
+      if (!Number.isNaN(start.getTime())) day.sleepSeconds += Math.max(0, end - start) / 1000;
+    }
+    days.set(dayKey, day);
+    recordCount += 1;
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    let start = buffer.indexOf("<Record");
+    while (start !== -1) {
+      const end = buffer.indexOf(">", start);
+      if (end === -1) break;
+      processTag(buffer.slice(start, end + 1));
+      buffer = buffer.slice(end + 1);
+      start = buffer.indexOf("<Record");
+    }
+    if (buffer.length > 20000 && start === -1) buffer = buffer.slice(-1000);
+    if (done) break;
+  }
+
+  if (!recordCount || !days.size) throw new Error("No supported Apple Health records were found.");
+  const latestDayKey = [...days.keys()].sort().at(-1);
+  const day = days.get(latestDayKey);
+  const average = (total, count) => count ? total / count : undefined;
+  const oxygen = average(day.spo2Total, day.spo2Count);
 
   return {
-    source: "Apple Health import",
-    sleep: sleepSeconds ? sleepSeconds / 3600 : undefined,
-    rhr: average(values("HKQuantityTypeIdentifierRestingHeartRate")),
-    hrv: average(values("HKQuantityTypeIdentifierHeartRateVariabilitySDNN")),
-    spo2: oxygen ? oxygen * 100 : undefined,
-    steps: sum(values("HKQuantityTypeIdentifierStepCount")),
-    exercise: sum(values("HKQuantityTypeIdentifierAppleExerciseTime")),
+    source: `Apple Health import · ${latestDayKey}`,
+    sleep: day.sleepSeconds ? day.sleepSeconds / 3600 : undefined,
+    rhr: average(day.rhrTotal, day.rhrCount),
+    hrv: average(day.hrvTotal, day.hrvCount),
+    spo2: oxygen === undefined ? undefined : oxygen <= 1 ? oxygen * 100 : oxygen,
+    steps: day.steps,
+    exercise: day.exercise,
   };
 }
 
@@ -458,7 +520,8 @@ document.querySelector("#source-details-button").addEventListener("click", openD
 document.querySelectorAll(".device-card button").forEach((button) => {
   button.addEventListener("click", () => showProviderGuide(button.closest(".device-card").dataset.provider));
 });
-document.querySelector("#import-button").addEventListener("click", () => healthFile.click());
+document.querySelector("#import-button").addEventListener("click", () => appleImportDialog.showModal());
+document.querySelector("#choose-health-file").addEventListener("click", () => healthFile.click());
 document.querySelector("#clear-button").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   window.location.reload();
@@ -484,23 +547,27 @@ healthFile.addEventListener("change", async () => {
   const [file] = healthFile.files;
   if (!file) return;
   try {
-    const text = await file.text();
+    appleImportDialog.close();
     if (!file.name.toLowerCase().endsWith(".xml")) {
       throw new Error("For now, select the export.xml file inside your Apple Health export.");
     }
-    const metrics = saveMetrics(parseAppleHealthXml(text));
+    dialogLabel.textContent = "Reading Apple Health";
+    dialogTitle.textContent = "Processing your export locally";
+    dialogContentNode.innerHTML = `<div class="source-list"><p>BALA is scanning ${(file.size / 1024 / 1024).toFixed(1)} MB record-by-record. Keep the app open until this finishes.</p></div>`;
+    dialog.showModal();
+    const metrics = saveMetrics(await parseAppleHealthFile(file));
     const count = Object.entries(metrics)
       .filter(([key, value]) => !["source", "updatedAt"].includes(key) && value !== undefined)
       .length;
     dialogLabel.textContent = "Import complete";
     dialogTitle.textContent = "Your latest Apple Health day is ready";
     dialogContentNode.innerHTML = `<div class="source-list"><p>BALA found local values for ${count} metrics. The file was processed in this browser and was not uploaded.</p></div>`;
-    dialog.showModal();
+    if (!dialog.open) dialog.showModal();
   } catch (error) {
     dialogLabel.textContent = "Import could not finish";
     dialogTitle.textContent = "Check the selected file";
-    dialogContentNode.innerHTML = `<div class="source-list"><p>${error.message}</p><p>On iPhone: Health → profile picture → Export All Health Data. Unzip the export and select <strong>export.xml</strong>.</p></div>`;
-    dialog.showModal();
+    dialogContentNode.innerHTML = `<div class="source-list"><p>${error.message}</p><p>Choose the <strong>export.xml</strong> file inside the unzipped <strong>apple_health_export</strong> folder, not the ZIP file.</p></div>`;
+    if (!dialog.open) dialog.showModal();
   } finally {
     healthFile.value = "";
   }

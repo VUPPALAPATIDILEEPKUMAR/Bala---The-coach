@@ -341,6 +341,13 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .priority-table > div { min-height: 37px; padding: 8px 12px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 145px 1fr; align-items: center; gap: 12px; font-size: 9px; }
 .priority-table > div:first-child { border-top: 0; color: var(--muted); background: var(--canvas); }
 .priority-table span:last-child { color: var(--muted); }
+.import-steps ol { margin: 0; padding: 0; display: grid; list-style: none; }
+.import-steps li { padding: 13px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 32px 1fr; gap: 11px; align-items: start; }
+.import-steps li > span { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--green); background: var(--green-pale); font-size: 10px; font-weight: 800; }
+.import-steps li > div { display: grid; gap: 4px; }
+.import-steps strong { font-size: 13px; }
+.import-steps small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.import-steps code { color: var(--green); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 
 .coach-drawer { position: fixed; top: 0; right: 0; z-index: 10; width: min(420px, 100vw); height: 100vh; padding: 22px; display: grid; grid-template-rows: auto 1fr auto auto; color: var(--ink); background: var(--white); box-shadow: -20px 0 70px rgba(22,33,27,.17); transform: translateX(105%); transition: transform 260ms ease; }
 .coach-drawer.open { transform: translateX(0); }
