@@ -56,7 +56,7 @@ const signalDetails = {
   spo2: ["SpO₂", "97%", "An overnight estimate from a compatible wearable. Use it for personal awareness and discuss persistent concerns with a qualified professional."],
   breathing: ["Breathing rate", "13 brpm", "Near your recent sleeping baseline. BALA looks for sustained changes rather than reacting to one night."],
   temperature: ["Skin-temperature variation", "+0.1°F", "Near baseline. Wearables measure skin-temperature variation, which is different from core body temperature."],
-  steps: ["Steps", "6,842", "You are at 68% of a 10,000-step demo goal. Goals should match your ability and context."],
+  steps: ["Steps", "6,842", "You are at 68% of a 10,000-step daily goal. Goals should match your ability and context."],
 };
 
 const dialog = document.querySelector("#detail-dialog");
@@ -74,14 +74,14 @@ const coachDrawer = document.querySelector("#coach-drawer");
 const coachMessages = document.querySelector("#coach-messages");
 const coachInput = document.querySelector("#coach-input");
 const voiceInputButton = document.querySelector("#voice-input");
-const voiceModeButton = document.querySelector("#voice-mode");
+const stopListeningButton = document.querySelector("#voice-stop-listening");
+const readAloudToggle = document.querySelector("#read-aloud-toggle");
+const stopSpeakingButton = document.querySelector("#voice-stop-speaking");
 const voiceStatus = document.querySelector("#voice-status");
 const coachLanguage = document.querySelector("#coach-language");
-const coachTone = document.querySelector("#coach-tone");
 const symptomDialog = document.querySelector("#symptom-dialog");
 const symptomForm = document.querySelector("#symptom-form");
 const coachModeLabel = document.querySelector("#coach-mode-label");
-const cloudConsent = document.querySelector("#cloud-consent");
 const shortcutDialog = document.querySelector("#shortcut-dialog");
 const shortcutTemplate = document.querySelector("#shortcut-template");
 const captureDialog = document.querySelector("#capture-dialog");
@@ -91,17 +91,40 @@ const installDialog = document.querySelector("#install-dialog");
 const installTitle = document.querySelector("#install-title");
 const installContent = document.querySelector("#install-content");
 const installButton = document.querySelector("#install-button");
+const setupInstallButton = document.querySelector("#setup-install-button");
+const setupCardCopy = document.querySelector("#setup-card-copy");
 const devicesDialog = document.querySelector("#devices-dialog");
 const providerDetail = document.querySelector("#provider-detail");
 const appleImportDialog = document.querySelector("#apple-import-dialog");
+const importSource = document.querySelector("#import-source");
+const importSourceSteps = document.querySelector("#import-source-steps");
+const importSupportNote = document.querySelector("#import-support-note");
+const onboardingDialog = document.querySelector("#onboarding-dialog");
+const onboardingForm = document.querySelector("#onboarding-form");
+const profileNameInput = document.querySelector("#profile-name");
+const onboardingCancel = document.querySelector("#onboarding-cancel");
+const resetNameButton = document.querySelector("#reset-name-button");
+const profileButton = document.querySelector("#profile-button");
+const exportDataButton = document.querySelector("#export-data-button");
+const importDataButton = document.querySelector("#import-data-button");
+const balaImportFile = document.querySelector("#bala-import-file");
+const dataPortabilityStatus = document.querySelector("#data-portability-status");
+const webhookForm = document.querySelector("#webhook-form");
+const webhookUrlInput = document.querySelector("#webhook-url");
+const clearWebhookButton = document.querySelector("#clear-webhook-button");
+const sendTestSummaryButton = document.querySelector("#send-test-summary-button");
+const webhookStatus = document.querySelector("#webhook-status");
 const STORAGE_KEY = "bala-local-health-v1";
 const SYMPTOM_KEY = "bala-symptoms-v1";
+const PROFILE_KEY = "bala-profile-v1";
+const WEBHOOK_KEY = "bala-webhook-v2";
+const EXPORT_FORMAT = "bala-data-export";
+const EXPORT_VERSION = 1;
+const DATA_SOURCE_KEY = "currentDataSource";
 let deferredInstallPrompt = null;
-let voiceRepliesEnabled = true;
-let liveVoiceEnabled = false;
+let voiceRepliesEnabled = false;
 let speechRecognition = null;
 let isListening = false;
-let voicePhase = "idle";
 let microphonePermissionGranted = false;
 const conversation = [];
 const DEMO_METRICS = {
@@ -156,6 +179,76 @@ const providerGuides = {
   },
 };
 
+const dataSourceLabels = {
+  apple: "Apple Health Import",
+  "health-connect": "Android Health Connect Import",
+  samsung: "Samsung Health Import",
+  fitbit: "Fitbit Import",
+  garmin: "Garmin Import",
+  oura: "Oura Import",
+  "manual-csv": "Manual CSV Import",
+  "manual-json": "Manual JSON Import",
+  manual: "Manual Entry",
+  demo: "Demo Mode",
+};
+
+const healthSourceGuides = {
+  apple: {
+    title: "Apple Health / Apple Watch",
+    steps: [
+      "Open the Health app.",
+      "Tap your profile picture, then Export All Health Data.",
+      "Save the ZIP file, open BALA, and tap Import file.",
+    ],
+    files: "Supported now: Apple Health ZIP and export.xml.",
+  },
+  "health-connect": {
+    title: "Android Health Connect",
+    steps: [
+      "Open Android Settings and search for Health Connect.",
+      "Tap Manage data, then Backup and restore or an export option if available.",
+      "Save the exported file, open BALA, and tap Import file.",
+    ],
+    files: "Health Connect export availability varies. BALA currently reads only a simple supported CSV or JSON file.",
+  },
+  samsung: {
+    title: "Samsung Health",
+    steps: [
+      "Open Samsung Health, then open Settings.",
+      "Tap Download personal data and save the downloaded files.",
+      "Open BALA and tap Import file.",
+    ],
+    files: "Samsung downloads can contain multiple files. BALA currently reads only a simple supported CSV or JSON file.",
+  },
+  fitbit: {
+    title: "Fitbit",
+    steps: [
+      "Open your Fitbit account settings and choose Data Export.",
+      "Request or download your data as ZIP, CSV, or JSON where offered.",
+      "Save the file, open BALA, and tap Import file.",
+    ],
+    files: "BALA reads only simple CSV or JSON records with supported daily fields. Fitbit archives are not fully parsed yet.",
+  },
+  garmin: {
+    title: "Garmin Connect",
+    steps: [
+      "Open Garmin Connect on the web.",
+      "Open Activities or Reports, then choose Export CSV where available.",
+      "Save the file, open BALA, and tap Import file.",
+    ],
+    files: "BALA reads only supported daily columns. FIT, TCX, GPX, and complex Garmin exports are not parsed yet.",
+  },
+  oura: {
+    title: "Oura",
+    steps: [
+      "Open Oura on the web or the Membership Hub.",
+      "Choose Download Data, Export data, or download your trends as CSV.",
+      "Save the CSV file, open BALA, and tap Import file.",
+    ],
+    files: "Oura CSV columns vary. BALA currently reads only supported BALA daily field names.",
+  },
+};
+
 function openDialog(type) {
   const content = detailContent[type];
   if (type === "plan") {
@@ -203,7 +296,7 @@ function platformGuide() {
           <span>${ios ? "This appears to be your device." : "Install from Safari."}</span>
         </div>
         <ol>
-          <li>In Safari, tap Share, then Add to Home Screen.</li>
+          <li>Tap Share &rarr; Add to Home Screen &rarr; Add.</li>
           <li>Use Apple Health export import in this web version.</li>
           <li>Automatic Apple Watch sync requires the planned native HealthKit companion and your explicit permission.</li>
         </ol>
@@ -223,7 +316,7 @@ function platformGuide() {
     </div>
     <div class="connection-note">
       <strong>Important limitation</strong>
-      <p>A browser cannot directly read HealthKit or Health Connect. The installable web app is usable now; automatic background wearable sync needs small native iOS and Android bridges.</p>
+      <p>A browser cannot directly read HealthKit or Health Connect. The installable web app is usable now; automatic wearable sync needs future iPhone and Android app support.</p>
     </div>`;
   installDialog.showModal();
 }
@@ -272,15 +365,290 @@ function getLocalMetrics() {
   }
 }
 
-function getRecentSymptoms() {
+function getProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(PROFILE_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function getUserName() {
+  return String(getProfile()?.name || "").trim();
+}
+
+function getSymptomHistory() {
   try {
     const entries = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
+    return Array.isArray(entries) ? entries : [];
+  } catch {
+    return [];
+  }
+}
+
+function getSavedWebhook() {
+  return String(localStorage.getItem(WEBHOOK_KEY) || "").trim();
+}
+
+function inferDataSource(metrics = getLocalMetrics()) {
+  const saved = localStorage.getItem(DATA_SOURCE_KEY);
+  if (saved && dataSourceLabels[saved]) return saved;
+  const source = String(metrics?.source || "").toLowerCase();
+  if (source.includes("apple")) return "apple";
+  if (source.includes("demo")) return "demo";
+  return metrics ? "manual" : "demo";
+}
+
+function setCurrentDataSource(source) {
+  const normalized = dataSourceLabels[source] ? source : "manual";
+  localStorage.setItem(DATA_SOURCE_KEY, normalized);
+  const label = dataSourceLabels[normalized];
+  const scoreSource = document.querySelector("#score-data-source");
+  if (scoreSource) scoreSource.textContent = `Data source: ${label}`;
+  return label;
+}
+
+function renderImportSource(source = importSource.value) {
+  const guide = healthSourceGuides[source];
+  if (guide) {
+    importSourceSteps.innerHTML = `
+      <ol>${guide.steps.map((step, index) => `<li><span>${index + 1}</span><div><strong>${step}</strong></div></li>`).join("")}</ol>
+      <div class="connection-note"><strong>Manual import only</strong><p>Live sync is not available yet. Direct wearable connections are planned for a future version.</p></div>`;
+    importSupportNote.textContent = guide.files;
+    return;
+  }
+  const fileType = source === "manual-json" ? "JSON" : "CSV";
+  importSourceSteps.innerHTML = `
+    <ol>
+      <li><span>1</span><div><strong>Prepare a simple ${fileType} file</strong><small>Use date, sleepHours, restingHeartRate, hrv, steps, spo2, and symptomsNote.</small></div></li>
+      <li><span>2</span><div><strong>Choose the file in BALA</strong><small>BALA validates supported daily fields and keeps valid dated rows as local history.</small></div></li>
+    </ol>
+    <div class="connection-note"><strong>Processed on this device</strong><p>Your imported data stays local unless you later export or manually share it.</p></div>`;
+  importSupportNote.textContent = source === "manual-json"
+    ? "Supported now: BALA data exports and simple JSON records with recognized fields."
+    : "Supported now: CSV with the BALA sample headers.";
+}
+
+function openHealthImport(source = inferDataSource()) {
+  const selected = ["apple", "health-connect", "samsung", "fitbit", "garmin", "oura", "manual-csv", "manual-json"].includes(source)
+    ? source
+    : "manual-csv";
+  importSource.value = selected;
+  renderImportSource(importSource.value);
+  appleImportDialog.showModal();
+}
+
+function openHealthSourceGuide(source) {
+  const guide = healthSourceGuides[source];
+  if (!guide) return;
+  dialogLabel.textContent = "Connect your health data";
+  dialogTitle.textContent = guide.title;
+  dialogContentNode.innerHTML = `
+    <ol class="plan-list">${guide.steps.map((step, index) => `<li><span>Step ${index + 1}</span><strong>${step}</strong></li>`).join("")}</ol>
+    <div class="connection-note"><strong>Import your exported health data</strong><p>${guide.files} Live sync is not available yet.</p></div>`;
+  dialog.showModal();
+}
+
+function personalizeTitle(title) {
+  const name = getUserName();
+  if (!name) return title;
+  return `${name}, ${title.charAt(0).toLowerCase()}${title.slice(1)}`;
+}
+
+function updatePersonalization() {
+  const name = getUserName();
+  document.querySelector("#welcome-label").textContent = name
+    ? `Good to see you, ${name}`
+    : "A calm guide for everyday awareness";
+  profileButton.textContent = name ? `Edit name: ${name}` : "Set up your name";
+  document.querySelector("#guide-label").textContent = name ? `Today's Guide for ${name}` : "Today's Guide";
+  document.querySelector("#coach-title").textContent = name ? `${name}'s BALA Coach` : "Ask BALA";
+  document.querySelector("#coach-welcome").textContent = name
+    ? `Hi ${name}. I can help you understand your saved sleep, recovery, heart, activity, and symptom signals.`
+    : "I can help you understand patterns across sleep, recovery, activity, and your wearable data.";
+  coachInput.placeholder = name ? `What would you like to understand, ${name}?` : "What changed this week?";
+  const metrics = getLocalMetrics();
+  if (metrics) updateDashboard(metrics);
+}
+
+function openOnboarding(allowClose = false) {
+  const name = getUserName();
+  profileNameInput.value = name;
+  onboardingCancel.hidden = !allowClose;
+  resetNameButton.hidden = !allowClose || !name;
+  onboardingDialog.showModal();
+  window.setTimeout(() => profileNameInput.focus(), 80);
+}
+
+onboardingDialog.addEventListener("cancel", (event) => {
+  if (!getUserName()) event.preventDefault();
+});
+
+function getRecentSymptoms() {
+  try {
+    const entries = getSymptomHistory();
     const latest = entries.at(-1);
     if (!latest) return null;
     const age = Date.now() - new Date(latest.date).getTime();
     return age <= 36 * 60 * 60 * 1000 ? latest : null;
   } catch {
     return null;
+  }
+}
+
+function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory()) {
+  if (!metrics) return "";
+  const baseline = baselineAnalysis(metrics);
+  return [
+    "BALA WELLNESS SUMMARY",
+    `Generated: ${new Date().toLocaleString()}`,
+    `Source: ${metrics.source || "Local check-in"}`,
+    `Baseline: ${baseline.days} days - ${baseline.level}`,
+    baseline.copy,
+    "",
+    "LATEST SUPPORTED METRICS",
+    ...metricEvidence(metrics).map((item) => `- ${item}`),
+    "",
+    "RECENT SYMPTOM CHECK-INS",
+    ...(symptoms.length
+      ? symptoms.slice(-10).map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${(entry.symptoms || []).join(", ") || "No listed symptom"}${entry.note ? ` - ${entry.note}` : ""}`)
+      : ["- None recorded"]),
+    "",
+    "This report is health-awareness context from supported body signals. Discuss persistent concerns with a qualified clinician.",
+  ].join("\n");
+}
+
+function downloadJson(filename, data) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadText(filename, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function downloadSampleCsv() {
+  const date = new Date().toISOString().slice(0, 10);
+  const sample = [
+    "date,sleepHours,restingHeartRate,hrv,steps,spo2,symptomsNote",
+    `${date},7.5,61,46,6842,97,Feeling steady`,
+  ].join("\n");
+  downloadText("bala-sample-health-data.csv", sample, "text/csv;charset=utf-8");
+}
+
+function exportBalaData() {
+  const exportedAt = new Date().toISOString();
+  const payload = {
+    format: EXPORT_FORMAT,
+    version: EXPORT_VERSION,
+    exportedAt,
+    data: {
+      profile: getProfile(),
+      health: getLocalMetrics(),
+      symptomCheckIns: getSymptomHistory(),
+      settings: {
+        language: localStorage.getItem("bala-language") || "en-IN",
+        tone: localStorage.getItem("bala-tone") || "warm-family",
+        demoMode: getLocalMetrics()?.source === "BALA demo",
+        currentDataSource: inferDataSource(),
+      },
+    },
+  };
+  downloadJson(`bala-data-${exportedAt.slice(0, 10)}.json`, payload);
+  dataPortabilityStatus.textContent = "BALA data export created. Your saved webhook URL was not included.";
+}
+
+function supportedImportData(payload) {
+  if (!payload || payload.format !== EXPORT_FORMAT || payload.version !== EXPORT_VERSION || !payload.data || typeof payload.data !== "object") {
+    throw new Error("This file does not look like a supported BALA data export.");
+  }
+  const { profile, health, symptomCheckIns, settings } = payload.data;
+  if (profile !== null && profile !== undefined && (typeof profile !== "object" || Array.isArray(profile) || typeof profile.name !== "string")) {
+    throw new Error("The BALA profile in this file is invalid.");
+  }
+  if (health !== null && health !== undefined && (typeof health !== "object" || Array.isArray(health))) {
+    throw new Error("The saved health signals in this file are invalid.");
+  }
+  if (symptomCheckIns !== undefined && !Array.isArray(symptomCheckIns)) {
+    throw new Error("The symptom check-in history in this file is invalid.");
+  }
+  const numericMetric = (value, min, max) => {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= min && number <= max ? number : undefined;
+  };
+  const cleanMetricRecord = (record, includeHistory = false) => {
+    if (!record || typeof record !== "object") return null;
+    const cleaned = {
+      date: typeof record.date === "string" ? record.date.slice(0, 10) : undefined,
+      source: typeof record.source === "string" ? record.source.slice(0, 120) : undefined,
+      sleep: numericMetric(record.sleep, 0, 16),
+      rhr: numericMetric(record.rhr, 25, 220),
+      hrv: numericMetric(record.hrv, 1, 300),
+      spo2: numericMetric(record.spo2, 70, 100),
+      steps: numericMetric(record.steps, 0, 200000),
+      exercise: numericMetric(record.exercise, 0, 1440),
+      note: typeof record.note === "string" ? record.note.slice(0, 240) : undefined,
+      updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : undefined,
+    };
+    if (includeHistory && Array.isArray(record.history)) {
+      cleaned.history = record.history
+        .slice(-90)
+        .map((day) => cleanMetricRecord(day))
+        .filter((day) => day?.date);
+    }
+    return Object.fromEntries(Object.entries(cleaned).filter(([, value]) => value !== undefined));
+  };
+  const cleanSymptoms = Array.isArray(symptomCheckIns)
+    ? symptomCheckIns.slice(-60).map((entry) => ({
+      date: typeof entry?.date === "string" ? entry.date : new Date().toISOString(),
+      symptoms: Array.isArray(entry?.symptoms)
+        ? entry.symptoms.filter((item) => typeof item === "string").slice(0, 10)
+        : [],
+      note: typeof entry?.note === "string" ? entry.note.slice(0, 240) : "",
+    }))
+    : [];
+  const allowedLanguages = new Set(["en-US", "en-IN", "hi-IN", "te-IN", "es-ES", "ta-IN", "kn-IN", "ml-IN", "mr-IN", "bn-IN"]);
+  const allowedTones = new Set(["warm-family", "friendly-coach", "calm-clinical"]);
+  return {
+    profile: profile ? { name: String(profile.name).trim().slice(0, 40), updatedAt: profile.updatedAt || new Date().toISOString() } : null,
+    health: health ? cleanMetricRecord(health, true) : null,
+    symptomCheckIns: cleanSymptoms,
+    settings: {
+      language: allowedLanguages.has(settings?.language) ? settings.language : "en-US",
+      tone: allowedTones.has(settings?.tone) ? settings.tone : "warm-family",
+      currentDataSource: dataSourceLabels[settings?.currentDataSource] ? settings.currentDataSource : undefined,
+    },
+  };
+}
+
+function restoreBalaData(data) {
+  if (data.profile?.name) localStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
+  else localStorage.removeItem(PROFILE_KEY);
+  if (data.health) localStorage.setItem(STORAGE_KEY, JSON.stringify(data.health));
+  else localStorage.removeItem(STORAGE_KEY);
+  localStorage.setItem(SYMPTOM_KEY, JSON.stringify(data.symptomCheckIns));
+  localStorage.setItem("bala-language", data.settings.language);
+  localStorage.setItem("bala-tone", data.settings.tone);
+  if (data.settings.currentDataSource && dataSourceLabels[data.settings.currentDataSource]) {
+    localStorage.setItem(DATA_SOURCE_KEY, data.settings.currentDataSource);
+  }
+}
+
+function validWebhookUrl(value) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
+  } catch {
+    return "";
   }
 }
 
@@ -352,7 +720,7 @@ function scoreMetrics(metrics) {
 
 function scoreStatus(score) {
   if (score >= 80) return { label: "Strong day", level: "strong", icon: "↑" };
-  if (score >= 65) return { label: "Take it easy", level: "steady", icon: "↔" };
+  if (score >= 65) return { label: "Take it easy", level: "steady", icon: "↓" };
   if (score >= 50) return { label: "Recovery needed", level: "recover", icon: "↓" };
   return { label: "Check your signals", level: "check", icon: "!" };
 }
@@ -362,29 +730,385 @@ function averageValues(values) {
   return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : undefined;
 }
 
+const baselineFields = {
+  sleep: { label: "Sleep", unit: "h", decimals: 1, threshold: 0.75 },
+  rhr: { label: "Resting heart rate", unit: " bpm", decimals: 0, threshold: 5 },
+  hrv: { label: "HRV", unit: " ms", decimals: 0, ratioThreshold: 0.15 },
+  steps: { label: "Steps", unit: "", decimals: 0, ratioThreshold: 0.2 },
+  spo2: { label: "SpO2", unit: "%", decimals: 0, threshold: 1.5 },
+};
+
+function validCheckIns(metrics) {
+  const history = Array.isArray(metrics?.history) ? metrics.history : [];
+  return history
+    .filter((entry) => (
+      typeof entry?.date === "string"
+      && Object.keys(baselineFields).some((key) => Number.isFinite(entry[key]))
+    ))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function formatBaselineValue(key, value) {
+  if (!Number.isFinite(value)) return "Not available";
+  const field = baselineFields[key];
+  const formatted = field.decimals ? value.toFixed(field.decimals) : Math.round(value).toLocaleString();
+  return `${formatted}${field.unit}`;
+}
+
+function baselineComparison(key, latest, average) {
+  if (!Number.isFinite(latest) || !Number.isFinite(average)) return null;
+  const field = baselineFields[key];
+  const difference = latest - average;
+  const threshold = field.ratioThreshold ? Math.abs(average) * field.ratioThreshold : field.threshold;
+  const direction = Math.abs(difference) < threshold ? "near" : difference > 0 ? "above" : "below";
+  const label = direction === "near"
+    ? "Near baseline"
+    : direction === "above"
+      ? "Above recent baseline"
+      : "Below recent baseline";
+  return { key, direction, label, difference, latest, average };
+}
+
 function baselineAnalysis(metrics) {
-  const history = Array.isArray(metrics?.history) ? metrics.history.slice(-30) : [];
-  const prior = history.slice(0, -1).slice(-14);
-  if (prior.length < 3) {
-    return { days: history.length, level: "Baseline building", copy: "Keep importing or checking in. BALA needs at least 4 days before comparing changes." };
-  }
+  const history = validCheckIns(metrics);
+  const baselineCheckIns = history.slice(-3);
   const latest = history.at(-1) || metrics;
-  const sleepBase = averageValues(prior.map((day) => day.sleep));
-  const rhrBase = averageValues(prior.map((day) => day.rhr));
-  const hrvBase = averageValues(prior.map((day) => day.hrv));
-  const changes = [];
-  if (latest.sleep && sleepBase && latest.sleep < sleepBase - 1) changes.push(`sleep is ${(sleepBase - latest.sleep).toFixed(1)}h below baseline`);
-  if (latest.rhr && rhrBase && latest.rhr > rhrBase + 8) changes.push(`resting heart rate is ${Math.round(latest.rhr - rhrBase)} bpm above baseline`);
-  if (latest.hrv && hrvBase && latest.hrv < hrvBase * 0.75) changes.push("HRV is more than 25% below baseline");
+  const averages = Object.fromEntries(
+    Object.keys(baselineFields).map((key) => [key, averageValues(baselineCheckIns.map((day) => day[key]))]),
+  );
+  const comparisons = Object.keys(baselineFields)
+    .map((key) => baselineComparison(key, latest?.[key], averages[key]))
+    .filter(Boolean);
+  const changed = comparisons.filter((item) => item.direction !== "near");
+  const ready = baselineCheckIns.length >= 3;
+  if (!ready) {
+    return {
+      ready,
+      days: history.length,
+      level: "Baseline building",
+      copy: "Add 3 check-ins to build your first BALA baseline.",
+      averages,
+      comparisons: [],
+      history,
+      timeline: history.slice(-5).reverse(),
+    };
+  }
+  const changeCopy = changed.length
+    ? `${changed.map((item) => `${baselineFields[item.key].label} is ${item.direction} your recent baseline`).join("; ")}.`
+    : "Your latest supported signals are near your recent baseline.";
   return {
+    ready,
     days: history.length,
-    level: changes.length >= 2 ? "Meaningful change" : changes.length ? "Watch the trend" : "Near your baseline",
-    copy: changes.length ? `Today, ${changes.join(" and ")}. Consider recovery and add symptoms for context.` : "Your latest supported signals are close to your recent personal pattern.",
+    level: changed.length ? "Recent pattern changed" : "Near your baseline",
+    copy: changeCopy,
+    averages,
+    comparisons,
+    history,
+    timeline: history.slice(-5).reverse(),
   };
+}
+
+function weeklyTrend(key, history, average, baselineAverage) {
+  const values = history.filter((entry) => Number.isFinite(entry[key]));
+  if (values.length < 3 || !Number.isFinite(average)) return { key, label: "Not enough data", direction: "unknown" };
+  const split = Math.max(1, Math.floor(values.length / 2));
+  const earlier = averageValues(values.slice(0, split).map((entry) => entry[key]));
+  const recent = averageValues(values.slice(split).map((entry) => entry[key]));
+  if (!Number.isFinite(earlier) || !Number.isFinite(recent)) return { key, label: "Not enough data", direction: "unknown" };
+  const ratio = earlier ? (recent - earlier) / Math.abs(earlier) : 0;
+  const smallChange = key === "sleep" ? 0.06 : key === "rhr" || key === "spo2" ? 0.03 : 0.1;
+  if (Math.abs(ratio) < smallChange) {
+    if (Number.isFinite(baselineAverage)) {
+      const comparison = baselineComparison(key, average, baselineAverage);
+      if (comparison?.direction === "below") return { key, label: "Lower than usual", direction: "lower" };
+      if (comparison?.direction === "above") return { key, label: "Higher than usual", direction: "higher" };
+    }
+    return { key, label: "Steady", direction: "steady" };
+  }
+  const improving = key === "rhr" ? ratio < 0 : ratio > 0;
+  return improving
+    ? { key, label: "Improving", direction: "improving" }
+    : ratio < 0
+      ? { key, label: "Lower than usual", direction: "lower" }
+      : { key, label: "Higher than usual", direction: "higher" };
+}
+
+function weeklyPatternsAnalysis(metrics) {
+  const history = validCheckIns(metrics).slice(-7);
+  const baseline = baselineAnalysis(metrics);
+  const averages = Object.fromEntries(
+    Object.keys(baselineFields).map((key) => [key, averageValues(history.map((entry) => entry[key]))]),
+  );
+  const trends = Object.fromEntries(
+    Object.keys(baselineFields).map((key) => [
+      key,
+      weeklyTrend(key, history, averages[key], baseline.averages[key]),
+    ]),
+  );
+  if (history.length < 3) {
+    return {
+      ready: false,
+      history,
+      averages,
+      trends,
+      insights: ["Add a few more check-ins to see weekly patterns."],
+      focus: {
+        label: "Add more check-ins",
+        copy: "A few more check-ins will help BALA offer a pattern-aware focus.",
+      },
+    };
+  }
+
+  const insights = [];
+  const baselineCount = (key, direction) => {
+    const baselineAverage = baseline.averages[key];
+    if (!Number.isFinite(baselineAverage)) return 0;
+    return history.filter((entry) => baselineComparison(key, entry[key], baselineAverage)?.direction === direction).length;
+  };
+  if (trends.sleep.direction === "lower") insights.push("Your sleep has been trending lower across recent check-ins.");
+  else if (baselineCount("sleep", "below") >= 2) insights.push("Your sleep has been lower than your recent baseline on multiple check-ins.");
+  else if (trends.sleep.direction === "improving") insights.push("Your recorded sleep has been moving closer to a steadier pattern.");
+  else insights.push("Your sleep has been fairly steady across recent check-ins.");
+
+  if (trends.steps.direction === "lower") insights.push("Your steps are trending lower this week.");
+  else if (trends.steps.direction === "improving") insights.push("Your steps have been gradually increasing across recent check-ins.");
+  else insights.push("Your activity has stayed close to its recent weekly pattern.");
+
+  if (trends.hrv.direction === "lower") insights.push("Your HRV has been trending lower across recent check-ins.");
+  else if (baselineCount("hrv", "below") >= 2) insights.push("Your HRV has been below your recent baseline on multiple check-ins.");
+  else insights.push("Your HRV has been close to your recent pattern.");
+
+  if (trends.rhr.direction === "higher") insights.push("Your resting heart rate has been trending higher across recent check-ins.");
+  else if (baselineCount("rhr", "above") >= 2) insights.push("Your resting heart rate has been higher than your baseline recently.");
+  else insights.push("Your resting heart rate has been close to your recent pattern.");
+
+  if (baselineCount("spo2", "below") >= 2) insights.push("Your wearable SpO2 estimates have been lower than your recent pattern on multiple check-ins.");
+  else insights.push("Your SpO2 readings look close to your recent pattern.");
+
+  const sleepNeedsFocus = baselineCount("sleep", "below") >= 2 || trends.sleep.direction === "lower";
+  const rhrNeedsFocus = baselineCount("rhr", "above") >= 2 || trends.rhr.direction === "higher";
+  const hrvNeedsFocus = baselineCount("hrv", "below") >= 2 || trends.hrv.direction === "lower";
+  const stepsNeedFocus = trends.steps.direction === "lower" || baselineCount("steps", "below") >= 2;
+  let focus = {
+    label: "Keep current routine",
+    copy: "Your recent supported signals look fairly steady. Keep the routines that feel sustainable.",
+  };
+  if (sleepNeedsFocus) {
+    focus = {
+      label: "Sleep recovery",
+      copy: "Protect a consistent wind-down, regular meals, hydration, and a lighter evening.",
+    };
+  } else if (rhrNeedsFocus) {
+    focus = {
+      label: "Hydration and rest",
+      copy: "Give recovery more room with regular fluids, rest, and a check-in with how you feel.",
+    };
+  } else if (hrvNeedsFocus) {
+    focus = {
+      label: "Breathing and stress balance",
+      copy: "Choose a few minutes of slow breathing, gentle movement, hydration, and sleep focus.",
+    };
+  } else if (stepsNeedFocus) {
+    focus = {
+      label: "Lighter movement",
+      copy: "Try a comfortable walk or light mobility if you feel well, without chasing a number.",
+    };
+  }
+  return { ready: true, history, averages, trends, insights: insights.slice(0, 5), focus };
+}
+
+function timelineSummary(metrics) {
+  const baseline = baselineAnalysis(metrics);
+  const lines = [
+    "BALA DOCTOR-READY TIMELINE",
+    `Generated: ${new Date().toLocaleString()}`,
+    "For personal health awareness and discussion with a healthcare professional.",
+    "",
+    baseline.ready
+      ? `Baseline from latest 3 valid check-ins: ${Object.entries(baseline.averages)
+        .filter(([, value]) => Number.isFinite(value))
+        .map(([key, value]) => `${baselineFields[key].label} ${formatBaselineValue(key, value)}`)
+        .join(", ")}`
+      : "Baseline: Add 3 check-ins to build your first BALA baseline.",
+    `What changed: ${baseline.copy}`,
+    "",
+    "LAST 5 CHECK-INS",
+    ...(baseline.timeline.length
+      ? baseline.timeline.map((entry) => {
+        const signals = Object.keys(baselineFields)
+          .filter((key) => Number.isFinite(entry[key]))
+          .map((key) => `${baselineFields[key].label} ${formatBaselineValue(key, entry[key])}`);
+        const note = entry.note ? `; note: ${String(entry.note).slice(0, 240)}` : "";
+        return `- ${entry.date}: ${signals.join(", ") || "No supported signal values"}${note}`;
+      })
+      : ["- No valid check-ins yet."]),
+    "",
+    "BALA organizes supported signals for awareness. It does not provide diagnosis or replace professional care.",
+  ];
+  return lines.join("\n");
+}
+
+function renderBaselineAndTimeline(metrics) {
+  const baseline = baselineAnalysis(metrics);
+  document.querySelector("#baseline-days").textContent = `${baseline.days} check-in${baseline.days === 1 ? "" : "s"}`;
+  document.querySelector("#baseline-level").textContent = baseline.level;
+  document.querySelector("#baseline-copy").textContent = baseline.copy;
+
+  const averagesNode = document.querySelector("#baseline-averages");
+  averagesNode.replaceChildren();
+  if (baseline.ready) {
+    Object.entries(baselineFields).forEach(([key, field]) => {
+      const item = document.createElement("div");
+      const label = document.createElement("span");
+      const value = document.createElement("strong");
+      label.textContent = field.label;
+      value.textContent = formatBaselineValue(key, baseline.averages[key]);
+      item.append(label, value);
+      averagesNode.append(item);
+    });
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "baseline-empty";
+    empty.textContent = "Add 3 check-ins to build your first BALA baseline.";
+    averagesNode.append(empty);
+  }
+
+  document.querySelector("#change-summary-copy").textContent = baseline.ready
+    ? baseline.copy
+    : "Add 3 check-ins to compare your latest signals with your baseline.";
+  const labelsNode = document.querySelector("#change-labels");
+  labelsNode.replaceChildren();
+  baseline.comparisons.forEach((comparison) => {
+    const item = document.createElement("div");
+    item.className = `change-label ${comparison.direction}`;
+    const signal = document.createElement("strong");
+    const label = document.createElement("span");
+    signal.textContent = baselineFields[comparison.key].label;
+    label.textContent = comparison.label;
+    item.append(signal, label);
+    labelsNode.append(item);
+  });
+
+  const timelineNode = document.querySelector("#timeline-list");
+  timelineNode.replaceChildren();
+  if (!baseline.timeline.length) {
+    const empty = document.createElement("p");
+    empty.className = "timeline-empty";
+    empty.textContent = "Your recent valid check-ins will appear here.";
+    timelineNode.append(empty);
+    return;
+  }
+  baseline.timeline.forEach((entry) => {
+    const item = document.createElement("article");
+    const header = document.createElement("header");
+    const date = document.createElement("strong");
+    const source = document.createElement("span");
+    date.textContent = new Date(`${entry.date}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" });
+    source.textContent = entry.source || "Local check-in";
+    header.append(date, source);
+    const signals = document.createElement("p");
+    signals.textContent = Object.keys(baselineFields)
+      .filter((key) => Number.isFinite(entry[key]))
+      .map((key) => `${baselineFields[key].label}: ${formatBaselineValue(key, entry[key])}`)
+      .join(" · ");
+    item.append(header, signals);
+    if (entry.note) {
+      const note = document.createElement("small");
+      note.textContent = `Note: ${String(entry.note).slice(0, 240)}`;
+      item.append(note);
+    }
+    timelineNode.append(item);
+  });
+}
+
+function renderWeeklyPatterns(metrics) {
+  const weekly = weeklyPatternsAnalysis(metrics);
+  document.querySelector("#weekly-count").textContent = `${weekly.history.length} check-in${weekly.history.length === 1 ? "" : "s"}`;
+  document.querySelector("#weekly-patterns-copy").textContent = weekly.ready
+    ? "A calm summary of up to your latest 7 valid check-ins."
+    : "Add a few more check-ins to see weekly patterns.";
+
+  const averagesNode = document.querySelector("#weekly-averages");
+  averagesNode.replaceChildren();
+  Object.entries(baselineFields).forEach(([key, field]) => {
+    const item = document.createElement("div");
+    const header = document.createElement("span");
+    const value = document.createElement("strong");
+    const trend = document.createElement("small");
+    header.textContent = field.label;
+    value.textContent = formatBaselineValue(key, weekly.averages[key]);
+    trend.className = `weekly-trend ${weekly.trends[key].direction}`;
+    trend.textContent = weekly.trends[key].label;
+    item.append(header, value, trend);
+    averagesNode.append(item);
+  });
+
+  const insightsNode = document.querySelector("#pattern-insights-list");
+  insightsNode.replaceChildren();
+  weekly.insights.forEach((insight) => {
+    const item = document.createElement("li");
+    item.textContent = insight;
+    insightsNode.append(item);
+  });
+
+  document.querySelector("#weekly-focus-label").textContent = weekly.focus.label;
+  document.querySelector("#weekly-focus-copy").textContent = weekly.focus.copy;
+}
+
+async function copyTimelineSummary() {
+  const status = document.querySelector("#timeline-status");
+  const metrics = getLocalMetrics();
+  if (!metrics || !validCheckIns(metrics).length) {
+    status.textContent = "Add a valid check-in before copying a timeline.";
+    return;
+  }
+  const summary = timelineSummary(metrics);
+  try {
+    await navigator.clipboard.writeText(summary);
+    status.textContent = "Timeline summary copied. Share it only with someone you trust.";
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = summary;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.append(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    if (copied) {
+      status.textContent = "Timeline summary copied. Share it only with someone you trust.";
+      return;
+    }
+    dialogLabel.textContent = "Timeline summary";
+    dialogTitle.textContent = "Select and copy your timeline";
+    const wrapper = document.createElement("div");
+    wrapper.className = "source-list";
+    const copy = document.createElement("p");
+    copy.textContent = "Automatic clipboard access is unavailable in this browser. Select the local summary below and copy it manually.";
+    const manual = document.createElement("textarea");
+    manual.className = "timeline-copy-fallback";
+    manual.value = summary;
+    manual.setAttribute("readonly", "");
+    wrapper.append(copy, manual);
+    dialogContentNode.replaceChildren(wrapper);
+    dialog.showModal();
+    manual.focus();
+    manual.select();
+    status.textContent = "Automatic copy was unavailable. The timeline is selected for manual copying.";
+  }
 }
 
 function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
   const symptoms = symptomContext?.symptoms || [];
+  const note = String(metrics?.note || "").trim();
+  const history = Array.isArray(metrics?.history) ? metrics.history.slice(0, -1).slice(-14) : [];
+  const rhrBase = averageValues(history.map((day) => day.rhr));
+  const hrvBase = averageValues(history.map((day) => day.hrv));
+  const higherRhr = Number.isFinite(metrics?.rhr) && (rhrBase ? metrics.rhr >= rhrBase + 8 : metrics.rhr >= 75);
+  const lowerHrv = Number.isFinite(metrics?.hrv) && (hrvBase ? metrics.hrv < hrvBase * 0.75 : metrics.hrv < 35);
   if (symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item))) {
     return {
       title: "Pause and put your symptoms first",
@@ -397,16 +1121,34 @@ function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
       copy: `You recorded ${symptoms.join(", ")}. Keep activity comfortable, support rest and hydration, and notice whether the symptom improves or persists.`,
     };
   }
+  if (note && /chest pain|shortness of breath|faint|severe dizziness|blue lips|confusion/i.test(note)) {
+    return {
+      title: "Put your symptoms ahead of the numbers",
+      copy: "Your note describes a potentially concerning symptom. Contact a healthcare professional promptly, and seek urgent medical help if symptoms are severe, new, or worsening.",
+    };
+  }
+  if (Number.isFinite(metrics?.spo2) && metrics.spo2 < 95) {
+    return {
+      title: "Recheck your oxygen estimate and how you feel",
+      copy: "Your wearable SpO2 estimate is lower than expected. Check device fit and measurement conditions, and contact a healthcare professional if readings stay low or you have concerning symptoms.",
+    };
+  }
   if (metrics.sleep && metrics.sleep < 6.5) {
     return {
       title: "Choose recovery over intensity today",
       copy: "Your recorded sleep was short. Favor an easy walk, regular meals, hydration, and an earlier wind-down.",
     };
   }
-  if (metrics.rhr && metrics.rhr >= 75 && metrics.hrv && metrics.hrv < 35) {
+  if (higherRhr) {
     return {
-      title: "Keep today light and watch the trend",
-      copy: "Your recovery signals differ from this demo baseline. Recheck how you feel, choose a lighter day, and watch the pattern over time.",
+      title: "Give recovery a little more room today",
+      copy: "Your resting heart rate is higher than your recent pattern or usual wellness range. Favor rest, hydration, a stress check, and comfortable activity while you monitor the trend.",
+    };
+  }
+  if (lowerHrv) {
+    return {
+      title: "Choose a lighter recovery-focused day",
+      copy: "Your HRV is lower than your recent pattern or still building a baseline. Focus on sleep, gentle movement, hydration, and a few minutes of slow breathing.",
     };
   }
   if ((metrics.steps || 0) < 6000 || (metrics.exercise || 0) < 20) {
@@ -429,57 +1171,16 @@ function metricEvidence(metrics) {
     metrics?.spo2 && `${Math.round(metrics.spo2)}% SpO2`,
     metrics?.steps !== undefined && `${Math.round(metrics.steps).toLocaleString()} steps`,
     metrics?.exercise !== undefined && `${Math.round(metrics.exercise)} exercise minutes`,
+    metrics?.note && `your note: "${String(metrics.note).slice(0, 120)}"`,
   ].filter(Boolean);
 }
 
-function coachSummary(metrics) {
-  if (!metrics) return { source: "demo", metrics: {} };
-  const baseline = baselineAnalysis(metrics);
-  return {
-    source: metrics.source || "local",
-    metrics: {
-      sleepHours: metrics.sleep,
-      restingHeartRate: metrics.rhr,
-      hrvMs: metrics.hrv,
-      spo2Percent: metrics.spo2,
-      steps: metrics.steps,
-      exerciseMinutes: metrics.exercise,
-      baselineDays: baseline.days,
-      baselineLevel: baseline.level,
-      recentSymptoms: getRecentSymptoms()?.symptoms || [],
-    },
-  };
-}
-
-async function requestConversationalCoach(question, metrics) {
-  const configured = String(window.BALA_CONFIG?.aiEndpoint || "").trim();
-  const endpoint = configured || (location.hostname.endsWith(".pages.dev") ? "./api/coach" : "");
-  if (!endpoint) throw new Error("Secure AI endpoint is not configured");
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 8000);
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    signal: controller.signal,
-    body: JSON.stringify({
-      question,
-      language: coachLanguage.value,
-      tone: coachTone.value,
-      summary: coachSummary(metrics),
-      history: conversation.slice(-8),
-    }),
-  }).finally(() => window.clearTimeout(timeout));
-  if (!response.ok) throw new Error("Secure AI is unavailable");
-  const result = await response.json();
-  if (!result.answer) throw new Error("AI returned no answer");
-  return result;
-}
-
-function coachResponse(question, metrics) {
+function coachResponseCore(question, metrics) {
   const normalized = question.toLowerCase().trim();
   const symptomContext = getRecentSymptoms();
   const recentSymptoms = symptomContext?.symptoms || [];
   const symptomText = recentSymptoms.length ? recentSymptoms.join(", ") : "";
+  const name = getUserName();
   if (/^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening)[!. ]*$/.test(normalized)) {
     const greetings = {
       "hi-IN": "नमस्ते! मैं BALA हूँ, आपका निजी स्वास्थ्य मार्गदर्शक। आप नींद, HRV, आराम की हृदय गति, ऑक्सीजन, तनाव या आज क्या करना है, पूछ सकते हैं।",
@@ -502,9 +1203,50 @@ function coachResponse(question, metrics) {
     return "I can explain sleep, HRV, resting heart rate, SpO₂, readiness, stress, hydration, steps, and exercise using your imported metrics. Try asking, “Why is my sleep low?” or “What should I do today?”";
   }
   if (!metrics) {
-    return "I’m still showing demo data. Add today’s metrics or import your Apple Health ZIP, then I can explain your local values.";
+    return `${name ? `${name}, ` : ""}add today's metrics or import your Apple Health ZIP, then I can explain your local values.`;
   }
   const evidence = metricEvidence(metrics).join(", ") || "the values you recorded";
+  const history = Array.isArray(metrics.history) ? metrics.history.slice(0, -1).slice(-14) : [];
+  const rhrBase = averageValues(history.map((day) => day.rhr));
+  const hrvBase = averageValues(history.map((day) => day.hrv));
+  const baseline = baselineAnalysis(metrics);
+  const weekly = weeklyPatternsAnalysis(metrics);
+
+  if (/how was my week|what patterns|weekly pattern|this week|am i improving|improv|focus on this week|focus this week/.test(normalized)) {
+    if (!weekly.ready) return "Add a few more check-ins to see weekly patterns. With at least 3 valid check-ins, I can summarize recent averages, pattern directions, and one simple focus.";
+    const trendSummary = Object.entries(weekly.trends)
+      .filter(([, trend]) => trend.direction !== "unknown")
+      .map(([key, trend]) => `${baselineFields[key].label}: ${trend.label.toLowerCase()}`)
+      .join("; ");
+    if (/focus/.test(normalized)) {
+      return `${weekly.focus.label}. ${weekly.focus.copy} I based this on up to your latest 7 valid check-ins and your personal baseline.`;
+    }
+    if (/improv/.test(normalized)) {
+      const improving = Object.entries(weekly.trends)
+        .filter(([, trend]) => trend.direction === "improving")
+        .map(([key]) => baselineFields[key].label);
+      return improving.length
+        ? `${improving.join(", ")} ${improving.length === 1 ? "is" : "are"} moving in a more supportive direction across your recent check-ins. Other signals are summarized as ${trendSummary}. Patterns can vary, so use this for awareness rather than a medical conclusion.`
+        : `I do not see a clear improving direction yet. Your recent pattern is ${trendSummary}. Keep adding consistent check-ins so the weekly view becomes more useful.`;
+    }
+    return `Across ${weekly.history.length} recent check-ins: ${weekly.insights.join(" ")} Your next 24-hour focus is ${weekly.focus.label.toLowerCase()}. ${weekly.focus.copy}`;
+  }
+
+  if (/what changed|compared? to (my )?baseline|how am i compared|baseline|recent trend/.test(normalized)) {
+    if (!baseline.ready) return "Add 3 check-ins to build your first BALA baseline. Then I can compare your latest sleep, resting heart rate, HRV, steps, and SpO2 with your recent pattern.";
+    const comparisons = baseline.comparisons.length
+      ? baseline.comparisons.map((item) => `${baselineFields[item.key].label} is ${item.label.toLowerCase()}`).join("; ")
+      : "No comparable supported signals were found in the latest check-in.";
+    return `Your BALA baseline uses your latest 3 valid check-ins. ${comparisons}. ${baseline.copy} Use this as personal pattern awareness, not a medical conclusion.`;
+  }
+
+  if (/tell my doctor|tell a doctor|doctor|clinician|healthcare professional/.test(normalized)) {
+    const recent = baseline.timeline;
+    if (!recent.length) return "There are no valid check-ins to summarize yet. Add dated signals and symptom notes, then BALA can organize them for a healthcare conversation.";
+    const dates = recent.map((entry) => entry.date).join(", ");
+    const change = baseline.ready ? baseline.copy : "Your baseline is still building.";
+    return `You can share that BALA has ${recent.length} recent check-in${recent.length === 1 ? "" : "s"} dated ${dates}. Mention the recorded sleep, resting heart rate, HRV, steps, SpO2 estimates, and any symptom notes. ${change} Use the Doctor-Ready Timeline for the exact values, and describe any persistent or concerning symptoms directly to the healthcare professional.`;
+  }
 
   if (/symptom|feel|feeling|unwell|pain|dizz|faint|breath|palpitation|fatigue|fever/.test(normalized)) {
     if (!recentSymptoms.length) return "I do not have a recent symptom check-in yet. Add one so I can consider how you feel alongside sleep, recovery, heart, and activity signals.";
@@ -525,12 +1267,22 @@ function coachResponse(question, metrics) {
 
   if (/hrv|variability/.test(normalized)) {
     if (!metrics.hrv) return "No HRV value was found in your latest import. HRV is most useful against your own multi-week baseline, measured under similar conditions.";
-    return `Your latest HRV is ${Math.round(metrics.hrv)} ms. HRV varies widely between people, so compare it with your own baseline rather than another person’s number. Sleep, illness, alcohol, stress, and hard training can lower it. Use the trend with resting heart rate and how you feel.`;
+    const context = hrvBase
+      ? metrics.hrv < hrvBase * 0.75
+        ? `This is lower than your recent average of ${Math.round(hrvBase)} ms.`
+        : `Your recent average is ${Math.round(hrvBase)} ms.`
+      : "Your personal baseline is still building.";
+    return `Your latest HRV is ${Math.round(metrics.hrv)} ms. ${context} HRV varies widely between people. If it is low for you, favor recovery, slow breathing, lighter activity, hydration, and sleep focus.`;
   }
 
   if (/heart|rhr|pulse/.test(normalized)) {
     if (!metrics.rhr) return "No resting heart-rate value was found in your latest import. A multi-day trend is more useful than one reading.";
-    return `Your latest resting heart rate is ${Math.round(metrics.rhr)} bpm. One high day can reflect short sleep, stress, dehydration, illness, alcohol, or recent exertion. Recheck the trend and how you feel. Seek medical care for concerning symptoms or a persistently unusual rate.`;
+    const context = rhrBase
+      ? metrics.rhr >= rhrBase + 8
+        ? `That is higher than your recent average of ${Math.round(rhrBase)} bpm.`
+        : `Your recent average is ${Math.round(rhrBase)} bpm.`
+      : "Your personal baseline is still building.";
+    return `Your latest resting heart rate is ${Math.round(metrics.rhr)} bpm. ${context} A higher value can accompany stress, dehydration, illness, short sleep, or recent exertion. Rest, hydrate, check your stress and symptoms, and monitor the trend. Contact a healthcare professional for persistent unusual readings or concerning symptoms.`;
   }
 
   if (/oxygen|spo2|blood oxygen/.test(normalized)) {
@@ -550,7 +1302,9 @@ function coachResponse(question, metrics) {
     const breakdown = scoreBreakdown(metrics, symptomContext);
     const lowest = breakdown.parts.slice(0, 2).map((part) => `${part.label.toLowerCase()} ${part.score}`).join(" and ");
     const context = recentSymptoms.length ? ` Your recent check-in also includes ${symptomText}.` : "";
-    return `Your BALA score is ${breakdown.total}. It is calculated from the signals available today, with the most attention on sleep, HRV, resting heart rate, and activity. The lower contributors are ${lowest || "still building a baseline"}.${context} Use it to pace the day, not as a medical conclusion.`;
+    const trend = baseline.ready ? ` Compared with your recent baseline, ${baseline.copy.toLowerCase()}` : " Your 3-check-in baseline is still building.";
+    const weeklyContext = weekly.ready ? ` Your weekly focus is ${weekly.focus.label.toLowerCase()}.` : "";
+    return `Your BALA score is ${breakdown.total}. It is calculated from the signals available today, with the most attention on sleep, HRV, resting heart rate, and activity. The lower contributors are ${lowest || "still building a baseline"}.${trend}${weeklyContext}${context} Use it to pace the day, not as a medical conclusion.`;
   }
 
   if (/step|walk|activity|exercise|workout|today|do/.test(normalized)) {
@@ -563,11 +1317,69 @@ function coachResponse(question, metrics) {
   return `${recommendation.title}. ${recommendation.copy} I based this on ${evidence}.${symptomContextCopy} Ask me about any one signal for a more focused explanation.`;
 }
 
+function coachResponse(question, metrics) {
+  const normalized = question.toLowerCase().trim();
+  const urgentTerms = /\b(chest pain|severe shortness of breath|fainting|emergency|severe symptoms?)\b/;
+  if (urgentTerms.test(normalized)) {
+    return "BALA is not an emergency service. If you may be experiencing urgent symptoms, seek emergency care or contact local emergency services now.";
+  }
+
+  const directAnswer = coachResponseCore(question, metrics);
+  const isGreeting = /^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening|thanks|thank you|thx|okay|ok|cool|great)[!. ]*$/.test(normalized);
+  const simpleExchange = isGreeting
+    || /who are you|what are you|your name|what can you do|help me|how can you help/.test(normalized);
+  const languageNote = coachLanguage.value === "en-US" || isGreeting ? "" : "\n\nFull multilingual coaching is coming soon.";
+  if (!metrics || simpleExchange) return `${directAnswer}${languageNote}`;
+
+  const name = getUserName();
+  const symptomContext = getRecentSymptoms();
+  const symptoms = symptomContext?.symptoms || [];
+  const baseline = baselineAnalysis(metrics);
+  const weekly = weeklyPatternsAnalysis(metrics);
+  const recommendation = buildRecommendation(metrics, symptomContext);
+  const breakdown = scoreBreakdown(metrics, symptomContext);
+  const source = dataSourceLabels[inferDataSource(metrics)] || "Local health data";
+  const evidence = metricEvidence(metrics).slice(0, 5);
+  const contextParts = [
+    `BALA Score ${breakdown.total}`,
+    `data source ${source}`,
+    evidence.length ? `latest signals: ${evidence.join(", ")}` : "",
+    baseline.ready ? `baseline: ${baseline.copy}` : "baseline: still building",
+    weekly.ready ? `weekly pattern: ${weekly.insights.slice(0, 2).join(" ")}` : "weekly pattern: add a few more check-ins",
+    metrics.note ? `your note: "${String(metrics.note).slice(0, 120)}"` : "",
+  ].filter(Boolean);
+  const gentleNext = weekly.ready
+    ? `${weekly.focus.label}. ${weekly.focus.copy} Today's Guide also suggests: ${recommendation.title.toLowerCase()}.`
+    : `${recommendation.title}. ${recommendation.copy}`;
+  const needsSafetyNote = symptoms.length > 0
+    || (Number.isFinite(metrics.spo2) && metrics.spo2 < 95)
+    || /doctor|clinician|healthcare professional|symptom|unwell|pain|dizz|breath|palpitation|fever/.test(normalized);
+  const safetyNote = needsSafetyNote
+    ? "\n\nSafety note: BALA supports health awareness and does not diagnose or replace professional care. If you feel unwell or concerned, consider contacting a healthcare professional."
+    : "";
+
+  const contextSummary = contextParts
+    .map((part) => part.replace(/[.\s]+$/, ""))
+    .join(". ");
+  return `${name ? `${name}, ` : ""}${directAnswer}\n\nWhat your signals show: ${contextSummary}.\n\nGentle next step: ${gentleNext}${safetyNote}${languageNote}`;
+}
+
 function updateDashboard(metrics) {
-  if (!metrics) return;
-  const breakdown = scoreBreakdown(metrics, getRecentSymptoms());
+  if (!metrics) {
+    renderBaselineAndTimeline(null);
+    renderWeeklyPatterns(null);
+    return;
+  }
+  const currentSource = inferDataSource(metrics);
+  const currentSourceLabel = setCurrentDataSource(currentSource);
+  const symptomContext = getRecentSymptoms();
+  const breakdown = scoreBreakdown(metrics, symptomContext);
   const score = breakdown.total;
-  const status = scoreStatus(score);
+  const symptoms = symptomContext?.symptoms || [];
+  const urgentSymptoms = symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item));
+  const status = urgentSymptoms
+    ? { label: "Check symptoms first", level: "check", icon: "!" }
+    : scoreStatus(score);
   const scoreRing = document.querySelector(".score-ring");
   scoreRing.querySelector("strong").textContent = score;
   scoreRing.setAttribute("aria-label", `Bala score ${score} out of 100, ${status.label}`);
@@ -595,31 +1407,43 @@ function updateDashboard(metrics) {
     document.querySelector("#heart-value").textContent = Math.round(metrics.rhr);
     document.querySelector("#heart-note").textContent = "Locally recorded";
   }
-  if (metrics.hrv) document.querySelector("#hrv-value").textContent = Math.round(metrics.hrv);
-  if (metrics.spo2) document.querySelector("#spo2-value").textContent = Math.round(metrics.spo2);
+  if (metrics.hrv) {
+    document.querySelector("#hrv-value").textContent = Math.round(metrics.hrv);
+    const history = Array.isArray(metrics.history) ? metrics.history.slice(0, -1).slice(-14) : [];
+    const baseline = averageValues(history.map((day) => day.hrv));
+    const lowerThanPattern = baseline ? metrics.hrv < baseline * 0.75 : metrics.hrv < 35;
+    const status = document.querySelector("#hrv-status");
+    status.textContent = lowerThanPattern ? "Below recent pattern" : baseline ? "Near recent pattern" : "Baseline building";
+    status.className = lowerThanPattern ? "watch" : "good";
+  }
+  if (metrics.spo2) {
+    document.querySelector("#spo2-value").textContent = Math.round(metrics.spo2);
+    const status = document.querySelector("#spo2-status");
+    const needsAttention = metrics.spo2 < 95;
+    status.textContent = needsAttention ? "Recheck and monitor" : "Within range";
+    status.className = needsAttention ? "watch" : "good";
+  }
   if (metrics.steps !== undefined) {
     document.querySelector("#steps-value").textContent = Math.round(metrics.steps).toLocaleString();
     const percentage = clamp(Math.round((metrics.steps / 10000) * 100), 0, 100);
-    document.querySelector("#steps-note").textContent = `${percentage}% of demo goal`;
+    document.querySelector("#steps-note").textContent = `${percentage}% of daily goal`;
     document.querySelector("#steps-progress").style.width = `${percentage}%`;
     document.querySelector("#activity-value").textContent = `${percentage}%`;
     document.querySelector("#activity-note").textContent = "Of daily step goal";
   }
 
-  const recommendation = buildRecommendation(metrics);
-  document.querySelector("#score-heading").textContent = recommendation.title;
-  document.querySelector(".score-insight > p:not(.section-label)").textContent = recommendation.copy;
+  const recommendation = buildRecommendation(metrics, symptomContext);
+  document.querySelector("#score-heading").textContent = personalizeTitle(recommendation.title);
+  document.querySelector("#score-guide-copy").textContent = recommendation.copy;
   document.querySelector("#suggestion-title").textContent = recommendation.title;
   document.querySelector(".suggestion-panel > p:not(.section-label)").textContent = recommendation.copy;
-  document.querySelector("#source-title").textContent = metrics.source || "Local check-in";
+  document.querySelector("#source-title").textContent = currentSourceLabel;
   document.querySelector("#source-status").textContent = `Saved on this device · ${new Date(metrics.updatedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`;
   document.querySelector("#clear-button").hidden = false;
   document.querySelector("#chart-value").textContent = score;
   document.querySelector("#chart-copy").textContent = "Local wellness estimate";
-  const baseline = baselineAnalysis(metrics);
-  document.querySelector("#baseline-days").textContent = `${baseline.days} day${baseline.days === 1 ? "" : "s"}`;
-  document.querySelector("#baseline-level").textContent = baseline.level;
-  document.querySelector("#baseline-copy").textContent = baseline.copy;
+  renderBaselineAndTimeline(metrics);
+  renderWeeklyPatterns(metrics);
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);
@@ -636,13 +1460,19 @@ function numericFormValue(formData, name) {
 
 function saveMetrics(metrics) {
   const existing = getLocalMetrics() || {};
+  const availableMetrics = Object.fromEntries(
+    Object.entries(metrics).filter(([, value]) => value !== undefined),
+  );
   const today = new Date().toISOString().slice(0, 10);
-  const incomingHistory = Array.isArray(metrics.history) ? metrics.history : [];
+  const incomingHistory = Array.isArray(availableMetrics.history) ? availableMetrics.history : [];
   const historyMap = new Map([...(existing.history || []), ...incomingHistory].map((day) => [day.date, day]));
-  if (!incomingHistory.length) historyMap.set(today, { date: today, ...metrics });
+  if (!incomingHistory.length) {
+    const existingToday = historyMap.get(today) || {};
+    historyMap.set(today, { ...existingToday, date: today, ...availableMetrics });
+  }
   const stored = {
     ...existing,
-    ...metrics,
+    ...availableMetrics,
     history: [...historyMap.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90),
     updatedAt: new Date().toISOString(),
   };
@@ -828,6 +1658,192 @@ function parseAppleHealthFile(file) {
   throw new Error("Choose apple_health_export.zip or export.xml.");
 }
 
+const importFieldLabels = {
+  sleep: "Sleep hours",
+  rhr: "Resting heart rate",
+  hrv: "HRV",
+  steps: "Steps",
+  spo2: "SpO2",
+  note: "Symptoms note",
+};
+
+function normalizedImportRecord(record) {
+  return Object.fromEntries(
+    Object.entries(record || {}).map(([key, value]) => [
+      key.toLowerCase().replace(/[^a-z0-9]/g, ""),
+      typeof value === "string" ? value.trim() : value,
+    ]),
+  );
+}
+
+function importDate(value) {
+  const text = String(value || "").trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return undefined;
+  const date = new Date(`${text}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? undefined : text;
+}
+
+function manualMetricRecord(record) {
+  const normalized = normalizedImportRecord(record);
+  const number = (keys, min, max) => {
+    const raw = keys.map((key) => normalized[key]).find((value) => value !== "" && value !== undefined);
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= min && value <= max ? value : undefined;
+  };
+  const note = ["symptomsnote", "note", "moodorsymptomsnote"]
+    .map((key) => normalized[key])
+    .find((value) => typeof value === "string");
+  return Object.fromEntries(Object.entries({
+    date: importDate(normalized.date),
+    source: "Manual file import",
+    sleep: number(["sleephours", "sleep"], 0, 16),
+    rhr: number(["restingheartrate", "rhr"], 25, 220),
+    hrv: number(["hrv", "hrvms"], 1, 300),
+    spo2: number(["spo2", "spo2percent"], 70, 100),
+    steps: number(["steps"], 0, 200000),
+    exercise: number(["exerciseminutes", "exercise"], 0, 1440),
+    note: note ? note.slice(0, 240) : undefined,
+  }).filter(([, value]) => value !== undefined));
+}
+
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let value = "";
+  let quoted = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (character === "\"") {
+      if (quoted && text[index + 1] === "\"") {
+        value += "\"";
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (character === "," && !quoted) {
+      row.push(value);
+      value = "";
+    } else if ((character === "\n" || character === "\r") && !quoted) {
+      if (character === "\r" && text[index + 1] === "\n") index += 1;
+      row.push(value);
+      if (row.some((item) => item.trim())) rows.push(row);
+      row = [];
+      value = "";
+    } else {
+      value += character;
+    }
+  }
+  row.push(value);
+  if (row.some((item) => item.trim())) rows.push(row);
+  if (quoted) throw new Error("This CSV has an unfinished quoted value.");
+  return rows;
+}
+
+function detectedImportFields(records) {
+  return Object.keys(importFieldLabels).filter((key) => records.some((record) => (
+    key === "note" ? Boolean(record.note) : Number.isFinite(record[key])
+  )));
+}
+
+function importPackage(records, format) {
+  const validRecords = records
+    .filter((record) => record.date && metricEvidence(record).length)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-90);
+  if (!validRecords.length) {
+    throw new Error(`No valid dated BALA signal records were found in this ${format} file.`);
+  }
+  const latest = validRecords.at(-1);
+  const detectedFields = detectedImportFields(validRecords);
+  return {
+    metrics: { ...latest, history: validRecords },
+    recordsImported: validRecords.length,
+    latestDate: latest.date,
+    detectedFields,
+    missingFields: Object.keys(importFieldLabels).filter((key) => !detectedFields.includes(key)),
+  };
+}
+
+function balaExportImportPackage(payload) {
+  const data = supportedImportData(payload);
+  if (!data.health) throw new Error("This BALA export does not contain saved health signals.");
+  const health = data.health;
+  const history = Array.isArray(health.history) && health.history.length
+    ? health.history
+    : [{ ...health, date: importDate(health.date || health.updatedAt) || new Date().toISOString().slice(0, 10) }];
+  const normalizedHistory = history.map((record) => ({
+    ...record,
+    date: importDate(record.date) || new Date().toISOString().slice(0, 10),
+  }));
+  const result = importPackage(normalizedHistory, "BALA JSON export");
+  result.metrics = { ...health, ...result.metrics };
+  return result;
+}
+
+async function parseManualSignalFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".json")) {
+    const parsed = JSON.parse(await file.text());
+    if (parsed?.format === EXPORT_FORMAT) return balaExportImportPackage(parsed);
+    const records = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.records) ? parsed.records : [parsed];
+    return importPackage(records.map(manualMetricRecord), "JSON");
+  }
+  if (name.endsWith(".csv")) {
+    const rows = parseCsvRows(await file.text());
+    if (rows.length < 2) throw new Error("This CSV needs a header row and at least one data row.");
+    const headers = rows[0].map((header) => header.replace(/^\uFEFF/, "").trim());
+    const records = rows.slice(1).map((values) => manualMetricRecord(
+      Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])),
+    ));
+    return importPackage(records, "CSV");
+  }
+  throw new Error("BALA can guide you through exporting this data, but this file format is not fully parsed yet. For now, try CSV or JSON.");
+}
+
+function showImportResult(result, sourceLabel) {
+  dialogLabel.textContent = "Import complete";
+  dialogTitle.textContent = `${sourceLabel} is ready`;
+  const container = document.createElement("div");
+  container.className = "source-list";
+  const summary = document.createElement("p");
+  summary.textContent = "Your supported health signals were processed locally in this browser and were not uploaded.";
+  const list = document.createElement("ul");
+  list.className = "import-result-list";
+  const rows = [
+    ["Source imported from", sourceLabel],
+    ["Records imported", String(result.recordsImported)],
+    ["Latest date imported", result.latestDate || "Not provided"],
+    ["Fields detected", result.detectedFields.map((key) => importFieldLabels[key]).join(", ") || "None"],
+    ["Fields missing", result.missingFields.map((key) => importFieldLabels[key]).join(", ") || "None"],
+  ];
+  rows.forEach(([label, value]) => {
+    const item = document.createElement("li");
+    const strong = document.createElement("strong");
+    strong.textContent = label;
+    const span = document.createElement("span");
+    span.textContent = value;
+    item.append(strong, span);
+    list.append(item);
+  });
+  container.append(summary, list);
+  dialogContentNode.replaceChildren(container);
+  if (!dialog.open) dialog.showModal();
+}
+
+function showImportError(message) {
+  dialogLabel.textContent = "Import could not finish";
+  dialogTitle.textContent = "Check the selected file";
+  const container = document.createElement("div");
+  container.className = "source-list";
+  const errorCopy = document.createElement("p");
+  errorCopy.textContent = message;
+  const localCopy = document.createElement("p");
+  localCopy.textContent = "Live sync is not available yet. You can try the BALA sample CSV or add signals manually.";
+  container.append(errorCopy, localCopy);
+  dialogContentNode.replaceChildren(container);
+  if (!dialog.open) dialog.showModal();
+}
+
 function openSignalDetail(key) {
   const metrics = getLocalMetrics();
   let [title, value, copy] = signalDetails[key];
@@ -902,25 +1918,72 @@ document.querySelectorAll("[data-signal]").forEach((button) => {
 
 document.querySelector("#plan-button").addEventListener("click", () => openDialog("plan"));
 document.querySelector("#demo-button").addEventListener("click", () => {
+  setCurrentDataSource("demo");
   saveMetrics(DEMO_METRICS);
   document.querySelector("#demo-button").textContent = "Demo ready";
   document.querySelector(".score-panel").scrollIntoView({ behavior: "smooth", block: "center" });
 });
-document.querySelector("#hero-import-button").addEventListener("click", () => appleImportDialog.showModal());
+document.querySelector("#hero-import-button").addEventListener("click", () => openHealthImport());
 document.querySelector("#hero-ask-button").addEventListener("click", () => openCoach());
 document.querySelector("#hero-report-button").addEventListener("click", () => document.querySelector("#report-button").click());
 document.querySelector("#sync-button").addEventListener("click", platformGuide);
 document.querySelector("#all-data-button").addEventListener("click", () => openDialog("data"));
 document.querySelector("#privacy-button").addEventListener("click", () => openDialog("privacy"));
-document.querySelector("#capture-button").addEventListener("click", () => captureDialog.showModal());
+function openCaptureForm() {
+  const metrics = getLocalMetrics();
+  ["sleep", "rhr", "hrv", "spo2", "steps", "exercise", "note"].forEach((name) => {
+    const field = captureForm.elements.namedItem(name);
+    if (field && metrics?.[name] !== undefined) field.value = metrics[name];
+  });
+  captureDialog.showModal();
+}
+
+document.querySelector("#capture-button").addEventListener("click", openCaptureForm);
 document.querySelector("#capture-close").addEventListener("click", () => captureDialog.close());
 installButton.addEventListener("click", requestInstall);
-document.querySelector("#devices-button").addEventListener("click", openDevices);
-document.querySelector("#source-details-button").addEventListener("click", openDevices);
+setupInstallButton.addEventListener("click", requestInstall);
+profileButton.addEventListener("click", () => openOnboarding(true));
+onboardingCancel.addEventListener("click", () => onboardingDialog.close());
+resetNameButton.addEventListener("click", () => {
+  localStorage.removeItem(PROFILE_KEY);
+  profileNameInput.value = "";
+  resetNameButton.hidden = true;
+  onboardingCancel.hidden = true;
+  updatePersonalization();
+  profileNameInput.focus();
+});
+onboardingForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = String(new FormData(onboardingForm).get("name") || "").trim().replace(/\s+/g, " ");
+  if (!name) return;
+  localStorage.setItem(PROFILE_KEY, JSON.stringify({ name, updatedAt: new Date().toISOString() }));
+  onboardingDialog.close();
+  updatePersonalization();
+});
+document.querySelector("#devices-button").addEventListener("click", () => {
+  document.querySelector("#connections-title").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+document.querySelector("#source-details-button")?.addEventListener("click", openDevices);
 document.querySelectorAll(".device-card button").forEach((button) => {
   button.addEventListener("click", () => showProviderGuide(button.closest(".device-card").dataset.provider));
 });
-document.querySelector("#import-button").addEventListener("click", () => appleImportDialog.showModal());
+document.querySelector("#import-button").addEventListener("click", () => openHealthImport());
+document.querySelectorAll("[data-health-source]").forEach((button) => {
+  button.addEventListener("click", () => openHealthSourceGuide(button.dataset.healthSource));
+});
+document.querySelectorAll("[data-source-import]").forEach((button) => {
+  button.addEventListener("click", () => openHealthImport(button.dataset.sourceImport));
+});
+document.querySelector("[data-source-action='demo']").addEventListener("click", () => {
+  document.querySelector("#demo-button").click();
+});
+document.querySelectorAll("[data-download-sample-csv]").forEach((button) => {
+  button.addEventListener("click", downloadSampleCsv);
+});
+document.querySelector("#copy-timeline-button").addEventListener("click", copyTimelineSummary);
+importSource.addEventListener("change", () => {
+  renderImportSource(importSource.value);
+});
 document.querySelector("#shortcut-button").addEventListener("click", () => {
   shortcutTemplate.value = `${location.origin}${location.pathname}#sync=1&sleep=7.5&rhr=62&hrv=45&spo2=97&steps=8000&exercise=30`;
   shortcutDialog.showModal();
@@ -935,6 +1998,32 @@ document.querySelector("#copy-shortcut-link").addEventListener("click", async ()
   }
 });
 document.querySelector("#choose-health-file").addEventListener("click", () => healthFile.click());
+exportDataButton.addEventListener("click", exportBalaData);
+importDataButton.addEventListener("click", () => balaImportFile.click());
+balaImportFile.addEventListener("change", async () => {
+  const [file] = balaImportFile.files;
+  if (!file) return;
+  try {
+    if (!file.name.toLowerCase().endsWith(".json")) throw new Error("Choose a BALA JSON export file.");
+    if (file.size > 5 * 1024 * 1024) throw new Error("This backup is too large. Choose a BALA JSON export smaller than 5 MB.");
+    const payload = JSON.parse(await file.text());
+    const data = supportedImportData(payload);
+    const confirmed = window.confirm("Importing this BALA backup will replace the supported profile, health signals, check-ins, and settings currently stored on this device. Continue?");
+    if (!confirmed) {
+      dataPortabilityStatus.textContent = "Import canceled. Your current BALA data was not changed.";
+      return;
+    }
+    restoreBalaData(data);
+    dataPortabilityStatus.textContent = "BALA data restored. Refreshing your local guide...";
+    window.setTimeout(() => window.location.reload(), 250);
+  } catch (error) {
+    dataPortabilityStatus.textContent = error instanceof SyntaxError
+      ? "This file is not valid JSON. Choose a BALA data export and try again."
+      : error.message;
+  } finally {
+    balaImportFile.value = "";
+  }
+});
 document.querySelector("#clear-button").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(SYMPTOM_KEY);
@@ -954,7 +2043,7 @@ symptomForm.addEventListener("submit", (event) => {
   const entry = { date: new Date().toISOString(), symptoms, note };
   const history = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
   localStorage.setItem(SYMPTOM_KEY, JSON.stringify([...history, entry].slice(-60)));
-  updateDashboard(getLocalMetrics());
+  updateDashboard(getLocalMetrics() || DEMO_METRICS);
   symptomDialog.close();
   symptomForm.reset();
   const urgent = symptoms.some((item) => ["chest pain", "shortness of breath", "fainting or severe dizziness"].includes(item));
@@ -967,7 +2056,7 @@ symptomForm.addEventListener("submit", (event) => {
 });
 document.querySelector("#report-button").addEventListener("click", () => {
   const metrics = getLocalMetrics();
-  const symptoms = JSON.parse(localStorage.getItem(SYMPTOM_KEY) || "[]");
+  const symptoms = getSymptomHistory();
   if (!metrics) {
     dialogLabel.textContent = "Report unavailable";
     dialogTitle.textContent = "Add health data first";
@@ -999,9 +2088,81 @@ document.querySelector("#report-button").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+webhookForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const webhookUrl = validWebhookUrl(webhookUrlInput.value.trim());
+  if (!webhookUrl) {
+    webhookStatus.textContent = "Enter a valid http or https webhook URL.";
+    webhookUrlInput.focus();
+    return;
+  }
+  localStorage.setItem(WEBHOOK_KEY, webhookUrl);
+  webhookUrlInput.value = webhookUrl;
+  webhookStatus.textContent = "Webhook URL saved only on this device. Nothing will be sent automatically.";
+});
+
+clearWebhookButton.addEventListener("click", () => {
+  localStorage.removeItem(WEBHOOK_KEY);
+  webhookUrlInput.value = "";
+  webhookStatus.textContent = "Webhook URL cleared. No webhook URL is saved.";
+});
+
+sendTestSummaryButton.addEventListener("click", async () => {
+  const webhookUrl = validWebhookUrl(webhookUrlInput.value.trim() || getSavedWebhook());
+  if (!webhookUrl) {
+    webhookStatus.textContent = "Save a valid webhook URL before sending a test summary.";
+    webhookUrlInput.focus();
+    return;
+  }
+  const metrics = getLocalMetrics();
+  if (!metrics) {
+    webhookStatus.textContent = "Add health signals or try Demo Mode before sending a summary.";
+    return;
+  }
+  const confirmed = window.confirm("Only send this to a webhook you trust. Your health signal summary will leave this device.");
+  if (!confirmed) {
+    webhookStatus.textContent = "Send canceled. No data left this device.";
+    return;
+  }
+  const recommendation = buildRecommendation(metrics, getRecentSymptoms());
+  const latestHealthSignals = Object.fromEntries(
+    ["source", "sleep", "rhr", "hrv", "spo2", "steps", "exercise", "note", "updatedAt"]
+      .filter((key) => metrics[key] !== undefined)
+      .map((key) => [key, metrics[key]]),
+  );
+  const payload = {
+    source: "BALA static PWA",
+    profile: getProfile(),
+    latestHealthSignals,
+    balaScore: scoreBreakdown(metrics, getRecentSymptoms()).total,
+    todaysGuide: {
+      title: recommendation.title,
+      copy: recommendation.copy,
+    },
+    doctorReadySummary: buildDoctorReadySummary(metrics),
+    timestamp: new Date().toISOString(),
+  };
+  sendTestSummaryButton.disabled = true;
+  webhookStatus.textContent = "Sending the confirmed test summary...";
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(`Webhook returned status ${response.status}.`);
+    webhookStatus.textContent = "Test summary sent to the webhook you confirmed.";
+  } catch (error) {
+    webhookStatus.textContent = `The test summary could not be sent. ${error.message || "Check the webhook and its browser access settings."}`;
+  } finally {
+    sendTestSummaryButton.disabled = false;
+  }
+});
+
 captureForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(captureForm);
+  setCurrentDataSource("manual");
   saveMetrics({
     source: "Local check-in",
     sleep: numericFormValue(formData, "sleep"),
@@ -1010,6 +2171,7 @@ captureForm.addEventListener("submit", (event) => {
     spo2: numericFormValue(formData, "spo2"),
     steps: numericFormValue(formData, "steps"),
     exercise: numericFormValue(formData, "exercise"),
+    note: String(formData.get("note") || "").trim(),
   });
   captureDialog.close();
   captureForm.reset();
@@ -1018,35 +2180,54 @@ captureForm.addEventListener("submit", (event) => {
 healthFile.addEventListener("change", async () => {
   const [file] = healthFile.files;
   if (!file) return;
+  const selectedSource = importSource.value;
   try {
     appleImportDialog.close();
-    if (!/\.(zip|xml)$/i.test(file.name)) throw new Error("Choose apple_health_export.zip or export.xml.");
-    dialogLabel.textContent = "Reading Apple Health";
+    const isAppleExport = selectedSource === "apple" && /\.(zip|xml)$/i.test(file.name);
+    const isSimpleFile = /\.(csv|json)$/i.test(file.name);
+    const maximumSize = isAppleExport ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maximumSize) {
+      throw new Error(isAppleExport
+        ? "This Apple Health export is too large for this browser session. Try a smaller export or use manual CSV or JSON."
+        : "This file is too large. Choose a CSV or JSON file smaller than 10 MB.");
+    }
+    if (selectedSource === "manual-csv" && !/\.csv$/i.test(file.name)) throw new Error("Choose a CSV file for Manual CSV.");
+    if (selectedSource === "manual-json" && !/\.json$/i.test(file.name)) throw new Error("Choose a JSON file for Manual JSON.");
+    if (!isAppleExport && !isSimpleFile) {
+      throw new Error("BALA can guide you through exporting this data, but this file format is not fully parsed yet. For now, try CSV or JSON.");
+    }
+    dialogLabel.textContent = "Reading health data";
     dialogTitle.textContent = "Processing your export locally";
     dialogContentNode.innerHTML = `<div class="source-list"><p>BALA is reading ${(file.size / 1024 / 1024).toFixed(1)} MB locally. Keep the app open until this finishes.</p></div>`;
     dialog.showModal();
-    const metrics = saveMetrics(await parseAppleHealthFile(file));
-    const count = Object.entries(metrics)
-      .filter(([key, value]) => !["source", "updatedAt"].includes(key) && value !== undefined)
-      .length;
-    dialogLabel.textContent = "Import complete";
-    dialogTitle.textContent = "Your latest Apple Health day is ready";
-    dialogContentNode.innerHTML = `<div class="source-list"><p>BALA found local values for ${count} metrics. The file was processed in this browser and was not uploaded.</p></div>`;
-    if (!dialog.open) dialog.showModal();
+    let result;
+    if (isAppleExport) {
+      const appleMetrics = await parseAppleHealthFile(file);
+      const history = Array.isArray(appleMetrics.history) ? appleMetrics.history : [];
+      const detectedFields = detectedImportFields([appleMetrics]);
+      result = {
+        metrics: appleMetrics,
+        recordsImported: history.length || 1,
+        latestDate: history.at(-1)?.date || new Date().toISOString().slice(0, 10),
+        detectedFields,
+        missingFields: Object.keys(importFieldLabels).filter((key) => !detectedFields.includes(key)),
+      };
+    } else {
+      result = await parseManualSignalFile(file);
+    }
+    result.metrics.source = dataSourceLabels[selectedSource];
+    setCurrentDataSource(selectedSource);
+    saveMetrics(result.metrics);
+    showImportResult(result, dataSourceLabels[selectedSource]);
   } catch (error) {
-    dialogLabel.textContent = "Import could not finish";
-    dialogTitle.textContent = "Check the selected file";
-    dialogContentNode.innerHTML = `<div class="source-list"><p>${error.message}</p><p>Choose <strong>apple_health_export.zip</strong> directly, or the <strong>export.xml</strong> inside its unzipped folder.</p></div>`;
-    if (!dialog.open) dialog.showModal();
+    showImportError(error.message || "The selected file could not be read.");
   } finally {
     healthFile.value = "";
   }
 });
 
 addButton.addEventListener("click", () => {
-  addButton.classList.add("added");
-  addButton.querySelector("span").textContent = "Added to today";
-  addButton.querySelector("svg path").setAttribute("d", "m5 12 4 4L19 6");
+  openDialog("plan");
 });
 
 function openCoach(prompt = "") {
@@ -1057,56 +2238,46 @@ function openCoach(prompt = "") {
 }
 
 function closeCoach() {
-  liveVoiceEnabled = false;
-  voicePhase = "idle";
-  voiceModeButton.setAttribute("aria-pressed", "false");
-  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice off · tap to continue hands-free`;
   speechRecognition?.stop();
   window.speechSynthesis?.cancel();
+  setListening(false);
+  stopSpeakingButton.disabled = true;
   coachDrawer.classList.remove("open");
   coachDrawer.setAttribute("aria-hidden", "true");
 }
 
-function preferredIndianVoice() {
+function preferredCoachVoice() {
   const voices = window.speechSynthesis?.getVoices() || [];
   const selectedLanguage = coachLanguage.value.toLowerCase();
   return voices.find((voice) => voice.lang.toLowerCase() === selectedLanguage)
     || voices.find((voice) => voice.lang.toLowerCase().startsWith(selectedLanguage.split("-")[0]))
-    || voices.find((voice) => voice.lang.toLowerCase() === "en-in" && /rishi|veena|indian/i.test(voice.name))
-    || voices.find((voice) => voice.lang.toLowerCase() === "en-in")
-    || voices.find((voice) => /india|indian/i.test(`${voice.name} ${voice.lang}`))
     || voices.find((voice) => voice.lang.toLowerCase().startsWith("en"))
     || voices[0];
 }
 
 function speakCoachAnswer(text) {
   if (!voiceRepliesEnabled || !window.speechSynthesis || !text) {
-    voicePhase = "idle";
-    voiceStatus.textContent = "Answer ready. Tap the microphone to ask another question.";
+    stopSpeakingButton.disabled = true;
+    voiceStatus.textContent = "Answer ready. You can type another question or tap Speak.";
     return;
   }
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  const voice = preferredIndianVoice();
+  const voice = preferredCoachVoice();
   if (voice) utterance.voice = voice;
   utterance.lang = voice?.lang || coachLanguage.value;
   utterance.rate = 0.94;
   utterance.pitch = 0.9;
   utterance.onstart = () => {
-    voicePhase = "speaking";
-    voiceStatus.textContent = "BALA is speaking…";
+    stopSpeakingButton.disabled = false;
+    voiceStatus.textContent = "BALA is reading the answer aloud.";
   };
   utterance.onend = () => {
-    voicePhase = "idle";
-    if (liveVoiceEnabled && coachDrawer.classList.contains("open")) {
-      voiceStatus.textContent = "Your turn. Listening again…";
-      window.setTimeout(() => startListening(), 350);
-    } else {
-      voiceStatus.textContent = "Answer complete. Tap the microphone to continue.";
-    }
+    stopSpeakingButton.disabled = true;
+    voiceStatus.textContent = "Answer complete. Tap Speak or type another question.";
   };
   utterance.onerror = () => {
-    voicePhase = "idle";
+    stopSpeakingButton.disabled = true;
     voiceStatus.textContent = "The answer is on screen. Spoken playback was unavailable.";
   };
   window.speechSynthesis.speak(utterance);
@@ -1114,10 +2285,9 @@ function speakCoachAnswer(text) {
 
 function setListening(active, status) {
   isListening = active;
-  if (active) voicePhase = "listening";
   voiceInputButton.classList.toggle("listening", active);
-  voiceInputButton.setAttribute("aria-pressed", String(active));
-  voiceInputButton.setAttribute("aria-label", active ? "Stop listening" : "Speak your question");
+  voiceInputButton.disabled = active;
+  stopListeningButton.disabled = !active;
   if (status) voiceStatus.textContent = status;
 }
 
@@ -1126,48 +2296,50 @@ function setupSpeechRecognition() {
   if (!Recognition) {
     voiceInputButton.disabled = true;
     voiceInputButton.title = "Voice input is not supported in this browser";
-    voiceModeButton.disabled = true;
-    voiceStatus.textContent = "Spoken replies are available. Voice input is not supported here, so type your question.";
-    return;
+    stopListeningButton.disabled = true;
+    voiceStatus.textContent = "Voice input is not supported in this browser yet. You can still type your question.";
+  } else {
+    speechRecognition = new Recognition();
+    speechRecognition.lang = coachLanguage.value;
+    speechRecognition.interimResults = true;
+    speechRecognition.continuous = false;
+    speechRecognition.onstart = () => {
+      const label = coachLanguage.options[coachLanguage.selectedIndex].text;
+      setListening(true, `Listening in ${label}. Speak naturally.`);
+    };
+    speechRecognition.onresult = (event) => {
+      const results = Array.from(event.results);
+      const transcript = results.map((result) => result[0].transcript).join("");
+      coachInput.value = transcript;
+      if (results[results.length - 1].isFinal) {
+        setListening(false, "Got it. BALA is using your local signals and check-ins.");
+        document.querySelector("#coach-form").requestSubmit();
+      }
+    };
+    speechRecognition.onerror = (event) => {
+      const message = event.error === "not-allowed"
+        ? "Microphone permission was not allowed. Enable it in browser settings or type your question."
+        : "I could not hear that clearly. Tap Speak and try again.";
+      setListening(false, message);
+    };
+    speechRecognition.onend = () => {
+      if (isListening) setListening(false, "Listening stopped. Tap Speak to try again.");
+    };
   }
 
-  speechRecognition = new Recognition();
-  speechRecognition.lang = coachLanguage.value;
-  speechRecognition.interimResults = true;
-  speechRecognition.continuous = false;
-  speechRecognition.onstart = () => {
-    const label = coachLanguage.options[coachLanguage.selectedIndex].text;
-    setListening(true, `Listening in ${label}… Speak naturally.`);
-  };
-  speechRecognition.onresult = (event) => {
-    const results = Array.from(event.results);
-    const transcript = results.map((result) => result[0].transcript).join("");
-    coachInput.value = transcript;
-    if (results[results.length - 1].isFinal) {
-      voicePhase = "transcribing";
-      setListening(false, "Got it. BALA is using your latest signals and check-in…");
-      document.querySelector("#coach-form").requestSubmit();
-    }
-  };
-  speechRecognition.onerror = (event) => {
-    voicePhase = "idle";
-    const message = event.error === "not-allowed"
-      ? "Microphone permission was not allowed. Enable it in browser settings or type your question."
-      : "I could not hear that clearly. Tap the microphone and try again.";
-    setListening(false, message);
-  };
-  speechRecognition.onend = () => {
-    if (isListening) {
-      voicePhase = "idle";
-      setListening(false, "Tap the microphone to speak again.");
-    }
-  };
+  if (!window.speechSynthesis) {
+    readAloudToggle.disabled = true;
+    stopSpeakingButton.disabled = true;
+    voiceStatus.textContent += " Spoken playback is not supported here.";
+    return;
+  }
 }
 
 async function startListening() {
   window.speechSynthesis?.cancel();
+  stopSpeakingButton.disabled = true;
   if (!speechRecognition) {
-    voiceStatus.textContent = "Voice input is not supported in this browser. Type your question instead.";
+    voiceStatus.textContent = "Voice input is not supported in this browser yet. You can still type your question.";
     return;
   }
   if (isListening) return;
@@ -1182,9 +2354,6 @@ async function startListening() {
     speechRecognition.start();
   } catch (error) {
     const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
-    liveVoiceEnabled = false;
-    voicePhase = "idle";
-    voiceModeButton.setAttribute("aria-pressed", "false");
     setListening(false, denied
       ? "Microphone is blocked. Allow microphone access in browser settings, then reopen BALA."
       : `Microphone could not start${error?.name ? ` (${error.name})` : ""}. Type your question or try again.`);
@@ -1193,40 +2362,32 @@ async function startListening() {
 
 document.querySelector("#ask-button").addEventListener("click", () => openCoach());
 document.querySelector("#coach-close").addEventListener("click", closeCoach);
-voiceInputButton.addEventListener("click", async () => {
-  if (isListening) {
-    liveVoiceEnabled = false;
-    voiceModeButton.setAttribute("aria-pressed", "false");
-    speechRecognition.stop();
-    return;
-  }
-  await startListening();
+voiceInputButton.addEventListener("click", startListening);
+stopListeningButton.addEventListener("click", () => {
+  speechRecognition?.stop();
+  setListening(false, "Listening stopped. You can edit the transcript or type your question.");
 });
-voiceModeButton.addEventListener("click", () => {
-  liveVoiceEnabled = !liveVoiceEnabled;
-  voiceRepliesEnabled = true;
-  voiceModeButton.setAttribute("aria-pressed", String(liveVoiceEnabled));
-  const label = coachLanguage.options[coachLanguage.selectedIndex].text;
-  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice ${liveVoiceEnabled ? `on · ${label}` : "off · tap to continue hands-free"}`;
-  if (liveVoiceEnabled) {
-    voiceStatus.textContent = "Live voice is on. BALA will listen again after each spoken answer.";
-    if (voicePhase === "idle") startListening();
-  } else {
-    speechRecognition?.stop();
+readAloudToggle.addEventListener("change", () => {
+  voiceRepliesEnabled = readAloudToggle.checked;
+  localStorage.setItem("bala-read-aloud", String(voiceRepliesEnabled));
+  if (!voiceRepliesEnabled) {
     window.speechSynthesis?.cancel();
-    voiceStatus.textContent = "Live voice is off. Tap the microphone for one question.";
+    stopSpeakingButton.disabled = true;
   }
+  voiceStatus.textContent = voiceRepliesEnabled
+    ? "Read answer aloud is on. Your browser or device will handle speech playback."
+    : "Read answer aloud is off.";
+});
+stopSpeakingButton.addEventListener("click", () => {
+  window.speechSynthesis?.cancel();
+  stopSpeakingButton.disabled = true;
+  voiceStatus.textContent = "Spoken playback stopped. The full answer remains on screen.";
 });
 coachLanguage.addEventListener("change", () => {
   localStorage.setItem("bala-language", coachLanguage.value);
   if (speechRecognition) speechRecognition.lang = coachLanguage.value;
   const label = coachLanguage.options[coachLanguage.selectedIndex].text;
-  voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice ${liveVoiceEnabled ? `on · ${label}` : "off · tap to continue hands-free"}`;
-  voiceStatus.textContent = `Voice language changed to ${label}.`;
-});
-coachTone.addEventListener("change", () => {
-  localStorage.setItem("bala-tone", coachTone.value);
-  voiceStatus.textContent = "Conversation style saved.";
+  voiceStatus.textContent = `Voice language changed to ${label}. Full multilingual coaching is coming soon.`;
 });
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
@@ -1239,10 +2400,13 @@ document.querySelectorAll(".nav-item").forEach((item) => {
 });
 
 document.querySelectorAll(".prompt-chips button").forEach((button) => {
-  button.addEventListener("click", () => openCoach(button.textContent));
+  button.addEventListener("click", () => {
+    coachInput.value = button.textContent;
+    document.querySelector("#coach-form").requestSubmit();
+  });
 });
 
-document.querySelector("#coach-form").addEventListener("submit", async (event) => {
+document.querySelector("#coach-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const question = coachInput.value.trim();
   if (!question) return;
@@ -1260,47 +2424,55 @@ document.querySelector("#coach-form").addEventListener("submit", async (event) =
   coachMessages.scrollTop = coachMessages.scrollHeight;
   const note = document.createElement("small");
   note.className = "ai-source";
-  note.textContent = "BALA private fallback";
+  note.textContent = "BALA private local guidance";
   response.append(note);
   conversation.push({ role: "user", content: question });
-  voicePhase = "answering";
-  voiceStatus.textContent = "BALA is preparing a response from your available signals…";
-  try {
-    if (!cloudConsent.checked) throw new Error("User selected private mode");
-    note.textContent = "BALA is thinking…";
-    const result = await requestConversationalCoach(question, getLocalMetrics());
-    answerText.textContent = result.answer;
-    note.textContent = `${result.provider} secure AI · derived context only`;
-    coachModeLabel.textContent = `Conversational AI active · ${result.provider}`;
-  } catch {
-    answerText.textContent = localAnswer;
-    note.textContent = "BALA private fallback · secure AI not connected";
-    coachModeLabel.textContent = "Private coach · secure AI endpoint not connected";
-  }
+  voiceStatus.textContent = "BALA used your available local signals and check-ins.";
+  coachModeLabel.textContent = "Private coach · local guidance active";
   conversation.push({ role: "assistant", content: answerText.textContent });
   if (conversation.length > 12) conversation.splice(0, conversation.length - 12);
   speakCoachAnswer(answerText.textContent);
 });
 
-coachLanguage.value = localStorage.getItem("bala-language") || "en-IN";
-coachTone.value = localStorage.getItem("bala-tone") || "warm-family";
-voiceModeButton.innerHTML = `<span aria-hidden="true">◖))</span> Live voice off · tap to continue hands-free`;
+coachLanguage.value = ["en-US", "hi-IN", "te-IN", "es-ES"].includes(localStorage.getItem("bala-language"))
+  ? localStorage.getItem("bala-language")
+  : "en-US";
+voiceRepliesEnabled = localStorage.getItem("bala-read-aloud") === "true";
+readAloudToggle.checked = voiceRepliesEnabled;
+webhookUrlInput.value = getSavedWebhook();
+webhookStatus.textContent = getSavedWebhook()
+  ? "A webhook URL is saved on this device. Nothing is sent automatically."
+  : "No webhook URL is saved.";
 setupSpeechRecognition();
 renderChart("recovery");
-updateDashboard(getLocalMetrics());
+setCurrentDataSource(inferDataSource());
+renderImportSource(importSource.value);
+updatePersonalization();
+updateDashboard(getLocalMetrics() || DEMO_METRICS);
+if (!getUserName()) openOnboarding(false);
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
   installButton.textContent = "Install BALA";
+  setupInstallButton.textContent = "Install BALA";
+  setupCardCopy.textContent = "Your browser can show an install prompt. Installation only starts after you choose it.";
 });
 
 window.addEventListener("appinstalled", () => {
   deferredInstallPrompt = null;
   installButton.textContent = "BALA installed";
+  setupInstallButton.textContent = "Installed";
+  setupCardCopy.textContent = "BALA is installed on this device. Your local health data remains in this browser profile.";
 });
 
-if (isStandalone()) installButton.textContent = "Installed";
+if (isStandalone()) {
+  installButton.textContent = "Installed";
+  setupInstallButton.textContent = "Installed";
+  setupCardCopy.textContent = "BALA is running from your home screen. Your local health data remains in this browser profile.";
+} else if (isIos()) {
+  setupCardCopy.textContent = "On iPhone in Safari: Tap Share -> Add to Home Screen -> Add. BALA cannot install itself.";
+}
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
@@ -1323,6 +2495,7 @@ function importShortcutSync() {
     exercise: number("exercise"),
   };
   if (Object.values(metrics).some((value) => Number.isFinite(value))) {
+    setCurrentDataSource("apple");
     saveMetrics(metrics);
     history.replaceState(null, "", `${location.pathname}${location.search}`);
     dialogLabel.textContent = "Daily sync complete";
@@ -1336,3 +2509,4 @@ const launchAction = new URLSearchParams(window.location.search).get("action");
 if (launchAction === "capture") captureDialog.showModal();
 if (launchAction === "coach") openCoach();
 importShortcutSync();
+

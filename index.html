@@ -69,7 +69,10 @@
       <main>
         <header class="page-header">
           <div class="hero-copy">
-            <p class="eyebrow">A calm guide for everyday awareness</p>
+            <div class="hero-intro">
+              <p class="eyebrow" id="welcome-label">A calm guide for everyday awareness</p>
+              <button class="profile-button" id="profile-button" type="button">Set up your name</button>
+            </div>
             <h1>Your daily health guide from your own body signals.</h1>
             <span>BALA turns sleep, heart, recovery, activity, and symptom data into simple guidance — free, private, and easy to understand.</span>
             <div class="hero-actions" aria-label="Get started with BALA">
@@ -80,7 +83,7 @@
             </div>
             <p class="hero-privacy"><span aria-hidden="true">●</span> Private by design. No account needed for demo.</p>
           </div>
-          <button class="sync-button" id="sync-button" type="button">
+          <button class="sync-button" id="sync-button" type="button" aria-label="View BALA setup and data source details">
             <span class="device-dots" aria-hidden="true"><i></i><i></i></span>
             <span>
               <strong id="source-title">Free local mode</strong>
@@ -99,9 +102,10 @@
             <span><small>BALA score</small><strong>82</strong><em id="score-status"><b id="score-icon" aria-hidden="true">↑</b> Strong day</em></span>
           </div>
           <div class="score-insight">
-            <p class="section-label">Today's Guide</p>
+            <p class="section-label" id="guide-label">Today's Guide</p>
+            <p class="score-data-source" id="score-data-source">Data source: Demo Mode</p>
             <h2 id="score-heading">You’re ready for a steady day</h2>
-            <p>
+            <p id="score-guide-copy">
               Your sleep and recovery are near your usual range. Keep activity moderate and
               consistent.
             </p>
@@ -126,50 +130,194 @@
 
         <section class="capture-panel" aria-labelledby="capture-title">
           <div>
-            <span class="local-status"><i aria-hidden="true"></i> No paid AI required</span>
+            <span class="local-status"><i aria-hidden="true"></i> Private local tracking</span>
             <h2 id="capture-title">Bring your real metrics into BALA</h2>
-            <p>Enter a quick daily check-in, use a private iPhone Shortcut, or import an Apple Health ZIP. Analysis stays in this browser.</p>
+            <p>Enter a quick daily check-in or import a supported health file. Analysis stays in this browser.</p>
           </div>
           <div class="capture-actions">
             <button class="capture-clear" id="clear-button" type="button" hidden>Clear local data</button>
             <button class="capture-secondary install-button" id="install-button" type="button">Install BALA</button>
-            <button class="capture-secondary" id="devices-button" type="button">Connect devices</button>
-            <button class="capture-secondary" id="import-button" type="button">Import Health ZIP</button>
-            <button class="capture-secondary" id="shortcut-button" type="button">Daily iPhone sync</button>
+            <button class="capture-secondary" id="devices-button" type="button">Connect health data</button>
+            <button class="capture-secondary" id="import-button" type="button">Import File</button>
+            <button class="capture-secondary" id="shortcut-button" type="button" hidden>Daily iPhone sync</button>
             <button class="capture-primary" id="capture-button" type="button">Add today’s metrics</button>
-            <input id="health-file" type="file" accept=".zip,.xml,application/zip,application/x-zip-compressed,text/xml,application/xml" hidden />
+            <input id="health-file" type="file" accept=".zip,.xml,.csv,.json,.fit,.tcx,.gpx,application/zip,application/x-zip-compressed,text/xml,application/xml,text/csv,application/json" hidden />
           </div>
+        </section>
+
+        <section class="setup-card" aria-labelledby="setup-card-title">
+          <div class="setup-card-icon" aria-hidden="true">+</div>
+          <div>
+            <p class="section-label">Quick access</p>
+            <h2 id="setup-card-title">Set up BALA on this device</h2>
+            <p id="setup-card-copy">Install BALA where your browser supports it, or follow simple home-screen instructions. BALA cannot install itself.</p>
+          </div>
+          <button id="setup-install-button" type="button">Set up BALA</button>
+        </section>
+
+        <section class="data-portability" aria-labelledby="data-portability-title">
+          <div>
+            <p class="section-label">Local backup</p>
+            <h2 id="data-portability-title">Export or restore your BALA data</h2>
+            <p>Download a readable JSON backup of supported local data, or restore a previous BALA export after reviewing a confirmation.</p>
+          </div>
+          <div class="data-portability-actions">
+            <button id="export-data-button" type="button">Export BALA Data</button>
+            <button id="import-data-button" type="button">Import BALA Data</button>
+            <input id="bala-import-file" type="file" accept=".json,application/json" hidden />
+          </div>
+          <p class="data-portability-status" id="data-portability-status" role="status" aria-live="polite">Backups stay on your device unless you choose where to save or share them.</p>
         </section>
 
         <section class="baseline-panel" aria-labelledby="baseline-title">
-          <div>
-            <p class="section-label">Personal baseline</p>
-            <h2 id="baseline-title">Build a pattern, not panic from one reading</h2>
-            <p id="baseline-copy">Import multiple Apple Health days to compare today with your own recent pattern.</p>
+          <header class="baseline-heading">
+            <div>
+              <p class="section-label">Baseline &amp; Trends</p>
+              <h2 id="baseline-title">Your BALA Baseline</h2>
+              <p id="baseline-copy">Add 3 check-ins to build your first BALA baseline.</p>
+            </div>
+            <div class="baseline-status">
+              <strong id="baseline-days">0 check-ins</strong>
+              <span id="baseline-level">Baseline not ready</span>
+            </div>
+          </header>
+
+          <div class="baseline-averages" id="baseline-averages" aria-label="Baseline averages"></div>
+
+          <section class="change-summary" aria-labelledby="change-summary-title">
+            <p class="section-label">Latest compared with baseline</p>
+            <h3 id="change-summary-title">What changed?</h3>
+            <p id="change-summary-copy">Add 3 check-ins to compare your latest signals with your baseline.</p>
+            <div class="change-labels" id="change-labels"></div>
+          </section>
+
+          <section class="timeline-section" aria-labelledby="timeline-title">
+            <div class="timeline-heading">
+              <div>
+                <p class="section-label">Last 5 check-ins</p>
+                <h3 id="timeline-title">Doctor-Ready Timeline</h3>
+              </div>
+              <button id="copy-timeline-button" type="button">Copy Timeline Summary</button>
+            </div>
+            <div class="timeline-list" id="timeline-list"></div>
+            <p class="timeline-status" id="timeline-status" role="status" aria-live="polite">Your timeline stays on this device unless you choose to copy or share it.</p>
+          </section>
+
+          <div class="baseline-actions">
+            <button id="symptom-button" type="button">Symptoms check</button>
+            <button id="report-button" type="button">Generate report</button>
           </div>
-          <div class="baseline-status">
-            <strong id="baseline-days">0 days</strong>
-            <span id="baseline-level">Baseline not ready</span>
-          </div>
-          <button id="symptom-button" type="button">Symptoms check</button>
-          <button id="report-button" type="button">Generate report</button>
         </section>
 
-        <section class="source-rail" aria-labelledby="source-rail-title">
-          <div>
-            <p class="section-label">Source intelligence</p>
-            <h2 id="source-rail-title">BALA picks the strongest source for each metric</h2>
-            <p>One timeline, no duplicate workouts, and every value keeps its origin.</p>
+        <section class="weekly-patterns" aria-labelledby="weekly-patterns-title">
+          <header class="weekly-patterns-heading">
+            <div>
+              <p class="section-label">Up to 7 recent check-ins</p>
+              <h2 id="weekly-patterns-title">Weekly Patterns</h2>
+              <p id="weekly-patterns-copy">Add a few more check-ins to see weekly patterns.</p>
+            </div>
+            <span class="weekly-count" id="weekly-count">0 check-ins</span>
+          </header>
+
+          <div class="weekly-averages" id="weekly-averages" aria-label="Weekly signal averages"></div>
+
+          <div class="weekly-insight-grid">
+            <section class="pattern-insights" aria-labelledby="pattern-insights-title">
+              <p class="section-label">Recent awareness</p>
+              <h3 id="pattern-insights-title">Pattern Insights</h3>
+              <ul id="pattern-insights-list"></ul>
+            </section>
+
+            <aside class="weekly-focus" aria-labelledby="weekly-focus-title">
+              <p class="section-label">One simple next step</p>
+              <h3 id="weekly-focus-title">Focus for the next 24 hours</h3>
+              <strong id="weekly-focus-label">Add more check-ins</strong>
+              <p id="weekly-focus-copy">A few more check-ins will help BALA offer a pattern-aware focus.</p>
+            </aside>
           </div>
-          <div class="source-badges" aria-label="Supported health ecosystems">
-            <span>Apple Health</span>
-            <span>Health Connect</span>
-            <span>Fitbit</span>
-            <span>Samsung Health</span>
-            <span>Oura</span>
-            <span>Garmin</span>
+        </section>
+
+        <section class="connections-section" aria-labelledby="connections-title">
+          <div class="connections-heading">
+            <div>
+              <p class="section-label">Simple and private</p>
+              <h2 id="connections-title">Connect Your Health Data</h2>
+            </div>
+            <p>Choose where your health information comes from. BALA supports manual entry and selected file imports today. Live sync is not available yet.</p>
           </div>
-          <button id="source-details-button" type="button">See source rules</button>
+
+          <div class="connection-matrix">
+            <article class="connection-card source-card">
+              <header><span class="connection-mark apple">A</span><div><h3>Apple Health / Apple Watch</h3><span class="connection-status ready">ZIP or XML</span></div></header>
+              <p>Import your exported Apple Health data. Live sync is not available yet.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="apple">View setup steps</button><button type="button" data-source-import="apple">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card">
+              <header><span class="connection-mark android">H</span><div><h3>Android Health Connect</h3><span class="connection-status planned">Manual import</span></div></header>
+              <p>Export a backup where available, then import a supported CSV or JSON file.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="health-connect">View setup steps</button><button type="button" data-source-import="health-connect">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card">
+              <header><span class="connection-mark samsung">S</span><div><h3>Samsung Health</h3><span class="connection-status planned">Manual import</span></div></header>
+              <p>Download your personal data, then import supported CSV or JSON records.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="samsung">View setup steps</button><button type="button" data-source-import="samsung">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card">
+              <header><span class="connection-mark fitbit">F</span><div><h3>Fitbit</h3><span class="connection-status planned">Manual import</span></div></header>
+              <p>Download your account data, then import a supported CSV or JSON file.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="fitbit">View setup steps</button><button type="button" data-source-import="fitbit">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card">
+              <header><span class="connection-mark garmin">G</span><div><h3>Garmin Connect</h3><span class="connection-status planned">CSV where available</span></div></header>
+              <p>Export activity or report data, then import supported daily signal columns.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="garmin">View setup steps</button><button type="button" data-source-import="garmin">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card">
+              <header><span class="connection-mark oura">O</span><div><h3>Oura</h3><span class="connection-status planned">Manual import</span></div></header>
+              <p>Download trends or personal data, then import supported CSV records.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="oura">View setup steps</button><button type="button" data-source-import="oura">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card available">
+              <header><span class="connection-mark local">+</span><div><h3>Manual CSV / JSON</h3><span class="connection-status ready">Available now</span></div></header>
+              <p>Import dated daily records using BALA's simple fields, or use the sample CSV.</p>
+              <div class="source-card-actions"><button type="button" data-source-import="manual-csv">Import file</button><button type="button" data-download-sample-csv>Download Sample CSV</button></div>
+            </article>
+
+            <article class="connection-card source-card available">
+              <header><span class="connection-mark demo">D</span><div><h3>Demo Mode</h3><span class="connection-status ready">Available now</span></div></header>
+              <p>Explore BALA with a local seven-day sample before adding your own data.</p>
+              <div class="source-card-actions"><button type="button" data-source-action="demo">Try demo mode</button></div>
+            </article>
+          </div>
+
+          <p class="connections-note">Direct wearable connections are planned for a future version. BALA does not claim a device is live connected.</p>
+        </section>
+
+        <section class="webhook-section" aria-labelledby="webhook-title" hidden>
+          <div class="webhook-copy">
+            <p class="section-label">Advanced and optional</p>
+            <h2 id="webhook-title">Webhook Automation</h2>
+            <p>Send your BALA summary to a webhook you control. This can support self-hosted n8n Community Edition or other trusted webhook tools. Some hosted automation platforms may require paid plans.</p>
+            <p>Webhook automation can work with self-hosted n8n Community Edition or any trusted webhook tool. Hosted automation services may have paid plans.</p>
+            <p class="webhook-safety">Nothing is sent automatically. BALA sends only after you click, review the warning, and confirm.</p>
+          </div>
+          <form class="webhook-form" id="webhook-form">
+            <label for="webhook-url">Webhook URL
+              <input id="webhook-url" name="webhookUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://your-trusted-webhook.example" />
+            </label>
+            <div class="webhook-actions">
+              <button type="submit">Save webhook</button>
+              <button class="secondary" id="clear-webhook-button" type="button">Clear webhook</button>
+              <button class="test" id="send-test-summary-button" type="button">Send Test Summary</button>
+            </div>
+            <p id="webhook-status" role="status" aria-live="polite">No webhook URL is saved.</p>
+          </form>
         </section>
 
         <section class="section-intro" aria-labelledby="signals-overview-title">
@@ -260,8 +408,8 @@
               today’s recovery.
             </p>
             <button id="add-button" type="button">
-              <span>Add to today</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              <span>View today’s plan</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
             </button>
           </aside>
         </div>
@@ -279,14 +427,14 @@
               <span class="signal-glyph">⌁</span>
               <span><strong>HRV</strong><small>Heart rate variability</small></span>
               <b><span id="hrv-value">46</span> <small>ms</small></b>
-              <em class="good">Within range</em>
+              <em class="good" id="hrv-status">Within range</em>
               <span class="sparkline up" aria-hidden="true"></span>
             </button>
             <button class="signal-row" type="button" data-signal="spo2">
               <span class="signal-glyph">O₂</span>
               <span><strong>SpO₂</strong><small>Blood oxygen estimate</small></span>
               <b><span id="spo2-value">97</span><small>%</small></b>
-              <em class="good">Within range</em>
+              <em class="good" id="spo2-status">Within range</em>
               <span class="sparkline level" aria-hidden="true"></span>
             </button>
             <button class="signal-row" type="button" data-signal="breathing">
@@ -415,6 +563,22 @@
       </form>
     </dialog>
 
+    <dialog id="onboarding-dialog" class="onboarding-dialog">
+      <form id="onboarding-form">
+        <div class="onboarding-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p class="section-label">Welcome to BALA</p>
+        <h2>What should BALA call you?</h2>
+        <p class="form-intro">Your name stays in this browser and is only used to make your daily guide feel more personal.</p>
+        <label class="name-field" for="profile-name">
+          Your name
+          <input id="profile-name" name="name" type="text" maxlength="40" autocomplete="name" placeholder="Enter your name" required />
+        </label>
+        <button class="dialog-primary" type="submit">Continue to my guide</button>
+        <button class="onboarding-reset" id="onboarding-cancel" type="button" hidden>Cancel</button>
+        <button class="onboarding-reset" id="reset-name-button" type="button" hidden>Forget my name</button>
+      </form>
+    </dialog>
+
     <dialog id="capture-dialog">
       <form id="capture-form">
         <button class="dialog-close" type="button" id="capture-close" aria-label="Close metric capture">×</button>
@@ -429,6 +593,9 @@
           <label>Steps<input name="steps" type="number" min="0" max="200000" step="1" placeholder="6842" /></label>
           <label>Exercise minutes<input name="exercise" type="number" min="0" max="1440" step="1" placeholder="25" /></label>
         </div>
+        <label class="signal-note">Mood or symptoms note
+          <textarea name="note" maxlength="240" placeholder="For example: calm, tired, stressed, mild headache, or anything you want BALA to consider"></textarea>
+        </label>
         <p class="form-note">Wearable readings can be incomplete or inaccurate. BALA offers health-awareness guidance and should not be used for urgent medical decisions.</p>
         <button class="dialog-primary" type="submit">Save and update my guide</button>
       </form>
@@ -444,7 +611,7 @@
       </form>
     </dialog>
 
-    <dialog id="devices-dialog" class="devices-dialog">
+    <dialog id="devices-dialog" class="devices-dialog" hidden>
       <form method="dialog">
         <button class="dialog-close" value="close" aria-label="Close device connections">×</button>
         <p class="section-label">Connection center</p>
@@ -505,22 +672,38 @@
 
     <dialog id="apple-import-dialog">
       <form method="dialog">
-        <button class="dialog-close" value="close" aria-label="Close Apple Health import guide">×</button>
-        <p class="section-label">Apple Health import</p>
-        <h2>Use your Apple Watch data in BALA</h2>
-        <div class="import-steps">
+        <button class="dialog-close" value="close" aria-label="Close health data import guide">×</button>
+        <p class="section-label">Manual file import</p>
+        <h2>Import your health data</h2>
+        <p class="form-intro">Choose where the file came from. BALA only reads file types it currently supports and does not claim a live connection.</p>
+        <label class="import-source-label" for="import-source">Data source
+          <select id="import-source">
+            <option value="apple">Apple Health</option>
+            <option value="health-connect">Android Health Connect</option>
+            <option value="samsung">Samsung Health</option>
+            <option value="fitbit">Fitbit</option>
+            <option value="garmin">Garmin</option>
+            <option value="oura">Oura</option>
+            <option value="manual-csv">Manual CSV</option>
+            <option value="manual-json">Manual JSON</option>
+          </select>
+        </label>
+        <div class="import-steps" id="import-source-steps">
           <ol>
-            <li><span>1</span><div><strong>Open Health on your iPhone</strong><small>Tap Summary, then your picture or initials in the top-right corner.</small></div></li>
-            <li><span>2</span><div><strong>Export all health data</strong><small>Scroll down, tap Export All Health Data, wait for Apple to prepare it, then choose Save to Files.</small></div></li>
-            <li><span>3</span><div><strong>Select the ZIP in BALA</strong><small>Choose <code>apple_health_export.zip</code> directly. BALA extracts only <code>export.xml</code> locally.</small></div></li>
-            <li><span>4</span><div><strong>Keep BALA open</strong><small>Large health histories may take a little while to process. Nothing is uploaded.</small></div></li>
+            <li><span>1</span><div><strong>Open the Health app</strong><small>Tap your profile picture.</small></div></li>
+            <li><span>2</span><div><strong>Export All Health Data</strong><small>Save the ZIP file to your device.</small></div></li>
+            <li><span>3</span><div><strong>Open BALA and import the file</strong><small>Choose Apple Health, then tap Import file.</small></div></li>
           </ol>
           <div class="connection-note">
-            <strong>This is not automatic syncing</strong>
-            <p>Installed web apps cannot ask Apple Health for permission. Automatic Apple Watch updates require BALA’s native iPhone HealthKit companion.</p>
+            <strong>This is a manual import</strong>
+            <p>Live sync is not available yet. Your supported data is processed locally in this browser.</p>
           </div>
         </div>
-        <button class="dialog-primary" id="choose-health-file" type="button">Choose Health ZIP</button>
+        <p class="form-note" id="import-support-note">Supported now: Apple Health ZIP and export.xml.</p>
+        <div class="import-dialog-actions">
+          <button class="dialog-primary" id="choose-health-file" type="button">Import file</button>
+          <button class="dialog-secondary" type="button" data-download-sample-csv>Download Sample CSV</button>
+        </div>
       </form>
     </dialog>
 
@@ -552,57 +735,48 @@
       </header>
       <div class="coach-messages" id="coach-messages">
         <div class="coach-message">
-          <p>I can help you understand patterns across sleep, recovery, activity, and your wearable data.</p>
+          <p id="coach-welcome">I can help you understand patterns across sleep, recovery, activity, and your wearable data.</p>
         </div>
         <div class="prompt-chips">
-          <button type="button">Why is my readiness 82?</button>
           <button type="button">What should I do today?</button>
-          <button type="button">Explain my HRV</button>
+          <button type="button">How was my week?</button>
+          <button type="button">What changed?</button>
+          <button type="button">How is my recovery?</button>
+          <button type="button">What should I tell my doctor?</button>
+          <button type="button">How do I improve sleep tonight?</button>
         </div>
       </div>
       <form id="coach-form">
         <label for="coach-input">Ask about your data</label>
         <label class="language-picker">Language
           <select id="coach-language">
-            <option value="en-IN">English (India)</option>
-            <option value="hi-IN">हिन्दी</option>
-            <option value="te-IN">తెలుగు</option>
-            <option value="ta-IN">தமிழ்</option>
-            <option value="kn-IN">ಕನ್ನಡ</option>
-            <option value="ml-IN">മലയാളം</option>
-            <option value="mr-IN">मराठी</option>
-            <option value="bn-IN">বাংলা</option>
-          </select>
-        </label>
-        <label class="language-picker">Conversation style
-          <select id="coach-tone">
-            <option value="warm-family">Warm family guide</option>
-            <option value="friendly-coach">Friendly Indian coach</option>
-            <option value="calm-clinical">Calm and precise</option>
+            <option value="en-US">English</option>
+            <option value="hi-IN">Hindi</option>
+            <option value="te-IN">Telugu</option>
+            <option value="es-ES">Spanish</option>
           </select>
         </label>
         <div class="ai-consent" role="status">
           <span class="local-ai-dot" aria-hidden="true"></span>
-          <span id="coach-mode-label">Private coach · connecting when secure AI is available</span>
+          <span id="coach-mode-label">Private coach · local guidance only</span>
         </div>
-        <label class="cloud-consent">
-          <input id="cloud-consent" type="checkbox" />
-          <span>Use conversational AI with my derived metric summary</span>
-        </label>
         <div class="coach-input-row">
           <input id="coach-input" autocomplete="off" placeholder="What changed this week?" />
-          <button class="voice-button" id="voice-input" type="button" aria-label="Speak your question" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm-7-3a7 7 0 0 0 14 0M12 19v3m-4 0h8" /></svg>
-          </button>
           <button type="submit" aria-label="Send question">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
           </button>
         </div>
-        <button class="voice-mode" id="voice-mode" type="button" aria-pressed="false">
-          <span aria-hidden="true">◖))</span> Live voice off · tap to continue hands-free
-        </button>
+        <div class="voice-controls" aria-label="BALA Voice Coach controls">
+          <button class="voice-control voice-start" id="voice-input" type="button">Speak</button>
+          <button class="voice-control" id="voice-stop-listening" type="button" disabled>Stop listening</button>
+          <label class="read-aloud-toggle">
+            <input id="read-aloud-toggle" type="checkbox" />
+            <span>Read answer aloud</span>
+          </label>
+          <button class="voice-control" id="voice-stop-speaking" type="button" disabled>Stop speaking</button>
+        </div>
       </form>
-      <small class="coach-note" id="voice-status" role="status" aria-live="polite">Tap the microphone to speak. BALA will transcribe, answer, and read the response aloud. Speech support depends on your browser.</small>
+      <small class="coach-note" id="voice-status" role="status" aria-live="polite">Voice is optional and handled by your browser or device. You can always type your question.</small>
     </aside>
 
     <dialog id="symptom-dialog">
@@ -625,7 +799,6 @@
     </dialog>
 
     <script src="./vendor/fflate.min.js"></script>
-    <script src="./config.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
