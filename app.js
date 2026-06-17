@@ -989,12 +989,23 @@ function renderBaselineAndTimeline(metrics) {
     labelsNode.append(item);
   });
 
+  const countLabel = document.querySelector("#timeline-count-label");
+  if (countLabel) {
+    const total = baseline.history.length;
+    const shown = baseline.timeline.length;
+    countLabel.textContent = total > shown
+      ? `Latest ${shown} of ${total} check-ins`
+      : total
+        ? `Last ${total} check-in${total === 1 ? "" : "s"}`
+        : "Last 5 check-ins";
+  }
+
   const timelineNode = document.querySelector("#timeline-list");
   timelineNode.replaceChildren();
   if (!baseline.timeline.length) {
     const empty = document.createElement("p");
     empty.className = "timeline-empty";
-    empty.textContent = "Your recent valid check-ins will appear here.";
+    empty.textContent = "Add your first check-in above to start your private history. Recent check-ins appear here and stay on this device.";
     timelineNode.append(empty);
     return;
   }
