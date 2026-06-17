@@ -586,6 +586,9 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .metric-form-grid input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--canvas); font-size: 14px; }
 .form-note { margin: 17px 0 0; }
 .signal-note, .name-field { margin-top: 15px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.capture-date-field { margin-top: 15px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.capture-date-field[hidden] { display: none; }
+.capture-date-field input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--canvas); font-size: 14px; }
 .signal-note textarea { min-height: 82px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; resize: vertical; color: var(--ink); background: var(--canvas); font: inherit; font-size: 13px; }
 .name-field input { width: 100%; min-height: 50px; padding: 0 14px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: var(--canvas); font-size: 16px; }
 .onboarding-dialog { width: min(480px, calc(100vw - 28px)); }

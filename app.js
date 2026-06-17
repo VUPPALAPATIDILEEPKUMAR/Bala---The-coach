@@ -1121,6 +1121,14 @@ function removeCheckIn(date) {
 
 const CAPTURE_FIELDS = ["sleep", "rhr", "hrv", "spo2", "steps", "exercise", "note"];
 
+function localToday() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function resetCaptureMode() {
   editingDate = null;
   const title = document.querySelector("#capture-title");
@@ -1129,6 +1137,13 @@ function resetCaptureMode() {
   if (editNote) {
     editNote.hidden = true;
     editNote.textContent = "";
+  }
+  const dateField = document.querySelector("#capture-date-field");
+  const dateInput = document.querySelector("#capture-date");
+  if (dateField) dateField.hidden = false;
+  if (dateInput) {
+    dateInput.max = localToday();
+    dateInput.value = localToday();
   }
 }
 
@@ -1149,6 +1164,8 @@ function openEditCheckIn(date) {
     editNote.textContent = `Editing your check-in from ${new Date(`${date}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" })}`;
     editNote.hidden = false;
   }
+  const dateField = document.querySelector("#capture-date-field");
+  if (dateField) dateField.hidden = true;
   captureDialog.showModal();
 }
 
@@ -2080,6 +2097,13 @@ function openCaptureForm() {
     const field = captureForm.elements.namedItem(name);
     if (field && metrics?.[name] !== undefined) field.value = metrics[name];
   });
+  const dateField = document.querySelector("#capture-date-field");
+  const dateInput = document.querySelector("#capture-date");
+  if (dateField) dateField.hidden = false;
+  if (dateInput) {
+    dateInput.max = localToday();
+    dateInput.value = localToday();
+  }
   captureDialog.showModal();
 }
 
@@ -2368,8 +2392,33 @@ captureForm.addEventListener("submit", (event) => {
     return;
   }
 
+  const chosenDate = String(formData.get("date") || "").trim() || localToday();
+  if (chosenDate > localToday()) {
+    window.alert("You can’t log a check-in for a future date.");
+    return;
+  }
+  if (!Object.values(values).some((value) => value !== undefined)) {
+    window.alert("Add at least one value before saving your check-in.");
+    return;
+  }
+  const existing = getLocalMetrics();
+  const entries = Array.isArray(existing?.history) ? existing.history : [];
+  if (entries.some((item) => item.date === chosenDate)) {
+    const niceDate = new Date(`${chosenDate}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" });
+    if (!window.confirm(`A check-in already exists for ${niceDate}. Replace it?`)) {
+      return;
+    }
+  }
+  const entry = { date: chosenDate, source: "Local check-in", ...values };
+  Object.keys(entry).forEach((key) => entry[key] === undefined && delete entry[key]);
+  if (note) entry.note = note;
+  const newestDate = entries.reduce((max, item) => (item.date > max ? item.date : max), "");
   setCurrentDataSource("manual");
-  saveMetrics({ source: "Local check-in", ...values, note });
+  if (chosenDate >= newestDate) {
+    saveMetrics({ source: "Local check-in", ...values, ...(note ? { note } : {}), history: [entry] });
+  } else {
+    saveMetrics({ history: [entry] });
+  }
   captureDialog.close();
   captureForm.reset();
 });

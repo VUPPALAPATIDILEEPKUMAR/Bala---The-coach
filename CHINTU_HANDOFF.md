@@ -170,10 +170,11 @@ timeline, doctor-ready summary all exist). Round 3 added **history clarity** (ti
 4. ~~**Edit/delete a past entry**~~ — **DONE (2026-06-17).** "Manage history" reveals per-row Edit + Remove.
    Remove is confirm-gated; Edit reopens the capture form prefilled from the entry with the date locked and
    merges back via saveMetrics (top-level snapshot resyncs only when editing the latest). Hidden for demo.
-5. **Log a past-date check-in** (medium, logic — add optional date field to capture form). ← next step.
-   **Design complete (2026-06-17); implementation deferred due to Claude usage limit.** Next session should
-   start with post-push/guard confirmation, then implement past-date check-in. Design detail in
-   `CLAUDE_END_OF_USAGE_HANDOFF_BALA_CHINTU_2026-06-17.md` (§9) in the reports folder.
+5. ~~**Log a past-date check-in**~~ — **DONE (2026-06-17).** Capture form gained an optional date field
+   (Add mode only; default today; future blocked). Duplicate date prompts confirm-overwrite (Cancel keeps
+   the dialog open). Snapshot resyncs only when the chosen date is the newest. Edit/delete/summary unchanged.
+
+**Stage 2 history/data-entry trust = COMPLETE (2026-06-17):** view more, edit, remove, past-date add.
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
 **Stage 2 history trust = complete (2026-06-17):** view more, remove, edit. Next BALA options —
@@ -217,6 +218,7 @@ is done.
 | 2026-06-17 | Edit saved check-in (Opus 4.8) | "Manage history" now also shows a per-row Edit. Edit reopens the capture dialog (`editingDate` state) prefilled from that entry with the date locked (read-only "Editing your check-in from {date}" line, title → "Edit check-in"). Submit merges the edited entry by date via saveMetrics; when editing the latest entry the top-level snapshot resyncs too. All-empty edits blocked; demo guarded; date can't change. `resetCaptureMode()` clears edit mode on close/Esc/submit. Copy summary still last-5. Bumped SW cache v38→v39. | `app.js`, `index.html`, `styles.css`, `sw.js` |
 | 2026-06-17 | Stage 3 doctor-ready .txt download (Opus 4.8) | Added a "Download .txt" button beside Copy on the Doctor-Ready Timeline. `downloadTimelineSummary()` reuses the existing `downloadText` Blob helper (no PDF/library/network), same valid-check-in guard as copy, saves `bala-doctor-ready-YYYY-MM-DD.txt`. Polished `timelineSummary`: clearer sections, a user-framed "to share with your healthcare professional" block, and a "Sample demo data" header when the record is demo. Last-5 only; no score exposed; copy behavior unchanged. Bumped SW cache v39→v40. | `app.js`, `index.html`, `sw.js` |
 | 2026-06-17 | Chintu Release Guard runner (Opus 4.8) | Added `scripts/chintu-release-guard.ps1`: read-only wrapper that runs the validator, reads `last-validation.txt`, gathers git state + recent commits + SW cache, and writes a gitignored `release-guard-report.md` (optional `-OutFile`) with verdict, manual-test checklist, and a push / do-not-push recommendation. No app change, no SW bump. | `scripts/chintu-release-guard.ps1`, `.gitignore` |
+| 2026-06-17 | Stage 2 past-date check-in (Opus 4.8) | Capture form gained an optional date field (`#capture-date`, Add mode only; default `localToday()`; future blocked via `max` + JS guard). Submitting a date merges by date via saveMetrics; an existing date prompts confirm-overwrite (Cancel keeps dialog open, saves nothing). Top-level snapshot resyncs only when the chosen date is the newest, so back-filling older days never changes today's dashboard. Edit hides the date field (locked `editingDate`); delete/summary/storage unchanged. Bumped SW cache v40→v41. Completes Stage 2 data-entry trust. | `app.js`, `index.html`, `styles.css`, `sw.js` |
 
 ---
 
