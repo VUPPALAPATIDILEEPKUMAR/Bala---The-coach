@@ -1076,6 +1076,23 @@ function renderBaselineAndTimeline(metrics) {
   });
 }
 
+// SNAPSHOT_SYNC_START
+function alignLatestSnapshot(record) {
+  const snapshotFields = ["source", "sleep", "rhr", "hrv", "steps", "spo2", "exercise", "note"];
+  const history = (Array.isArray(record.history) ? record.history : [])
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const withoutSnapshot = Object.fromEntries(
+    Object.entries(record).filter(([key]) => !snapshotFields.includes(key)),
+  );
+  const latest = history.at(-1);
+  const snapshot = latest
+    ? Object.fromEntries(snapshotFields.filter((key) => latest[key] !== undefined).map((key) => [key, latest[key]]))
+    : {};
+  return { ...withoutSnapshot, ...snapshot, history };
+}
+// SNAPSHOT_SYNC_END
+
 function removeCheckIn(date) {
   const existing = getLocalMetrics();
   if (!existing || existing.source === "BALA demo") return;
@@ -1088,14 +1105,11 @@ function removeCheckIn(date) {
     updateDashboard(null);
     return;
   }
-  const latest = history[history.length - 1];
-  const snapshot = Object.fromEntries([...Object.keys(baselineFields), "note"].map((key) => [key, latest[key]]));
-  const stored = {
+  const stored = alignLatestSnapshot({
     ...existing,
-    ...snapshot,
     history,
     updatedAt: new Date().toISOString(),
-  };
+  });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   updateDashboard(stored);
 }
@@ -1611,12 +1625,12 @@ function saveMetrics(metrics) {
     const existingToday = historyMap.get(today) || {};
     historyMap.set(today, { ...existingToday, date: today, ...availableMetrics });
   }
-  const stored = {
+  const stored = alignLatestSnapshot({
     ...existing,
     ...availableMetrics,
     history: [...historyMap.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90),
     updatedAt: new Date().toISOString(),
-  };
+  });
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   updateDashboard(stored);
   return stored;

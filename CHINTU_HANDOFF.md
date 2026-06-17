@@ -85,7 +85,7 @@ professional if concerned."
 | `index.html` | App shell. 4 tabs: **Today, Trends, Coach, Data**. All dialogs (onboarding, symptom, import, devices, install). |
 | `app.js` | All app logic: dashboard, scoring, coach Q&A, Apple Health parser, CSV/JSON import, local data export/import, voice in/out, multilingual greetings, PWA install. No outbound health-data send path. |
 | `styles.css` | All styling. Mobile-first. Uses CSS variables. |
-| `sw.js` | Service worker. Caches the app shell (`bala-shell-v42`) for offline use. **Bump the version number when assets change.** |
+| `sw.js` | Service worker. Caches the app shell (`bala-shell-v43`) for offline use. **Bump the version number when assets change.** |
 | `manifest.webmanifest` | PWA manifest. Standalone display, app icons, 2 shortcuts (Add metrics, Ask BALA). |
 | `server.py` | Tiny local dev server (Python, port 4173). Serves static files only — no API. |
 | `scripts/chintu-validate.ps1` | Local, read-only validation runner. PASS/WARN/FAIL over git/syntax/SW cache/manifest/medical/privacy/handoff. No push/install/network/secret. Writes gitignored `last-validation.txt`. |
@@ -242,6 +242,7 @@ is done.
 | 2026-06-17 | Chintu Agent Board v1 (Opus 4.8) | Added `scripts/chintu-agent-board.ps1`: local-only runner that wraps the release guard and writes a gitignored `chintu-agent-board-report.md` (optional `-OutFile`) with 8 "agent" sections (Repo, Validation, Release Guard, BALA Safety, Privacy, PWA, Product, Founder Handoff) + next-3-sprints + Stop/Go. No app change, no SW bump, no network/secret. | `scripts/chintu-agent-board.ps1`, `.gitignore` |
 | 2026-06-17 | Chintu Agent Board v2 (Opus 4.8) | Enhanced the board into a daily briefing / next-sprint recommender: Morning Brief, BALA Level (Stage 2 complete, Stage 3 started), Chintu Level, Manual Phone Test Checklist (seeded with SW cache), Next Sprint Recommender (A doctor-ready share polish / B tester onboarding checklist / C daily-briefing polish), a paste-ready next-Claude prompt, Parked Systems, and a Go/Review/Stop decision. Tooling/docs only; no app change, no SW bump, no network/secret. | `scripts/chintu-agent-board.ps1`, `CHINTU_HANDOFF.md` |
 | 2026-06-17 | Disable external health-data egress (Codex) | Removed the hidden external-send UI, endpoint storage, payload construction, and runtime send path. Reinforced local-first privacy; Telegram/Discord/webhooks remain parked. Validator now fails on obvious outbound app-data patterns. Bumped SW cache v41 to v42. | `app.js`, `index.html`, `styles.css`, `sw.js`, `scripts/chintu-validate.ps1`, `CHINTU_HANDOFF.md` |
+| 2026-06-17 | Latest snapshot consistency (Codex) | Added one synchronization helper so the top-level dashboard snapshot is rebuilt from the newest history entry after add, edit, overwrite, backfill, or delete. Omitted fields are cleared instead of inherited. Added a regression test to the validator and bumped SW cache v42 to v43. | `app.js`, `sw.js`, `scripts/chintu-validate.ps1`, `scripts/chintu-snapshot-consistency.test.js`, `CHINTU_HANDOFF.md` |
 
 ---
 

@@ -10,7 +10,7 @@
 
     Checks:
       [A] git working tree + unpushed commits + diff scope
-      [B] JS syntax (app.js, sw.js, config.js) via node --check
+      [B] JS syntax + snapshot consistency regression test
       [C] service worker CACHE_NAME version
       [D] manifest.webmanifest valid JSON + shortcut action targets wired
       [E] medical-safety phrase scan (forbidden claims minus known-safe lines)
@@ -93,7 +93,7 @@ if ($diffStat.Count -gt 0) {
 # ---- [B] JS syntax -------------------------------------------------------
 $syntaxOk = $true
 $syntaxDetail = @()
-foreach ($f in @("app.js", "sw.js", "config.js")) {
+foreach ($f in @("app.js", "sw.js", "config.js", "scripts/chintu-snapshot-consistency.test.js")) {
     if (-not (Test-Path -LiteralPath $f)) {
         $syntaxDetail += "$f MISSING"
         $syntaxOk = $false
@@ -106,10 +106,20 @@ foreach ($f in @("app.js", "sw.js", "config.js")) {
     }
 }
 if ($syntaxOk) {
-    Add-Line "[B] Syntax      : PASS (app.js, sw.js, config.js)"
+    Add-Line "[B] Syntax      : PASS (app.js, sw.js, config.js, snapshot test)"
 } else {
     Add-Line "[B] Syntax      : FAIL -> $($syntaxDetail -join ', ')"
     Note-Fail
+}
+
+if ($syntaxOk) {
+    & node "scripts/chintu-snapshot-consistency.test.js" 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Add-Line "[B] Snapshot    : PASS (latest history entry matches dashboard snapshot)"
+    } else {
+        Add-Line "[B] Snapshot    : FAIL (history/dashboard consistency regression)"
+        Note-Fail
+    }
 }
 
 # ---- [C] service worker cache version ------------------------------------
