@@ -182,6 +182,10 @@ Past-date check-in is **pushed/live** (`6e13d0a`, SW v41). **Chintu Agent Board 
 runner (`scripts/chintu-agent-board.ps1`). Telegram/Discord remain future (no implementation); Codex stays
 parked until explicitly activated.
 
+### Multi-Brain Review Protocol V1 (2026-06-17)
+
+`CHINTU_MULTI_BRAIN_REVIEW_PROTOCOL.md` now defines the safe collaboration flow for ChatGPT strategy, Claude building, Codex review and focused patches, Chintu local validation, OpenClaw tooling, and the human founder's final push gate. It is process-only and does not change BALA app behavior.
+
 ### OpenClaw Integration Direction (2026-06-17)
 OpenClaw 2026.6.6 is installed locally (gateway loopback, Tailscale off; memory-core enabled). Staged plan
 (local-first; see `CHINTU_OPENCLAW_INTEGRATION_MAP_V1_2026-06-17.md`):
