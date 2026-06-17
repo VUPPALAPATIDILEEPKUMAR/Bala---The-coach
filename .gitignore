@@ -3,3 +3,4 @@ __pycache__/
 .wrangler/
 .dev.vars
 .DS_Store
+.claude/
