@@ -179,6 +179,15 @@ timeline, doctor-ready summary all exist). Round 3 added **history clarity** (ti
 Past-date check-in is **pushed/live** (`6e13d0a`, SW v41). **Chintu Agent Board v1** added as a local-only
 runner (`scripts/chintu-agent-board.ps1`). Telegram/Discord remain future (no implementation); Codex stays
 parked until explicitly activated.
+
+### OpenClaw Integration Direction (2026-06-17)
+OpenClaw 2026.6.6 is installed locally (gateway loopback, Tailscale off; memory-core enabled). Staged plan
+(local-first; see `CHINTU_OPENCLAW_INTEGRATION_MAP_V1_2026-06-17.md`):
+- **memory-wiki first** (local knowledge vault; enable only with approval) — memory-core already active.
+- **document-extract / file-transfer second** (local docs; artifacts only, dry-run; never PHI).
+- **Search only for public, non-sensitive info** (DuckDuckGo, key-free) — never a health query.
+- **Telegram/Discord parked**; **no external APIs for health data**; no plugin install/enable without
+  explicit approval; never read `openclaw.json`/tokens/secrets.
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
 **Stage 2 history trust = complete (2026-06-17):** view more, remove, edit. Next BALA options —
