@@ -948,6 +948,10 @@ function timelineSummary(metrics) {
   return lines.join("\n");
 }
 
+const TIMELINE_COLLAPSED_COUNT = 5;
+const TIMELINE_EXPANDED_COUNT = 30;
+let timelineExpanded = false;
+
 function renderBaselineAndTimeline(metrics) {
   const baseline = baselineAnalysis(metrics);
   document.querySelector("#baseline-days").textContent = `${baseline.days} check-in${baseline.days === 1 ? "" : "s"}`;
@@ -989,10 +993,16 @@ function renderBaselineAndTimeline(metrics) {
     labelsNode.append(item);
   });
 
+  const orderedHistory = baseline.history.slice().reverse();
+  const total = orderedHistory.length;
+  const limit = timelineExpanded
+    ? Math.min(total, TIMELINE_EXPANDED_COUNT)
+    : TIMELINE_COLLAPSED_COUNT;
+  const shownEntries = orderedHistory.slice(0, limit);
+
   const countLabel = document.querySelector("#timeline-count-label");
   if (countLabel) {
-    const total = baseline.history.length;
-    const shown = baseline.timeline.length;
+    const shown = shownEntries.length;
     countLabel.textContent = total > shown
       ? `Latest ${shown} of ${total} check-ins`
       : total
@@ -1000,16 +1010,29 @@ function renderBaselineAndTimeline(metrics) {
         : "Last 5 check-ins";
   }
 
+  const toggle = document.querySelector("#timeline-toggle");
+  if (toggle) {
+    if (total > TIMELINE_COLLAPSED_COUNT) {
+      toggle.hidden = false;
+      const cap = Math.min(total, TIMELINE_EXPANDED_COUNT);
+      toggle.textContent = timelineExpanded ? "Show fewer check-ins" : `Show more (up to ${cap})`;
+      toggle.setAttribute("aria-expanded", timelineExpanded ? "true" : "false");
+    } else {
+      toggle.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+    }
+  }
+
   const timelineNode = document.querySelector("#timeline-list");
   timelineNode.replaceChildren();
-  if (!baseline.timeline.length) {
+  if (!shownEntries.length) {
     const empty = document.createElement("p");
     empty.className = "timeline-empty";
     empty.textContent = "Add your first check-in above to start your private history. Recent check-ins appear here and stay on this device.";
     timelineNode.append(empty);
     return;
   }
-  baseline.timeline.forEach((entry) => {
+  shownEntries.forEach((entry) => {
     const item = document.createElement("article");
     const header = document.createElement("header");
     const date = document.createElement("strong");
@@ -1992,6 +2015,13 @@ document.querySelectorAll("[data-download-sample-csv]").forEach((button) => {
   button.addEventListener("click", downloadSampleCsv);
 });
 document.querySelector("#copy-timeline-button").addEventListener("click", copyTimelineSummary);
+const timelineToggle = document.querySelector("#timeline-toggle");
+if (timelineToggle) {
+  timelineToggle.addEventListener("click", () => {
+    timelineExpanded = !timelineExpanded;
+    updateDashboard(getLocalMetrics() || DEMO_METRICS);
+  });
+}
 importSource.addEventListener("change", () => {
   renderImportSource(importSource.value);
 });
