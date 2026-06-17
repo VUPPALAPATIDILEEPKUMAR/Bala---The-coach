@@ -172,6 +172,12 @@ timeline, doctor-ready summary all exist). Round 3 added **history clarity** (ti
 5. **Log a past-date check-in** (medium, logic — add optional date field to capture form). ← next step.
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
+**Stage 2 history trust = complete (2026-06-17):** view more, remove, edit. Next BALA options —
+**A. Past-date check-in** (finishes Stage 2) or **B. Stage 3 Doctor-Ready Export polish** (render/copy,
+lower risk). Next Chintu option — **Release Guard / local report discipline** (see
+`CHINTU_BALA_RELEASE_GUARD_V1_2026-06-17.md` in the reports folder). Codex stays parked until Claude's day
+is done.
+
 ---
 
 ## 6. The bigger vision (Chintu) — keep it cheap and local
