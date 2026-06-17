@@ -164,8 +164,9 @@ timeline, doctor-ready summary all exist). Round 3 added **history clarity** (ti
 2. ~~**"View more" history**~~ — **DONE (2026-06-17).** Show more / Show fewer toggle expands the timeline
    from latest 5 to up to 30 stored entries (render-only). Also added "Demo data" vs "Local check-in" row
    labels and a "No check-ins yet" zero-state label.
-3. **Paginate beyond 30** — reveal all stored check-ins in batches (render-only). ← next smallest step.
-4. Edit/delete a past entry (medium, logic — route through existing dedupe + validation).
+3. ~~**Paginate beyond 30**~~ — **DONE (2026-06-17).** Step-based reveal: 5 → 30 → 60 → 90 (stored cap),
+   then "Show fewer check-ins" collapses to 5. Render-only.
+4. **Edit/delete a past entry** (medium, logic — route through existing dedupe + validation). ← next step.
 5. Log a past-date check-in (medium, logic — add optional date field to capture form).
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
@@ -199,6 +200,7 @@ Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT
 | 2026-06-17 | Chintu validation runner (Opus 4.8) | Added `scripts/chintu-validate.ps1` — local, read-only PASS/WARN/FAIL runner (git/syntax/SW cache/manifest/medical/privacy/handoff). Gitignored `last-validation.txt`. No push/install/network/secret. | `scripts/chintu-validate.ps1`, `.gitignore` |
 | 2026-06-17 | Stage 2 "View more history" (Opus 4.8) | Render-only timeline expand: Show more / Show fewer toggle reveals latest 5 → up to 30 stored check-ins; copyable doctor-ready summary stays last-5. Bumped SW cache v34→v35. | `app.js`, `index.html`, `styles.css`, `sw.js` |
 | 2026-06-17 | Timeline data clarity (Opus 4.8) | Render-only copy: timeline rows show "Demo data" (vs "Local check-in") when the demo record is active; count label reads "No check-ins yet" at zero. Bumped SW cache v35→v36. | `app.js`, `sw.js` |
+| 2026-06-17 | Batch reveal beyond 30 (Opus 4.8) | Render-only: replaced the 5↔30 boolean with a step-based visible count. "Show more check-ins" reveals 5→30→60→90 (stored cap); "Show fewer check-ins" collapses to 5; aria-expanded true only when >5 shown. Copyable doctor-ready summary stays last-5. Bumped SW cache v36→v37. | `app.js`, `sw.js` |
 
 ---
 

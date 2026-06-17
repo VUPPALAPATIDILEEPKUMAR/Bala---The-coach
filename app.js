@@ -950,7 +950,8 @@ function timelineSummary(metrics) {
 
 const TIMELINE_COLLAPSED_COUNT = 5;
 const TIMELINE_EXPANDED_COUNT = 30;
-let timelineExpanded = false;
+const TIMELINE_STEP = 30;
+let timelineShownCount = TIMELINE_COLLAPSED_COUNT;
 
 function renderBaselineAndTimeline(metrics) {
   const baseline = baselineAnalysis(metrics);
@@ -996,14 +997,11 @@ function renderBaselineAndTimeline(metrics) {
   const isDemoRecord = metrics?.source === "BALA demo";
   const orderedHistory = baseline.history.slice().reverse();
   const total = orderedHistory.length;
-  const limit = timelineExpanded
-    ? Math.min(total, TIMELINE_EXPANDED_COUNT)
-    : TIMELINE_COLLAPSED_COUNT;
-  const shownEntries = orderedHistory.slice(0, limit);
+  const shownEntries = orderedHistory.slice(0, Math.min(total, timelineShownCount));
+  const shown = shownEntries.length;
 
   const countLabel = document.querySelector("#timeline-count-label");
   if (countLabel) {
-    const shown = shownEntries.length;
     countLabel.textContent = total > shown
       ? `Latest ${shown} of ${total} check-ins`
       : total
@@ -1015,9 +1013,9 @@ function renderBaselineAndTimeline(metrics) {
   if (toggle) {
     if (total > TIMELINE_COLLAPSED_COUNT) {
       toggle.hidden = false;
-      const cap = Math.min(total, TIMELINE_EXPANDED_COUNT);
-      toggle.textContent = timelineExpanded ? "Show fewer check-ins" : `Show more (up to ${cap})`;
-      toggle.setAttribute("aria-expanded", timelineExpanded ? "true" : "false");
+      const allVisible = shown >= total;
+      toggle.textContent = allVisible ? "Show fewer check-ins" : "Show more check-ins";
+      toggle.setAttribute("aria-expanded", shown > TIMELINE_COLLAPSED_COUNT ? "true" : "false");
     } else {
       toggle.hidden = true;
       toggle.setAttribute("aria-expanded", "false");
@@ -2019,8 +2017,16 @@ document.querySelector("#copy-timeline-button").addEventListener("click", copyTi
 const timelineToggle = document.querySelector("#timeline-toggle");
 if (timelineToggle) {
   timelineToggle.addEventListener("click", () => {
-    timelineExpanded = !timelineExpanded;
-    updateDashboard(getLocalMetrics() || DEMO_METRICS);
+    const metrics = getLocalMetrics() || DEMO_METRICS;
+    const total = validCheckIns(metrics).length;
+    if (timelineShownCount >= total) {
+      timelineShownCount = TIMELINE_COLLAPSED_COUNT;
+    } else if (timelineShownCount <= TIMELINE_COLLAPSED_COUNT) {
+      timelineShownCount = TIMELINE_EXPANDED_COUNT;
+    } else {
+      timelineShownCount += TIMELINE_STEP;
+    }
+    updateDashboard(metrics);
   });
 }
 importSource.addEventListener("change", () => {
