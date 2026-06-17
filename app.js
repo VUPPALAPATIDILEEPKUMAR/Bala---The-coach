@@ -2435,7 +2435,7 @@ document.querySelector("#coach-form").addEventListener("submit", (event) => {
   speakCoachAnswer(answerText.textContent);
 });
 
-coachLanguage.value = ["en-US", "hi-IN", "te-IN", "es-ES"].includes(localStorage.getItem("bala-language"))
+coachLanguage.value = ["en-US", "hi-IN", "te-IN", "ta-IN"].includes(localStorage.getItem("bala-language"))
   ? localStorage.getItem("bala-language")
   : "en-US";
 voiceRepliesEnabled = localStorage.getItem("bala-read-aloud") === "true";
