@@ -87,6 +87,7 @@ professional if concerned."
 | `sw.js` | Service worker. Caches the app shell (`bala-shell-v30`) for offline use. **Bump the version number when assets change.** |
 | `manifest.webmanifest` | PWA manifest. Standalone display, app icons, 2 shortcuts (Add metrics, Ask BALA). |
 | `server.py` | Tiny local dev server (Python, port 4173). Serves static files only — no API. |
+| `scripts/chintu-validate.ps1` | Local, read-only validation runner. PASS/WARN/FAIL over git/syntax/SW cache/manifest/medical/privacy/handoff. No push/install/network/secret. Writes gitignored `last-validation.txt`. |
 | `vendor/fflate.min.js` | Local ZIP reader (extracts Apple Health `export.xml` in the browser). No CDN. |
 | `docs/ARCHITECTURE.md` | Design notes: what's built vs. future native bridges; AI boundary. |
 | `docs/BALA_SECURITY_RULES.md` | The full safety/privacy/conduct checklist (source of section 2 above). |
@@ -160,10 +161,12 @@ Roadmap **Stage 2 — better manual check-in + history timeline** is largely **a
 timeline, doctor-ready summary all exist). Round 3 added **history clarity** (timeline now shows
 "Latest 5 of N check-ins" + better empty state). Remaining Stage 2 steps, smallest-first:
 1. ~~History clarity~~ — **DONE (2026-06-17).**
-2. **"View more" history** — button to expand the timeline from 5 to ~30 most-recent entries
-   (data already stored). Render-only; no model change. ← next smallest step.
-3. Edit/delete a past entry (medium, logic — route through existing dedupe + validation).
-4. Log a past-date check-in (medium, logic — add optional date field to capture form).
+2. ~~**"View more" history**~~ — **DONE (2026-06-17).** Show more / Show fewer toggle expands the timeline
+   from latest 5 to up to 30 stored entries (render-only). Also added "Demo data" vs "Local check-in" row
+   labels and a "No check-ins yet" zero-state label.
+3. **Paginate beyond 30** — reveal all stored check-ins in batches (render-only). ← next smallest step.
+4. Edit/delete a past entry (medium, logic — route through existing dedupe + validation).
+5. Log a past-date check-in (medium, logic — add optional date field to capture form).
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
 ---
@@ -193,6 +196,9 @@ Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT
 | 2026-06-17 | Real-enhancement (Opus 4.8) | First-screen safety framing: added one calm line to the onboarding dialog — "BALA helps you notice your everyday body signals for awareness. It is not medical advice and does not replace a healthcare professional." Bumped SW cache v31→v32. Copy only, no app logic. Also wrote Chintu agent-board architecture, memory protocol, and BALA next-stage product roadmap to the reports folder. | `index.html`, `sw.js` |
 | 2026-06-17 | Round 2 (Opus 4.8) | Voice-language consistency: coach selector now offers Tamil (`ta-IN`, real native greeting) instead of Spanish (`es-ES`, no native greeting); persisted-language whitelist updated; hero tags now match the selector. Bumped SW cache v32→v33. Byte-level VERIFIED the Indian-language greetings are clean UTF-8 (5b.1 was a stale open item — closed). Wrote validation-runner implementation bridge + board-runner prompts to the reports folder. | `app.js`, `index.html`, `sw.js` |
 | 2026-06-17 | Round 3 (Opus 4.8) | Stage 2 audit found check-in/history/timeline/baseline/doctor-summary already ~80% built. Added one smallest-safe improvement: **history clarity** — timeline label now shows "Latest 5 of N check-ins" (existing data) + better empty state inviting the first check-in. Bumped SW cache v33→v34. Wrote Stage 2 design + current-state audit to the reports folder. | `app.js`, `index.html`, `sw.js` |
+| 2026-06-17 | Chintu validation runner (Opus 4.8) | Added `scripts/chintu-validate.ps1` — local, read-only PASS/WARN/FAIL runner (git/syntax/SW cache/manifest/medical/privacy/handoff). Gitignored `last-validation.txt`. No push/install/network/secret. | `scripts/chintu-validate.ps1`, `.gitignore` |
+| 2026-06-17 | Stage 2 "View more history" (Opus 4.8) | Render-only timeline expand: Show more / Show fewer toggle reveals latest 5 → up to 30 stored check-ins; copyable doctor-ready summary stays last-5. Bumped SW cache v34→v35. | `app.js`, `index.html`, `styles.css`, `sw.js` |
+| 2026-06-17 | Timeline data clarity (Opus 4.8) | Render-only copy: timeline rows show "Demo data" (vs "Local check-in") when the demo record is active; count label reads "No check-ins yet" at zero. Bumped SW cache v35→v36. | `app.js`, `sw.js` |
 
 ---
 
