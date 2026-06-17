@@ -953,6 +953,7 @@ const TIMELINE_EXPANDED_COUNT = 30;
 const TIMELINE_STEP = 30;
 let timelineShownCount = TIMELINE_COLLAPSED_COUNT;
 let manageHistory = false;
+let editingDate = null;
 
 function renderBaselineAndTimeline(metrics) {
   const baseline = baselineAnalysis(metrics);
@@ -1061,13 +1062,21 @@ function renderBaselineAndTimeline(metrics) {
       item.append(note);
     }
     if (canManage && manageHistory) {
+      const entryDate = entry.date;
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "timeline-edit";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => openEditCheckIn(entryDate));
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "timeline-remove";
       remove.textContent = "Remove";
-      const entryDate = entry.date;
       remove.addEventListener("click", () => removeCheckIn(entryDate));
-      item.append(remove);
+      const actions = document.createElement("div");
+      actions.className = "timeline-row-actions";
+      actions.append(edit, remove);
+      item.append(actions);
     }
     timelineNode.append(item);
   });
@@ -1095,6 +1104,39 @@ function removeCheckIn(date) {
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   updateDashboard(stored);
+}
+
+const CAPTURE_FIELDS = ["sleep", "rhr", "hrv", "spo2", "steps", "exercise", "note"];
+
+function resetCaptureMode() {
+  editingDate = null;
+  const title = document.querySelector("#capture-title");
+  if (title) title.textContent = "Add today’s metrics";
+  const editNote = document.querySelector("#capture-edit-note");
+  if (editNote) {
+    editNote.hidden = true;
+    editNote.textContent = "";
+  }
+}
+
+function openEditCheckIn(date) {
+  const metrics = getLocalMetrics();
+  if (!metrics || metrics.source === "BALA demo") return;
+  const entry = (Array.isArray(metrics.history) ? metrics.history : []).find((item) => item.date === date);
+  if (!entry) return;
+  editingDate = date;
+  CAPTURE_FIELDS.forEach((name) => {
+    const field = captureForm.elements.namedItem(name);
+    if (field) field.value = entry[name] !== undefined ? entry[name] : "";
+  });
+  const title = document.querySelector("#capture-title");
+  if (title) title.textContent = "Edit check-in";
+  const editNote = document.querySelector("#capture-edit-note");
+  if (editNote) {
+    editNote.textContent = `Editing your check-in from ${new Date(`${date}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" })}`;
+    editNote.hidden = false;
+  }
+  captureDialog.showModal();
 }
 
 function renderWeeklyPatterns(metrics) {
@@ -2006,8 +2048,10 @@ document.querySelector("#sync-button").addEventListener("click", platformGuide);
 document.querySelector("#all-data-button").addEventListener("click", () => openDialog("data"));
 document.querySelector("#privacy-button").addEventListener("click", () => openDialog("privacy"));
 function openCaptureForm() {
+  resetCaptureMode();
+  captureForm.reset();
   const metrics = getLocalMetrics();
-  ["sleep", "rhr", "hrv", "spo2", "steps", "exercise", "note"].forEach((name) => {
+  CAPTURE_FIELDS.forEach((name) => {
     const field = captureForm.elements.namedItem(name);
     if (field && metrics?.[name] !== undefined) field.value = metrics[name];
   });
@@ -2016,6 +2060,7 @@ function openCaptureForm() {
 
 document.querySelector("#capture-button").addEventListener("click", openCaptureForm);
 document.querySelector("#capture-close").addEventListener("click", () => captureDialog.close());
+captureDialog.addEventListener("close", resetCaptureMode);
 installButton.addEventListener("click", requestInstall);
 setupInstallButton.addEventListener("click", requestInstall);
 profileButton.addEventListener("click", () => openOnboarding(true));
@@ -2260,17 +2305,45 @@ sendTestSummaryButton.addEventListener("click", async () => {
 captureForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(captureForm);
-  setCurrentDataSource("manual");
-  saveMetrics({
-    source: "Local check-in",
+  const values = {
     sleep: numericFormValue(formData, "sleep"),
     rhr: numericFormValue(formData, "rhr"),
     hrv: numericFormValue(formData, "hrv"),
     spo2: numericFormValue(formData, "spo2"),
     steps: numericFormValue(formData, "steps"),
     exercise: numericFormValue(formData, "exercise"),
-    note: String(formData.get("note") || "").trim(),
-  });
+  };
+  const note = String(formData.get("note") || "").trim();
+
+  if (editingDate) {
+    const existing = getLocalMetrics();
+    if (!existing || existing.source === "BALA demo") {
+      captureDialog.close();
+      return;
+    }
+    if (!Object.values(values).some((value) => value !== undefined)) {
+      window.alert("Add at least one value before saving your check-in.");
+      return;
+    }
+    const entries = Array.isArray(existing.history) ? existing.history : [];
+    const existingEntry = entries.find((item) => item.date === editingDate) || {};
+    const editedEntry = { date: editingDate, source: existingEntry.source || "Local check-in", ...values };
+    Object.keys(editedEntry).forEach((key) => editedEntry[key] === undefined && delete editedEntry[key]);
+    if (note) editedEntry.note = note;
+    const newestDate = entries.reduce((max, item) => (item.date > max ? item.date : max), "");
+    setCurrentDataSource("manual");
+    if (editingDate === newestDate) {
+      saveMetrics({ source: "Local check-in", ...values, ...(note ? { note } : {}), history: [editedEntry] });
+    } else {
+      saveMetrics({ history: [editedEntry] });
+    }
+    captureDialog.close();
+    captureForm.reset();
+    return;
+  }
+
+  setCurrentDataSource("manual");
+  saveMetrics({ source: "Local check-in", ...values, note });
   captureDialog.close();
   captureForm.reset();
 });

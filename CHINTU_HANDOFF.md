@@ -166,10 +166,10 @@ timeline, doctor-ready summary all exist). Round 3 added **history clarity** (ti
    labels and a "No check-ins yet" zero-state label.
 3. ~~**Paginate beyond 30**~~ — **DONE (2026-06-17).** Step-based reveal: 5 → 30 → 60 → 90 (stored cap),
    then "Show fewer check-ins" collapses to 5. Render-only.
-4. **Edit/delete a past entry** — **DELETE DONE (2026-06-17)**: "Manage history" toggle reveals a per-row
-   Remove (confirm-gated, local-only, hidden for demo). **Edit still pending** ← next step (reuse capture
-   form pre-filled, date locked; replace via existing saveMetrics date-merge).
-5. Log a past-date check-in (medium, logic — add optional date field to capture form).
+4. ~~**Edit/delete a past entry**~~ — **DONE (2026-06-17).** "Manage history" reveals per-row Edit + Remove.
+   Remove is confirm-gated; Edit reopens the capture form prefilled from the entry with the date locked and
+   merges back via saveMetrics (top-level snapshot resyncs only when editing the latest). Hidden for demo.
+5. **Log a past-date check-in** (medium, logic — add optional date field to capture form). ← next step.
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
 ---
@@ -204,6 +204,7 @@ Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT
 | 2026-06-17 | Timeline data clarity (Opus 4.8) | Render-only copy: timeline rows show "Demo data" (vs "Local check-in") when the demo record is active; count label reads "No check-ins yet" at zero. Bumped SW cache v35→v36. | `app.js`, `sw.js` |
 | 2026-06-17 | Batch reveal beyond 30 (Opus 4.8) | Render-only: replaced the 5↔30 boolean with a step-based visible count. "Show more check-ins" reveals 5→30→60→90 (stored cap); "Show fewer check-ins" collapses to 5; aria-expanded true only when >5 shown. Copyable doctor-ready summary stays last-5. Bumped SW cache v36→v37. | `app.js`, `sw.js` |
 | 2026-06-17 | Delete saved check-in (Opus 4.8) | First history-mutating feature. "Manage history" toggle (hidden for demo, hidden at 0 check-ins) reveals a per-row Remove. Remove is confirm-gated ("Remove your check-in from {date}? This can't be undone."), filters `history` by date, rewrites `bala-local-health-v1`, resyncs the top-level snapshot to the new latest, and re-renders; deleting the last entry returns to the empty "No check-ins yet" state. Copy summary still last-5. Bumped SW cache v37→v38. | `app.js`, `index.html`, `styles.css`, `sw.js` |
+| 2026-06-17 | Edit saved check-in (Opus 4.8) | "Manage history" now also shows a per-row Edit. Edit reopens the capture dialog (`editingDate` state) prefilled from that entry with the date locked (read-only "Editing your check-in from {date}" line, title → "Edit check-in"). Submit merges the edited entry by date via saveMetrics; when editing the latest entry the top-level snapshot resyncs too. All-empty edits blocked; demo guarded; date can't change. `resetCaptureMode()` clears edit mode on close/Esc/submit. Copy summary still last-5. Bumped SW cache v38→v39. | `app.js`, `index.html`, `styles.css`, `sw.js` |
 
 ---
 
