@@ -136,14 +136,29 @@ professional if concerned."
 5. ~~Confirm manifest deep links (`?action=capture`, `?action=coach`) are handled on launch~~ —
    **DONE.** Handled in `app.js` (`launchAction` via `URLSearchParams`, ~lines 2509–2511).
 
-### 5b. Actual open items (small, optional)
+### 5b. Open items
 
-1. **Indian-language greeting mojibake** — Hindi/Tamil/Telugu/Kannada/Malayalam/Marathi/Bengali
-   greeting strings in `app.js` are double-encoded and display as garbage. Needs a careful
-   byte-level fix (Latin-1 re-encoded bytes → correct UTF-8). Do not attempt casually.
-2. **Voice language tag vs selector mismatch** (cosmetic) — hero voice tags show
-   En/Hindi/Telugu/Tamil; the coach language selector offers En/Hindi/Telugu/Spanish. Reconcile
-   the copy so the two lists agree. Pure copy, no logic.
+> **Status note (2026-06-17, Round 2 Opus 4.8):** both items below are now resolved/verified.
+> The list is effectively empty — see §5c for the next real feature instead.
+
+1. ~~**Indian-language greeting mojibake**~~ — **VERIFIED CLEAN.** Byte-level check of `app.js`:
+   whole file is valid UTF-8 (round-trips identically), no U+FFFD replacement chars, no mojibake
+   signatures (`Ã¤`/`à¤`/`â€™`…). Greetings are correct Unicode — `hi-IN` नमस्ते (U+0928…),
+   `ta-IN` வணக்கம் (U+0BB5…), `te-IN` నమస్తే (U+0C28…). With `<meta charset="UTF-8">` in
+   `index.html`, they render correctly. If a *deployed* build ever showed garbage, it was a stale
+   service-worker cache (now `v33`), not a source issue. **Do not attempt a byte-level "fix" — the
+   source is already correct and re-encoding it would break it.**
+2. ~~**Voice language tag vs selector mismatch**~~ — **DONE (2026-06-17).** Swapped the coach
+   selector's Spanish option (`es-ES`, no native greeting → fell back to English) for Tamil
+   (`ta-IN`, full native greeting, already advertised in the hero tags); updated the persisted-
+   language whitelist (`app.js` ~2438). Hero tags and selector now match exactly.
+
+### 5c. Next real feature (from the BALA roadmap)
+
+Roadmap **Stage 2 — better manual check-in + history timeline** is the highest-value next feature:
+pre-fill last check-in values, allow partial entry, and show an editable local history list. Medium
+effort; touches `app.js` capture/render + existing localStorage keys (no new keys, no backend).
+Detail: `CLAUDE_BALA_NEXT_STAGE_ROADMAP_2026-06-17.md`.
 
 ---
 
@@ -170,6 +185,7 @@ professional if concerned."
 | 2026-06-17 | Known issue logged | Indian language greeting text in `app.js` (Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Bengali) is double-encoded mojibake. Displays as garbage in browser. Needs a separate fix pass — converting Latin-1 re-encoded bytes back to correct UTF-8. Do not attempt without a careful byte-level script. | `app.js` |
 | 2026-06-17 | High-power audit (Opus 4.8) | Verified known issues 1–5 are all already fixed in code (esp. voice capability guard + manifest deep-links — do not redo). Corrected the Known Issues list to reflect reality and split out the real open items (5b). No app logic changed. Full session reports written to `Downloads\Claude\2026-06-17\metadata\md-files\`. | `CHINTU_HANDOFF.md` |
 | 2026-06-17 | Real-enhancement (Opus 4.8) | First-screen safety framing: added one calm line to the onboarding dialog — "BALA helps you notice your everyday body signals for awareness. It is not medical advice and does not replace a healthcare professional." Bumped SW cache v31→v32. Copy only, no app logic. Also wrote Chintu agent-board architecture, memory protocol, and BALA next-stage product roadmap to the reports folder. | `index.html`, `sw.js` |
+| 2026-06-17 | Round 2 (Opus 4.8) | Voice-language consistency: coach selector now offers Tamil (`ta-IN`, real native greeting) instead of Spanish (`es-ES`, no native greeting); persisted-language whitelist updated; hero tags now match the selector. Bumped SW cache v32→v33. Byte-level VERIFIED the Indian-language greetings are clean UTF-8 (5b.1 was a stale open item — closed). Wrote validation-runner implementation bridge + board-runner prompts to the reports folder. | `app.js`, `index.html`, `sw.js` |
 
 ---
 
