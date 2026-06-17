@@ -1,4 +1,4 @@
-const CACHE_NAME = "bala-shell-v35";
+const CACHE_NAME = "bala-shell-v36";
 const APP_SHELL = [
   "./",
   "./index.html",

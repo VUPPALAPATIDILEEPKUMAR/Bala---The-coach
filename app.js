@@ -993,6 +993,7 @@ function renderBaselineAndTimeline(metrics) {
     labelsNode.append(item);
   });
 
+  const isDemoRecord = metrics?.source === "BALA demo";
   const orderedHistory = baseline.history.slice().reverse();
   const total = orderedHistory.length;
   const limit = timelineExpanded
@@ -1007,7 +1008,7 @@ function renderBaselineAndTimeline(metrics) {
       ? `Latest ${shown} of ${total} check-ins`
       : total
         ? `Last ${total} check-in${total === 1 ? "" : "s"}`
-        : "Last 5 check-ins";
+        : "No check-ins yet";
   }
 
   const toggle = document.querySelector("#timeline-toggle");
@@ -1038,7 +1039,7 @@ function renderBaselineAndTimeline(metrics) {
     const date = document.createElement("strong");
     const source = document.createElement("span");
     date.textContent = new Date(`${entry.date}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" });
-    source.textContent = entry.source || "Local check-in";
+    source.textContent = entry.source || (isDemoRecord ? "Demo data" : "Local check-in");
     header.append(date, source);
     const signals = document.createElement("p");
     signals.textContent = Object.keys(baselineFields)
