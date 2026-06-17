@@ -952,6 +952,7 @@ const TIMELINE_COLLAPSED_COUNT = 5;
 const TIMELINE_EXPANDED_COUNT = 30;
 const TIMELINE_STEP = 30;
 let timelineShownCount = TIMELINE_COLLAPSED_COUNT;
+let manageHistory = false;
 
 function renderBaselineAndTimeline(metrics) {
   const baseline = baselineAnalysis(metrics);
@@ -999,6 +1000,8 @@ function renderBaselineAndTimeline(metrics) {
   const total = orderedHistory.length;
   const shownEntries = orderedHistory.slice(0, Math.min(total, timelineShownCount));
   const shown = shownEntries.length;
+  const canManage = !isDemoRecord && total > 0;
+  if (!canManage) manageHistory = false;
 
   const countLabel = document.querySelector("#timeline-count-label");
   if (countLabel) {
@@ -1020,6 +1023,13 @@ function renderBaselineAndTimeline(metrics) {
       toggle.hidden = true;
       toggle.setAttribute("aria-expanded", "false");
     }
+  }
+
+  const manageToggle = document.querySelector("#manage-history-toggle");
+  if (manageToggle) {
+    manageToggle.hidden = !canManage;
+    manageToggle.textContent = manageHistory ? "Done" : "Manage history";
+    manageToggle.setAttribute("aria-pressed", manageHistory ? "true" : "false");
   }
 
   const timelineNode = document.querySelector("#timeline-list");
@@ -1050,8 +1060,41 @@ function renderBaselineAndTimeline(metrics) {
       note.textContent = `Note: ${String(entry.note).slice(0, 240)}`;
       item.append(note);
     }
+    if (canManage && manageHistory) {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "timeline-remove";
+      remove.textContent = "Remove";
+      const entryDate = entry.date;
+      remove.addEventListener("click", () => removeCheckIn(entryDate));
+      item.append(remove);
+    }
     timelineNode.append(item);
   });
+}
+
+function removeCheckIn(date) {
+  const existing = getLocalMetrics();
+  if (!existing || existing.source === "BALA demo") return;
+  const niceDate = new Date(`${date}T00:00:00`).toLocaleDateString([], { dateStyle: "medium" });
+  if (!window.confirm(`Remove your check-in from ${niceDate}? This can't be undone.`)) return;
+  const history = (Array.isArray(existing.history) ? existing.history : []).filter((entry) => entry.date !== date);
+  if (!history.length) {
+    localStorage.removeItem(STORAGE_KEY);
+    manageHistory = false;
+    updateDashboard(null);
+    return;
+  }
+  const latest = history[history.length - 1];
+  const snapshot = Object.fromEntries([...Object.keys(baselineFields), "note"].map((key) => [key, latest[key]]));
+  const stored = {
+    ...existing,
+    ...snapshot,
+    history,
+    updatedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  updateDashboard(stored);
 }
 
 function renderWeeklyPatterns(metrics) {
@@ -2027,6 +2070,13 @@ if (timelineToggle) {
       timelineShownCount += TIMELINE_STEP;
     }
     updateDashboard(metrics);
+  });
+}
+const manageHistoryToggle = document.querySelector("#manage-history-toggle");
+if (manageHistoryToggle) {
+  manageHistoryToggle.addEventListener("click", () => {
+    manageHistory = !manageHistory;
+    updateDashboard(getLocalMetrics() || DEMO_METRICS);
   });
 }
 importSource.addEventListener("change", () => {

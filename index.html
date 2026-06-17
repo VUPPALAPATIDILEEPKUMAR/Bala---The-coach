@@ -197,7 +197,10 @@
                 <p class="section-label" id="timeline-count-label">Last 5 check-ins</p>
                 <h3 id="timeline-title">Doctor-Ready Timeline</h3>
               </div>
-              <button id="copy-timeline-button" type="button">Copy Timeline Summary</button>
+              <div class="timeline-heading-actions">
+                <button id="manage-history-toggle" type="button" class="timeline-manage" hidden aria-pressed="false">Manage history</button>
+                <button id="copy-timeline-button" type="button">Copy Timeline Summary</button>
+              </div>
             </div>
             <div class="timeline-list" id="timeline-list"></div>
             <button id="timeline-toggle" type="button" class="timeline-toggle" hidden aria-expanded="false" aria-controls="timeline-list">Show more</button>
