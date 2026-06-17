@@ -90,6 +90,7 @@ professional if concerned."
 | `scripts/chintu-validate.ps1` | Local, read-only validation runner. PASS/WARN/FAIL over git/syntax/SW cache/manifest/medical/privacy/handoff. No push/install/network/secret. Writes gitignored `last-validation.txt`. |
 | `scripts/chintu-release-guard.ps1` | Local, read-only release guard. Runs chintu-validate.ps1, reads its block, gathers git state + recent commits + SW cache, and writes a gitignored `release-guard-report.md` (optional `-OutFile` copy) with verdict, manual-test checklist, and a push / do-not-push recommendation. Never pushes/installs/networks/reads secrets. |
 | `scripts/chintu-agent-board.ps1` | Local-only "agent board" (**v2 daily briefing + next-sprint recommender**). Runs the release guard, reads the validation block, and writes a gitignored `chintu-agent-board-report.md` (optional `-OutFile`) with: Morning Brief, BALA Level, Chintu Level, Manual Phone Test Checklist, Next Sprint Recommender (A/B/C), a paste-ready next-Claude prompt, Parked Systems, and a Go/Stop decision. Not external bots; no push/install/network/secret/health-data. |
+| `scripts/chintu-openclaw-readiness.ps1` | Local-only, read-only OpenClaw plugin readiness dashboard. Runs `openclaw plugins inspect <id> --runtime --json` for the target plugins, merges live status with a static safe/use-case/risk assessment, and writes a gitignored `chintu-openclaw-readiness-report.md` (optional `-OutFile`) with a readiness table, priority ranking, safety rules, and next sprint. Never installs/enables/pushes/networks; never reads `openclaw.json`/tokens/secrets. |
 | `vendor/fflate.min.js` | Local ZIP reader (extracts Apple Health `export.xml` in the browser). No CDN. |
 | `docs/ARCHITECTURE.md` | Design notes: what's built vs. future native bridges; AI boundary. |
 | `docs/BALA_SECURITY_RULES.md` | The full safety/privacy/conduct checklist (source of section 2 above). |
@@ -188,6 +189,11 @@ OpenClaw 2026.6.6 is installed locally (gateway loopback, Tailscale off; memory-
 - **Search only for public, non-sensitive info** (DuckDuckGo, key-free) — never a health query.
 - **Telegram/Discord parked**; **no external APIs for health data**; no plugin install/enable without
   explicit approval; never read `openclaw.json`/tokens/secrets.
+
+A repeatable **OpenClaw readiness dashboard** now exists (`scripts/chintu-openclaw-readiness.ps1`).
+**memory-wiki** remains the top priority next; **document-extract / file-transfer** are the second wave
+(local docs; artifacts only, dry-run); **DuckDuckGo** only for public non-sensitive queries;
+Telegram/Discord/webhooks parked.
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
 **Stage 2 history trust = complete (2026-06-17):** view more, remove, edit. Next BALA options —
