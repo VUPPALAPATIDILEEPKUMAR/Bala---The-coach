@@ -121,17 +121,29 @@ professional if concerned."
 
 ## 5. Known issues / good next small patches (cheap, safe, high value)
 
-1. **Encoding mojibake** — `app.js` (and likely `index.html`, `styles.css`) have corrupted
-   characters in text (e.g. `â€™` should be `'`, `Â·` should be `·`, arrows broken). Re-save
-   as **UTF-8 (no BOM)** and fix the strings. Pure display fix, no logic risk. **Do this first.**
-2. `app.js` step note is hardcoded as `"% of demo goal"` even for real data — change to
-   `"% of daily goal"`.
-3. Voice features call the Web Speech API without checking browser support — add a capability
-   guard so it fails gracefully (Firefox / older iOS).
-4. The non-English coach always appends "multilingual coming soon" even when the greeting
-   already works in that language — make that note conditional.
-5. Confirm the manifest deep links (`?action=capture`, `?action=coach`) are actually handled
-   on app launch.
+> **Status note (2026-06-17, Opus 4.8 audit):** items 1–5 below are all **DONE** — verified
+> in code this session. They are kept here only as a record. The real open items are in 5b.
+
+1. ~~**Encoding mojibake** in `app.js`/`index.html`/`styles.css`~~ — **DONE.** Re-saved UTF-8
+   (no BOM); 40 mojibake chars fixed. (Indian-language greetings: see 5b.1 — separate issue.)
+2. ~~`app.js` step note hardcoded `"% of demo goal"`~~ — **DONE.** Now `"% of daily goal"`.
+3. ~~Voice features call Web Speech API without a support check~~ — **DONE.** `setupSpeechRecognition`
+   (app.js ~line 2294) checks `window.SpeechRecognition || window.webkitSpeechRecognition`, disables
+   the button + sets a "not supported" status when missing, and separately guards `speechSynthesis`.
+   **Do not re-implement this.**
+4. ~~Non-English coach always appends "multilingual coming soon"~~ — **DONE.** Made conditional via
+   the `isGreeting` flag; the note no longer shows when the greeting is already native.
+5. ~~Confirm manifest deep links (`?action=capture`, `?action=coach`) are handled on launch~~ —
+   **DONE.** Handled in `app.js` (`launchAction` via `URLSearchParams`, ~lines 2509–2511).
+
+### 5b. Actual open items (small, optional)
+
+1. **Indian-language greeting mojibake** — Hindi/Tamil/Telugu/Kannada/Malayalam/Marathi/Bengali
+   greeting strings in `app.js` are double-encoded and display as garbage. Needs a careful
+   byte-level fix (Latin-1 re-encoded bytes → correct UTF-8). Do not attempt casually.
+2. **Voice language tag vs selector mismatch** (cosmetic) — hero voice tags show
+   En/Hindi/Telugu/Tamil; the coach language selector offers En/Hindi/Telugu/Spanish. Reconcile
+   the copy so the two lists agree. Pure copy, no logic.
 
 ---
 
@@ -156,6 +168,7 @@ professional if concerned."
 | 2026-06-17 | Coach copy fix | "coming soon" note no longer appears when greeting is already in native language (Hindi, Tamil, Telugu etc.). `isGreeting` flag introduced — no logic change. | `app.js` |
 | 2026-06-17 | Intelligence map | Created `CHINTU_INTELLIGENCE_LAYERS.md` — documents ChatGPT/Claude/Codex/Ollama/OpenClaw roles and the Chintu loop. | `CHINTU_INTELLIGENCE_LAYERS.md` |
 | 2026-06-17 | Known issue logged | Indian language greeting text in `app.js` (Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Bengali) is double-encoded mojibake. Displays as garbage in browser. Needs a separate fix pass — converting Latin-1 re-encoded bytes back to correct UTF-8. Do not attempt without a careful byte-level script. | `app.js` |
+| 2026-06-17 | High-power audit (Opus 4.8) | Verified known issues 1–5 are all already fixed in code (esp. voice capability guard + manifest deep-links — do not redo). Corrected the Known Issues list to reflect reality and split out the real open items (5b). No app logic changed. Full session reports written to `Downloads\Claude\2026-06-17\metadata\md-files\`. | `CHINTU_HANDOFF.md` |
 
 ---
 
