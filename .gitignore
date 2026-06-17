@@ -4,3 +4,4 @@ __pycache__/
 .dev.vars
 .DS_Store
 .claude/
+last-validation.txt
