@@ -14,7 +14,7 @@
       [C] service worker CACHE_NAME version
       [D] manifest.webmanifest valid JSON + shortcut action targets wired
       [E] medical-safety phrase scan (forbidden claims minus known-safe lines)
-      [F] privacy / secret phrase scan
+      [F] privacy / secret + outbound app-data scan
       [G] key Chintu / BALA handoff files exist
 
     Severity rules:
@@ -188,17 +188,24 @@ if ($medReal.Count -gt 0) {
     Add-Line "[E] Medical     : PASS"
 }
 
-# ---- [F] privacy / secret scan -------------------------------------------
+# ---- [F] privacy / secret + outbound egress scan -------------------------
 $secPat = 'api[_-]?key\s*[:=]\s*["'']|secret\s*[:=]\s*["'']|Bearer [A-Za-z0-9]{12}|' +
           'token\s*[:=]\s*["''][A-Za-z0-9]|password\s*[:=]'
 $secFiles = @("app.js", "config.js", "wrangler.toml") | Where-Object { Test-Path -LiteralPath $_ }
 $secHits = @(Select-String -Path $secFiles -Pattern $secPat)
+$egressPat = 'fetch\s*\(|XMLHttpRequest|navigator\.sendBeacon|\bwebhook\b|\bPOST\b'
+$egressFiles = @("app.js", "index.html") | Where-Object { Test-Path -LiteralPath $_ }
+$egressHits = @(Select-String -Path $egressFiles -Pattern $egressPat)
 if ($secHits.Count -gt 0) {
     $locs = @($secHits | ForEach-Object { "$([System.IO.Path]::GetFileName($_.Path)):$($_.LineNumber)" })
     Add-Line "[F] Privacy     : FAIL (possible secret at $($locs -join ', '))"
     Note-Fail
+} elseif ($egressHits.Count -gt 0) {
+    $locs = @($egressHits | ForEach-Object { "$([System.IO.Path]::GetFileName($_.Path)):$($_.LineNumber)" })
+    Add-Line "[F] Privacy     : FAIL (possible outbound data path at $($locs -join ', '))"
+    Note-Fail
 } else {
-    Add-Line "[F] Privacy     : PASS (no secret patterns)"
+    Add-Line "[F] Privacy     : PASS (no secret or outbound app-data patterns)"
 }
 
 # ---- [G] key handoff / doc files exist -----------------------------------

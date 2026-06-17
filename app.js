@@ -109,15 +109,9 @@ const exportDataButton = document.querySelector("#export-data-button");
 const importDataButton = document.querySelector("#import-data-button");
 const balaImportFile = document.querySelector("#bala-import-file");
 const dataPortabilityStatus = document.querySelector("#data-portability-status");
-const webhookForm = document.querySelector("#webhook-form");
-const webhookUrlInput = document.querySelector("#webhook-url");
-const clearWebhookButton = document.querySelector("#clear-webhook-button");
-const sendTestSummaryButton = document.querySelector("#send-test-summary-button");
-const webhookStatus = document.querySelector("#webhook-status");
 const STORAGE_KEY = "bala-local-health-v1";
 const SYMPTOM_KEY = "bala-symptoms-v1";
 const PROFILE_KEY = "bala-profile-v1";
-const WEBHOOK_KEY = "bala-webhook-v2";
 const EXPORT_FORMAT = "bala-data-export";
 const EXPORT_VERSION = 1;
 const DATA_SOURCE_KEY = "currentDataSource";
@@ -386,10 +380,6 @@ function getSymptomHistory() {
   }
 }
 
-function getSavedWebhook() {
-  return String(localStorage.getItem(WEBHOOK_KEY) || "").trim();
-}
-
 function inferDataSource(metrics = getLocalMetrics()) {
   const saved = localStorage.getItem(DATA_SOURCE_KEY);
   if (saved && dataSourceLabels[saved]) return saved;
@@ -564,7 +554,7 @@ function exportBalaData() {
     },
   };
   downloadJson(`bala-data-${exportedAt.slice(0, 10)}.json`, payload);
-  dataPortabilityStatus.textContent = "BALA data export created. Your saved webhook URL was not included.";
+  dataPortabilityStatus.textContent = "BALA data export created locally.";
 }
 
 function supportedImportData(payload) {
@@ -640,15 +630,6 @@ function restoreBalaData(data) {
   localStorage.setItem("bala-tone", data.settings.tone);
   if (data.settings.currentDataSource && dataSourceLabels[data.settings.currentDataSource]) {
     localStorage.setItem(DATA_SOURCE_KEY, data.settings.currentDataSource);
-  }
-}
-
-function validWebhookUrl(value) {
-  try {
-    const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
-  } catch {
-    return "";
   }
 }
 
@@ -2281,77 +2262,6 @@ document.querySelector("#report-button").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-webhookForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const webhookUrl = validWebhookUrl(webhookUrlInput.value.trim());
-  if (!webhookUrl) {
-    webhookStatus.textContent = "Enter a valid http or https webhook URL.";
-    webhookUrlInput.focus();
-    return;
-  }
-  localStorage.setItem(WEBHOOK_KEY, webhookUrl);
-  webhookUrlInput.value = webhookUrl;
-  webhookStatus.textContent = "Webhook URL saved only on this device. Nothing will be sent automatically.";
-});
-
-clearWebhookButton.addEventListener("click", () => {
-  localStorage.removeItem(WEBHOOK_KEY);
-  webhookUrlInput.value = "";
-  webhookStatus.textContent = "Webhook URL cleared. No webhook URL is saved.";
-});
-
-sendTestSummaryButton.addEventListener("click", async () => {
-  const webhookUrl = validWebhookUrl(webhookUrlInput.value.trim() || getSavedWebhook());
-  if (!webhookUrl) {
-    webhookStatus.textContent = "Save a valid webhook URL before sending a test summary.";
-    webhookUrlInput.focus();
-    return;
-  }
-  const metrics = getLocalMetrics();
-  if (!metrics) {
-    webhookStatus.textContent = "Add health signals or try Demo Mode before sending a summary.";
-    return;
-  }
-  const confirmed = window.confirm("Only send this to a webhook you trust. Your health signal summary will leave this device.");
-  if (!confirmed) {
-    webhookStatus.textContent = "Send canceled. No data left this device.";
-    return;
-  }
-  const recommendation = buildRecommendation(metrics, getRecentSymptoms());
-  const latestHealthSignals = Object.fromEntries(
-    ["source", "sleep", "rhr", "hrv", "spo2", "steps", "exercise", "note", "updatedAt"]
-      .filter((key) => metrics[key] !== undefined)
-      .map((key) => [key, metrics[key]]),
-  );
-  const payload = {
-    source: "BALA static PWA",
-    profile: getProfile(),
-    latestHealthSignals,
-    balaScore: scoreBreakdown(metrics, getRecentSymptoms()).total,
-    todaysGuide: {
-      title: recommendation.title,
-      copy: recommendation.copy,
-    },
-    doctorReadySummary: buildDoctorReadySummary(metrics),
-    timestamp: new Date().toISOString(),
-  };
-  sendTestSummaryButton.disabled = true;
-  webhookStatus.textContent = "Sending the confirmed test summary...";
-  try {
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error(`Webhook returned status ${response.status}.`);
-    webhookStatus.textContent = "Test summary sent to the webhook you confirmed.";
-  } catch (error) {
-    webhookStatus.textContent = `The test summary could not be sent. ${error.message || "Check the webhook and its browser access settings."}`;
-  } finally {
-    sendTestSummaryButton.disabled = false;
-  }
-});
-
 captureForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(captureForm);
@@ -2686,10 +2596,6 @@ coachLanguage.value = ["en-US", "hi-IN", "te-IN", "ta-IN"].includes(localStorage
   : "en-US";
 voiceRepliesEnabled = localStorage.getItem("bala-read-aloud") === "true";
 readAloudToggle.checked = voiceRepliesEnabled;
-webhookUrlInput.value = getSavedWebhook();
-webhookStatus.textContent = getSavedWebhook()
-  ? "A webhook URL is saved on this device. Nothing is sent automatically."
-  : "No webhook URL is saved.";
 setupSpeechRecognition();
 renderChart("recovery");
 setCurrentDataSource(inferDataSource());
@@ -2756,4 +2662,3 @@ const launchAction = new URLSearchParams(window.location.search).get("action");
 if (launchAction === "capture") captureDialog.showModal();
 if (launchAction === "coach") openCoach();
 importShortcutSync();
-

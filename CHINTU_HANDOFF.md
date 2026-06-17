@@ -62,10 +62,11 @@ check-in, recent trend, recovery, balance, "listen to your body," "talk to a hea
 professional if concerned."
 
 **Privacy / security rules:**
-- Keep health data local by default. Never auto-send it anywhere.
-- Any export / import / webhook / share must be **user-triggered** and show a clear
-  confirmation before anything leaves the device.
-- Never hardcode API keys, tokens, secrets, webhook URLs, or private data.
+- Keep health data local. Sharing and automation are parked; app runtime must not send
+  profile data, health metrics, notes, scores, or summaries off-device.
+- Local export / import must be **user-triggered**. File downloads remain on-device unless
+  the user later chooses to share the downloaded file outside BALA.
+- Never hardcode API keys, tokens, secrets, external endpoints, or private data.
 - Validate and sanitize all imported files (JSON/CSV) before saving. Reject junk with a
   friendly error. Never put unsanitized user text into `innerHTML`.
 - No trackers, analytics, ads, cookies, fingerprinting, or paid APIs. Avoid extra
@@ -81,10 +82,10 @@ professional if concerned."
 
 | File | What it does |
 |---|---|
-| `index.html` | App shell. 4 tabs: **Today, Trends, Coach, Data**. All dialogs (onboarding, symptom, import, devices, install, webhook). |
-| `app.js` | ~2,200 lines, all the logic: dashboard, scoring, coach Q&A, Apple Health parser, CSV/JSON import, data export/import, webhook send, voice in/out, multilingual greetings, PWA install. |
+| `index.html` | App shell. 4 tabs: **Today, Trends, Coach, Data**. All dialogs (onboarding, symptom, import, devices, install). |
+| `app.js` | All app logic: dashboard, scoring, coach Q&A, Apple Health parser, CSV/JSON import, local data export/import, voice in/out, multilingual greetings, PWA install. No outbound health-data send path. |
 | `styles.css` | All styling. Mobile-first. Uses CSS variables. |
-| `sw.js` | Service worker. Caches the app shell (`bala-shell-v30`) for offline use. **Bump the version number when assets change.** |
+| `sw.js` | Service worker. Caches the app shell (`bala-shell-v42`) for offline use. **Bump the version number when assets change.** |
 | `manifest.webmanifest` | PWA manifest. Standalone display, app icons, 2 shortcuts (Add metrics, Ask BALA). |
 | `server.py` | Tiny local dev server (Python, port 4173). Serves static files only — no API. |
 | `scripts/chintu-validate.ps1` | Local, read-only validation runner. PASS/WARN/FAIL over git/syntax/SW cache/manifest/medical/privacy/handoff. No push/install/network/secret. Writes gitignored `last-validation.txt`. |
@@ -98,7 +99,7 @@ professional if concerned."
 | `.github/workflows/pages.yml` | Auto-deploys to GitHub Pages on push to `main`. |
 
 **LocalStorage keys:** `bala-local-health-v1` (metrics + 90-day history), `bala-symptoms-v1`,
-`bala-profile-v1`, `bala-webhook-v2`, `bala-language`, `bala-tone`, `currentDataSource`.
+`bala-profile-v1`, `bala-language`, `bala-tone`, `currentDataSource`.
 
 ---
 
@@ -117,7 +118,7 @@ professional if concerned."
 - **Manual CSV/JSON import** — strict validation and range clamping.
 - **BALA data export/import** — versioned JSON (`bala-data-export` v1), sanitized on import.
 - **Doctor-ready timeline** — copyable plain-text summary of recent check-ins.
-- **Webhook** — optional, user-triggered POST, gated behind a confirm dialog.
+- **Sharing/automation** — parked. The former external-send path is disabled and removed from runtime/UI.
 - **PWA** — install prompt, offline shell, manifest shortcuts.
 - **Demo mode** — realistic 7-day sample data when no real data exists.
 
@@ -240,6 +241,7 @@ is done.
 | 2026-06-17 | Stage 2 past-date check-in (Opus 4.8) | Capture form gained an optional date field (`#capture-date`, Add mode only; default `localToday()`; future blocked via `max` + JS guard). Submitting a date merges by date via saveMetrics; an existing date prompts confirm-overwrite (Cancel keeps dialog open, saves nothing). Top-level snapshot resyncs only when the chosen date is the newest, so back-filling older days never changes today's dashboard. Edit hides the date field (locked `editingDate`); delete/summary/storage unchanged. Bumped SW cache v40→v41. Completes Stage 2 data-entry trust. Pushed/live (`6e13d0a`). | `app.js`, `index.html`, `styles.css`, `sw.js` |
 | 2026-06-17 | Chintu Agent Board v1 (Opus 4.8) | Added `scripts/chintu-agent-board.ps1`: local-only runner that wraps the release guard and writes a gitignored `chintu-agent-board-report.md` (optional `-OutFile`) with 8 "agent" sections (Repo, Validation, Release Guard, BALA Safety, Privacy, PWA, Product, Founder Handoff) + next-3-sprints + Stop/Go. No app change, no SW bump, no network/secret. | `scripts/chintu-agent-board.ps1`, `.gitignore` |
 | 2026-06-17 | Chintu Agent Board v2 (Opus 4.8) | Enhanced the board into a daily briefing / next-sprint recommender: Morning Brief, BALA Level (Stage 2 complete, Stage 3 started), Chintu Level, Manual Phone Test Checklist (seeded with SW cache), Next Sprint Recommender (A doctor-ready share polish / B tester onboarding checklist / C daily-briefing polish), a paste-ready next-Claude prompt, Parked Systems, and a Go/Review/Stop decision. Tooling/docs only; no app change, no SW bump, no network/secret. | `scripts/chintu-agent-board.ps1`, `CHINTU_HANDOFF.md` |
+| 2026-06-17 | Disable external health-data egress (Codex) | Removed the hidden external-send UI, endpoint storage, payload construction, and runtime send path. Reinforced local-first privacy; Telegram/Discord/webhooks remain parked. Validator now fails on obvious outbound app-data patterns. Bumped SW cache v41 to v42. | `app.js`, `index.html`, `styles.css`, `sw.js`, `scripts/chintu-validate.ps1`, `CHINTU_HANDOFF.md` |
 
 ---
 
