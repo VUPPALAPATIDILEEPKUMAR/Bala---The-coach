@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Chintu Agent Board v1 - local-only multi-agent status board.
+    Chintu Agent Board v2 - local-only daily briefing + next-sprint recommender.
 
 .DESCRIPTION
     A read-only, local-first command that coordinates Chintu's existing local checks into a
@@ -108,75 +108,80 @@ if (Test-Path -LiteralPath $handoff) {
 
 # --- Founder handoff helpers -------------------------------------------------
 $pushNeeded = if ($isFail) { "No - fix FAIL first" } elseif ($unN -gt 0) { "Yes - $unN commit(s) ready for human push" } else { "No - origin/main caught up" }
-$stopGo = if ($isFail) { "STOP - validation FAIL; no commit, no push until resolved." } else { "GO - all green (known-safe WARN only); human owns push." }
+$stopGo = if ($isFail) {
+    "STOP - validation FAIL; no commit, no push until resolved."
+} elseif ($statusShort.Count -gt 0) {
+    "REVIEW - validation PASS but the tree has uncommitted changes; validate and commit before pushing."
+} else {
+    "GO - validation PASS and repo clean; human owns push."
+}
 
-# --- Build the board markdown ------------------------------------------------
+# --- Build the board markdown (V2 daily briefing) ----------------------------
 $lines = New-Object System.Collections.Generic.List[string]
-$lines.Add("# Chintu Agent Board Report")
+$lines.Add("# Chintu Agent Board - Daily Briefing (v2)")
 $lines.Add("")
 $lines.Add("**Generated:** $stamp  ")
 $lines.Add("**Repo:** $RepoRoot  ")
 $lines.Add("**Branch:** $branch")
 $lines.Add("")
-$lines.Add("## 1. Repo Agent")
+$lines.Add("## 1. Morning Brief")
 $lines.Add("")
-$lines.Add("- Working tree: **$treeState**")
-$lines.Add("- HEAD: ``$headHash`` | origin/main: ``$originHash``")
-$lines.Add("- Unpushed commits: **$unN**")
-if ($unN -gt 0) {
-    $lines.Add("")
-    $lines.Add('```')
-    foreach ($c in $unpushed) { $lines.Add($c) }
-    $lines.Add('```')
-}
-$lines.Add("- Latest commits:")
+$lines.Add("- Repo: working tree **$treeState**, " + ($(if ($unN -eq 0) { "**caught up** with origin/main" } else { "**$unN commit(s) ahead** of origin/main" })) + ".")
+$lines.Add("- Latest commit: ``$headHash`` (origin/main ``$originHash``).")
+$lines.Add("  - " + ($(if ($last5.Count -gt 0) { $last5[0] } else { "(none)" })))
+$lines.Add("- Validation verdict: **$verdict**.")
+$lines.Add("- Release guard: **$recommendation**")
 $lines.Add("")
-$lines.Add('```')
-foreach ($c in $last5) { $lines.Add($c) }
-$lines.Add('```')
-$lines.Add("")
-$lines.Add("## 2. Validation Agent")
-$lines.Add("")
-$lines.Add("- $syntaxLine")
-$lines.Add("- VERDICT: **$verdict**")
-$lines.Add("")
-$lines.Add("## 3. Release Guard Agent")
-$lines.Add("")
-$lines.Add("- Recommendation: **$recommendation**")
-$lines.Add("")
-$lines.Add("## 4. BALA Safety Agent")
-$lines.Add("")
-$lines.Add("- $medicalLine")
-$lines.Add("- Reminder: BALA never claims to diagnose, predict, prevent, detect disease, or monitor emergencies. Awareness / body signals / recent trend / talk to a healthcare professional only.")
-$lines.Add("")
-$lines.Add("## 5. Privacy Agent")
-$lines.Add("")
-$lines.Add("- $privacyLine")
-$lines.Add("- Reminder: no secrets in code; health data stays in localStorage on the device; nothing is sent anywhere automatically.")
-$lines.Add("")
-$lines.Add("## 6. PWA Agent")
-$lines.Add("")
-$lines.Add("- Service worker cache: **$swVer**")
-$lines.Add("- $manifestLine")
-$lines.Add("")
-$lines.Add("## 7. Product Agent")
+$lines.Add("## 2. BALA Level")
 $lines.Add("")
 $lines.Add("- $productLevel")
-if ($nextOptions) { $lines.Add("- $nextOptions") }
+$lines.Add("- **Stage 2 data-entry/history trust complete** (view more, edit, remove, past-date add). **Stage 3 started** (doctor-ready .txt download).")
+$lines.Add("- PWA: service worker cache **$swVer**; $manifestLine")
 $lines.Add("")
-$lines.Add("## 8. Founder Handoff Agent")
+$lines.Add("## 3. Chintu Level")
 $lines.Add("")
-$lines.Add("- Push needed: **$pushNeeded**")
-$lines.Add("- Manual phone test needed: **Yes if an app feature changed since the last test** (hard-refresh so $swVer activates, then confirm the changed feature).")
-$lines.Add("- Next Claude prompt title: **""BALA + CHINTU - POST-PUSH/GUARD CONFIRM, THEN NEXT STAGE 3 POLISH""**")
+$lines.Add("- Validation runner: ``scripts/chintu-validate.ps1`` - $verdict")
+$lines.Add("- Release guard runner: ``scripts/chintu-release-guard.ps1`` - $recommendation")
+$lines.Add("- Agent board runner: ``scripts/chintu-agent-board.ps1`` - this daily briefing (v2).")
+$lines.Add("- Safety: $medicalLine - BALA never claims to diagnose, predict, prevent, detect disease, or monitor emergencies.")
+$lines.Add("- Privacy: $privacyLine - health data stays in localStorage on the device; nothing is sent anywhere.")
 $lines.Add("")
-$lines.Add("## 9. Recommended next 3 sprints")
+$lines.Add("## 4. Manual Phone Test Checklist")
 $lines.Add("")
-$lines.Add("1. Stage 3 doctor-ready share polish (render/copy wording) - lowest risk.")
-$lines.Add("2. Manual phone-tester checklist (in-app Data tab or report) - repeatable verification.")
-$lines.Add("3. Chintu one-command daily run (wrapper around validate + release guard).")
+$lines.Add("Hard-refresh (Ctrl+F5) or reopen the installed app so the current service worker (**$swVer**) activates, then:")
+$lines.Add("- [ ] App loads; no console-breaking behavior.")
+$lines.Add("- [ ] Latest shipped feature works (currently: past-date check-in + doctor-ready .txt download).")
+$lines.Add("- [ ] History: add (today and a past date), edit, and remove a check-in.")
+$lines.Add("- [ ] Doctor-Ready Summary: Copy and **Download .txt** (last 5).")
+$lines.Add("- [ ] Show more / Show fewer history (5 -> 30 -> 60 -> 90).")
 $lines.Add("")
-$lines.Add("## 10. Stop/Go decision")
+$lines.Add("## 5. Next Sprint Recommender")
+$lines.Add("")
+$lines.Add("- **A. Stage 3 doctor-ready share polish** - cleaner .txt/clipboard wording + section order. Render/copy only, lowest risk.")
+$lines.Add("- **B. Stage 3 tester onboarding / feedback checklist** - a calm in-app or report checklist so a tester can self-verify the build. Render/static, low risk.")
+$lines.Add("- **C. Chintu one-command daily briefing polish** - refine this board (e.g. since-last-push commit list). Local tooling, low risk.")
+$lines.Add("")
+$lines.Add("## 6. Paste-Ready Next Claude Prompt")
+$lines.Add("")
+$lines.Add('```')
+$lines.Add("BALA + CHINTU - STAGE 3 DOCTOR-READY SHARE POLISH (design check first)")
+$lines.Add("")
+$lines.Add("Repo: $RepoRoot. Claude only; Codex parked. Read-only design check first, then smallest safe patch.")
+$lines.Add("Rules: no push (human pushes), no install, no external URLs, no secrets, no backend, no medical claims,")
+$lines.Add("local-first. Start: git status --short; git log --oneline origin/main..HEAD;")
+$lines.Add("powershell -ExecutionPolicy Bypass -File scripts\chintu-agent-board.ps1.")
+$lines.Add("Goal: polish the doctor-ready summary wording/section order (still last-5, no BALA Score exposed,")
+$lines.Add("no diagnosis/prediction/emergency language). Validate with chintu-validate + chintu-release-guard;")
+$lines.Add("bump sw.js cache if the app shell changes; commit locally; do not push.")
+$lines.Add('```')
+$lines.Add("")
+$lines.Add("## 7. Parked Systems")
+$lines.Add("")
+$lines.Add("- **Codex** - parked until explicitly activated (read-only/spec only; never pushes or networks).")
+$lines.Add("- **Telegram/Discord** - future only; no implementation; nothing networked ships in v1/v2.")
+$lines.Add("- **External APIs / backend / paid services** - not used.")
+$lines.Add("")
+$lines.Add("## 8. Go / Stop Decision")
 $lines.Add("")
 $lines.Add("**$stopGo**")
 $lines.Add("")
