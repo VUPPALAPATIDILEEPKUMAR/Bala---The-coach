@@ -169,6 +169,7 @@ professional if concerned."
 | 2026-06-17 | Intelligence map | Created `CHINTU_INTELLIGENCE_LAYERS.md` — documents ChatGPT/Claude/Codex/Ollama/OpenClaw roles and the Chintu loop. | `CHINTU_INTELLIGENCE_LAYERS.md` |
 | 2026-06-17 | Known issue logged | Indian language greeting text in `app.js` (Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Bengali) is double-encoded mojibake. Displays as garbage in browser. Needs a separate fix pass — converting Latin-1 re-encoded bytes back to correct UTF-8. Do not attempt without a careful byte-level script. | `app.js` |
 | 2026-06-17 | High-power audit (Opus 4.8) | Verified known issues 1–5 are all already fixed in code (esp. voice capability guard + manifest deep-links — do not redo). Corrected the Known Issues list to reflect reality and split out the real open items (5b). No app logic changed. Full session reports written to `Downloads\Claude\2026-06-17\metadata\md-files\`. | `CHINTU_HANDOFF.md` |
+| 2026-06-17 | Real-enhancement (Opus 4.8) | First-screen safety framing: added one calm line to the onboarding dialog — "BALA helps you notice your everyday body signals for awareness. It is not medical advice and does not replace a healthcare professional." Bumped SW cache v31→v32. Copy only, no app logic. Also wrote Chintu agent-board architecture, memory protocol, and BALA next-stage product roadmap to the reports folder. | `index.html`, `sw.js` |
 
 ---
 
