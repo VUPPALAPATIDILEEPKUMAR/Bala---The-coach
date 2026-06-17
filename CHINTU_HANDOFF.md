@@ -171,6 +171,9 @@ timeline, doctor-ready summary all exist). Round 3 added **history clarity** (ti
    Remove is confirm-gated; Edit reopens the capture form prefilled from the entry with the date locked and
    merges back via saveMetrics (top-level snapshot resyncs only when editing the latest). Hidden for demo.
 5. **Log a past-date check-in** (medium, logic — add optional date field to capture form). ← next step.
+   **Design complete (2026-06-17); implementation deferred due to Claude usage limit.** Next session should
+   start with post-push/guard confirmation, then implement past-date check-in. Design detail in
+   `CLAUDE_END_OF_USAGE_HANDOFF_BALA_CHINTU_2026-06-17.md` (§9) in the reports folder.
 Detail: `CLAUDE_BALA_STAGE2_CHECKIN_HISTORY_DESIGN_2026-06-17.md` + `..._CURRENT_STATE_AUDIT_...md`.
 
 **Stage 2 history trust = complete (2026-06-17):** view more, remove, edit. Next BALA options —
