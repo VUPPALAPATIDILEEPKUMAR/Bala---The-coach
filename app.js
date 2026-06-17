@@ -1328,7 +1328,7 @@ function coachResponse(question, metrics) {
   const isGreeting = /^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening|thanks|thank you|thx|okay|ok|cool|great)[!. ]*$/.test(normalized);
   const simpleExchange = isGreeting
     || /who are you|what are you|your name|what can you do|help me|how can you help/.test(normalized);
-  const languageNote = coachLanguage.value === "en-US" || isGreeting ? "" : "\n\nFull multilingual coaching is coming soon.";
+  const languageNote = coachLanguage.value === "en-US" || isGreeting ? "" : "\n\nCoaching responses are in English. Greetings and basic responses are available in your selected language.";
   if (!metrics || simpleExchange) return `${directAnswer}${languageNote}`;
 
   const name = getUserName();
@@ -2387,7 +2387,8 @@ coachLanguage.addEventListener("change", () => {
   localStorage.setItem("bala-language", coachLanguage.value);
   if (speechRecognition) speechRecognition.lang = coachLanguage.value;
   const label = coachLanguage.options[coachLanguage.selectedIndex].text;
-  voiceStatus.textContent = `Voice language changed to ${label}. Full multilingual coaching is coming soon.`;
+  const langNote = coachLanguage.value === "en-US" ? "" : " Greetings and basic responses are available in this language.";
+  voiceStatus.textContent = `Voice language set to ${label}.${langNote}`;
 });
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
