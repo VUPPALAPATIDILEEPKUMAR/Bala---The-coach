@@ -920,17 +920,25 @@ function weeklyPatternsAnalysis(metrics) {
 function timelineSummary(metrics) {
   const baseline = baselineAnalysis(metrics);
   const lines = [
-    "BALA DOCTOR-READY TIMELINE",
+    "BALA DOCTOR-READY SUMMARY",
     `Generated: ${new Date().toLocaleString()}`,
-    "For personal health awareness and discussion with a healthcare professional.",
     "",
+    "This is a personal health-awareness summary of body signals you entered.",
+    "It is not medical advice and does not replace a healthcare professional.",
+    ...(metrics?.source === "BALA demo"
+      ? ["", "NOTE: Sample demo data — not your own readings."]
+      : []),
+    "",
+    "BASELINE (latest 3 check-ins)",
     baseline.ready
-      ? `Baseline from latest 3 valid check-ins: ${Object.entries(baseline.averages)
+      ? Object.entries(baseline.averages)
         .filter(([, value]) => Number.isFinite(value))
         .map(([key, value]) => `${baselineFields[key].label} ${formatBaselineValue(key, value)}`)
-        .join(", ")}`
-      : "Baseline: Add 3 check-ins to build your first BALA baseline.",
-    `What changed: ${baseline.copy}`,
+        .join(", ")
+      : "Add 3 check-ins to build your first BALA baseline.",
+    "",
+    "RECENT TREND",
+    baseline.copy,
     "",
     "LAST 5 CHECK-INS",
     ...(baseline.timeline.length
@@ -943,7 +951,12 @@ function timelineSummary(metrics) {
       })
       : ["- No valid check-ins yet."]),
     "",
-    "BALA organizes supported signals for awareness. It does not provide diagnosis or replace professional care.",
+    "TO SHARE WITH YOUR HEALTHCARE PROFESSIONAL (your notes — not medical advice)",
+    "- How you have been feeling and anything you noticed",
+    "- Any changes in sleep, activity, or how you have been resting",
+    "- Anything you would like to ask",
+    "",
+    "BALA organizes supported signals for awareness. It does not provide diagnosis or replace professional care. Talk to a healthcare professional if you are concerned.",
   ];
   return lines.join("\n");
 }
@@ -1217,6 +1230,18 @@ async function copyTimelineSummary() {
     manual.select();
     status.textContent = "Automatic copy was unavailable. The timeline is selected for manual copying.";
   }
+}
+
+function downloadTimelineSummary() {
+  const status = document.querySelector("#timeline-status");
+  const metrics = getLocalMetrics();
+  if (!metrics || !validCheckIns(metrics).length) {
+    status.textContent = "Add a valid check-in before downloading.";
+    return;
+  }
+  const filename = `bala-doctor-ready-${new Date().toISOString().slice(0, 10)}.txt`;
+  downloadText(filename, timelineSummary(metrics), "text/plain");
+  status.textContent = "Summary downloaded. Share only with someone you trust.";
 }
 
 function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
@@ -2102,6 +2127,7 @@ document.querySelectorAll("[data-download-sample-csv]").forEach((button) => {
   button.addEventListener("click", downloadSampleCsv);
 });
 document.querySelector("#copy-timeline-button").addEventListener("click", copyTimelineSummary);
+document.querySelector("#download-timeline-button").addEventListener("click", downloadTimelineSummary);
 const timelineToggle = document.querySelector("#timeline-toggle");
 if (timelineToggle) {
   timelineToggle.addEventListener("click", () => {
