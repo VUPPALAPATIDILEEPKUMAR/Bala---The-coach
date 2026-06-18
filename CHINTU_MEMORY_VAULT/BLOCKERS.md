@@ -6,7 +6,8 @@ Current blockers and parked constraints for the active Chintu OS track.
 
 - iMac Option 12 must be tested before assuming the bridge is fully smooth.
 - Shared bridge smooth-loop still needs one full Windows export -> shared bridge -> iMac Option 12 intake check.
-- BALA app feature work should wait until Chintu OS Stage 9 is stable.
+- BALA app feature work requires a separate explicit founder-selected Stage 11 product sprint.
+- The Stage 10 dashboard is a generated snapshot; live file reading and background refresh remain intentionally unimplemented.
 
 ## Parked systems
 
@@ -18,7 +19,9 @@ Current blockers and parked constraints for the active Chintu OS track.
 - Phone notifications parked.
 - Voice calling parked.
 - Chintu Agent voice/personality app parked as future direction only.
+- Local speech input/output, desktop wrappers, and background scheduling parked as future research only.
 
 ## Safety boundary
 
-- No backend, paid APIs, secrets, health-data transfer, or app behavior changes during Stage 9A.
+- No backend, paid APIs, secrets, health-data transfer, external automation, or BALA app behavior changes during Stage 10.
+- Cloud sync remains an explicit founder-owned decision only.

@@ -1,0 +1,396 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Chintu Agent Control Shell</title>
+  <style>
+    :root { color-scheme: dark; --bg:#08111f; --panel:#101d30; --line:#263b55; --text:#edf4ff; --muted:#9eb1c9; --safe:#56d69b; --park:#f1bf65; --accent:#79a9ff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; background:radial-gradient(circle at top right,#18335c 0,#08111f 38rem); color:var(--text); line-height:1.55; }
+    header,main,footer { width:min(1180px,calc(100% - 2rem)); margin-inline:auto; }
+    header { padding:3rem 0 1.5rem; }
+    h1 { margin:0; font-size:clamp(2rem,5vw,4rem); letter-spacing:-.04em; }
+    h2 { margin:.2rem 0 1rem; font-size:1.05rem; letter-spacing:.02em; }
+    p { margin:.45rem 0; }
+    .eyebrow,.meta { color:var(--muted); }
+    .brief { max-width:760px; font-size:1.16rem; }
+    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:1rem; padding-bottom:2rem; }
+    .card { grid-column:span 6; min-width:0; background:rgba(16,29,48,.94); border:1px solid var(--line); border-radius:18px; padding:1.2rem; box-shadow:0 16px 45px rgba(0,0,0,.22); }
+    .wide { grid-column:1/-1; }
+    .third { grid-column:span 4; }
+    .safe { border-color:rgba(86,214,155,.55); }
+    .parked { border-color:rgba(241,191,101,.5); }
+    .next { border-color:var(--accent); background:linear-gradient(145deg,rgba(31,61,105,.98),rgba(16,29,48,.98)); }
+    .status { display:inline-block; padding:.2rem .55rem; border-radius:999px; background:#18314f; color:var(--safe); font-weight:700; font-size:.82rem; }
+    code { color:#c8dcff; overflow-wrap:anywhere; }
+    ul { margin:.5rem 0 0; padding-left:1.2rem; }
+    pre { margin:0; max-height:25rem; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; color:#c6d4e6; font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    details summary { cursor:pointer; color:var(--accent); }
+    button { border:1px solid var(--line); border-radius:999px; padding:.5rem .8rem; color:var(--text); background:#142946; cursor:pointer; }
+    .compact .snapshot { display:none; }
+    footer { padding:0 0 3rem; color:var(--muted); font-size:.9rem; }
+    @media (max-width:800px) { .card,.third { grid-column:1/-1; } header { padding-top:2rem; } }
+    @media print { body { background:#fff; color:#111; } .card { box-shadow:none; background:#fff; border-color:#bbb; } button { display:none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">CHINTU OS / LOCAL OPERATOR SNAPSHOT</p>
+    <h1>Agent Control Shell</h1>
+    <p class="brief">Bro, Chintu checked the system. Here is what changed. Here is what is safe. Here is the next move.</p>
+    <p class="meta">Generated 2026-06-18 02:05 -04:00 from local files. <strong>This is a static snapshot, not live file reading.</strong></p>
+    <button id="snapshot-toggle" type="button" aria-pressed="false">Hide report snapshots</button>
+  </header>
+  <main class="grid" id="dashboard">
+    <section class="card third">
+      <h2>System state</h2>
+      <span class="status">CHANGES PRESENT (19)</span>
+      <p>Branch: <code>m</code></p>
+      <p>Unpushed commits: 0</p>
+      <p>Latest: <code>3</code></p>
+    </section>
+    <section class="card third">
+      <h2>What changed</h2>
+      <ul><li><code> M CHINTU_HANDOFF.md</code></li>
+<li><code> M CHINTU_MEMORY_VAULT/BLOCKERS.md</code></li>
+<li><code> M CHINTU_MEMORY_VAULT/DAILY_LOGS/2026-06-18.md</code></li>
+<li><code> M CHINTU_MEMORY_VAULT/DECISIONS.md</code></li>
+<li><code> M CHINTU_MEMORY_VAULT/NEXT_SPRINT_QUEUE.md</code></li>
+<li><code> M CHINTU_MEMORY_VAULT/PARKED_SYSTEMS.md</code></li>
+<li><code> M CHINTU_OPERATOR_STATUS.md</code></li>
+<li><code> M CHINTU_TOMORROW_START.md</code></li>
+<li><code> M scripts/chintu-endday-operator.ps1</code></li>
+<li><code>?? BALA_SAFE_TOUCHPOINTS.md</code></li>
+<li><code>?? CHINTU_AGENT_CONTROL_SHELL.md</code></li>
+<li><code>?? CHINTU_AGENT_DASHBOARD.html</code></li>
+<li><code>?? CHINTU_CLAUDE_OVERNIGHT_PROMPT.md</code></li>
+<li><code>?? CHINTU_FREE_POWER_LANES.md</code></li>
+<li><code>?? CHINTU_STAGE_11_QUEUE.md</code></li>
+<li><code>?? docs/superpowers/</code></li>
+<li><code>?? scripts/chintu-agent-control-shell.test.js</code></li>
+<li><code>?? scripts/chintu-agent-dashboard.ps1</code></li>
+<li><code>?? scripts/chintu-claude-overnight-package.ps1</code></li></ul>
+    </section>
+    <section class="card third safe">
+      <h2>BALA safety status</h2>
+      <p><strong>BOUNDARY ACTIVE.</strong> Stage 10 is scripts, reports, and planning only. BALA product files and behavior are outside this shell.</p>
+      <p>No diagnosis, prediction, prevention, emergency monitoring, network transfer, or external automation.</p>
+    </section>
+    <section class="card">
+      <h2>Latest commits</h2>
+      <ul><li><code>3ef0e03 chore: add Chintu alive daily operator layer</code></li>
+<li><code>05abebb chore: add Chintu bridge command center and iMac option 12 package</code></li>
+<li><code>a1480d5 chore: add Chintu auto bridge transfer</code></li>
+<li><code>0745626 chore: add Chintu bridge daily export</code></li>
+<li><code>fc4fdec chore: connect Chintu memory vault and bridge reporter</code></li></ul>
+    </section>
+    <section class="card next">
+      <h2>Next exact action</h2>
+      <p><strong>STOP - review the working tree before continuing.</strong></p>
+    </section>
+    <section class="card snapshot">
+      <h2>Operator status</h2>
+      <details><summary>Open local report snapshot</summary><pre># Chintu Operator Status
+
+Chintu checked the system. Here is the state.
+
+**Generated:** 2026-06-18 02:04
+**Repo:** C:\Users\Chintu\Desktop\test
+**Branch:** main
+
+## 1. Repo state
+
+- Latest commit: `3ef0e03 chore: add Chintu alive daily operator layer`
+- Working tree clean: **NO**
+- Unpushed commits count: **0**
+- git status --short:
+  - ` M CHINTU_HANDOFF.md`
+  - ` M CHINTU_MEMORY_VAULT/BLOCKERS.md`
+  - ` M CHINTU_MEMORY_VAULT/DAILY_LOGS/2026-06-18.md`
+  - ` M CHINTU_MEMORY_VAULT/DECISIONS.md`
+  - ` M CHINTU_MEMORY_VAULT/NEXT_SPRINT_QUEUE.md`
+  - ` M CHINTU_MEMORY_VAULT/PARKED_SYSTEMS.md`
+  - ` M CHINTU_OPERATOR_STATUS.md`
+  - ` M CHINTU_TOMORROW_START.md`
+  - ` M scripts/chintu-endday-operator.ps1`
+  - `?? BALA_SAFE_TOUCHPOINTS.md`
+  - `?? CHINTU_AGENT_CONTROL_SHELL.md`
+  - `?? CHINTU_AGENT_DASHBOARD.html`
+  - `?? CHINTU_CLAUDE_OVERNIGHT_PROMPT.md`
+  - `?? CHINTU_FREE_POWER_LANES.md`
+  - `?? CHINTU_STAGE_11_QUEUE.md`
+  - `?? docs/superpowers/`
+  - `?? scripts/chintu-agent-control-shell.test.js`
+  - `?? scripts/chintu-agent-dashboard.ps1`
+  - `?? scripts/chintu-claude-overnight-package.ps1`
+
+## 2. Validation state
+
+- chintu-validate: **OK** | VERDICT: PASS (with 2 WARN - human glance)
+- chintu-release-guard: **OK** | RECOMMENDATION: NOTHING TO PUSH - origin/main is caught up.
+- chintu-bridge-command-center: **OK** | Next action: STOP and review the repo before any bridge action.
+- chintu-next-action: **OK** | NEXT ACTION: STOP - review the working tree before continuing.
+
+## 3. Bridge state
+
+- Shared bridge path: `C:\Users\Chintu\Desktop\CHINTU_SHARED_BRIDGE`
+- Shared bridge ready: **YES**
+- CHINTU_BRIDGE_LATEST.zip present: **YES**
+- MANIFEST.txt present: **YES**
+- LATEST_FLAT ready: **YES**
+- Bridge Command Center report exists: **YES**
+- iMac Option 12 package ready in repo: **YES**
+- iMac Option 12 test status from Windows: **PENDING FOUNDER CONFIRMATION**
+
+## 4. What changed since last run
+
+- Previous operator report: 2026-06-18 01:57
+- No new commit since the previous operator report.
+- Working tree changed after the previous operator report.
+
+## 5. Blockers
+
+- iMac Option 12 must be tested before assuming the bridge is fully smooth.
+- Shared bridge smooth-loop still needs one full Windows export -&gt; shared bridge -&gt; iMac Option 12 intake check.
+- BALA app feature work requires a separate explicit founder-selected Stage 11 product sprint.
+- The Stage 10 dashboard is a generated snapshot; live file reading and background refresh remain intentionally unimplemented.
+- Telegram parked.
+- Discord parked.
+- Webhooks parked.
+- Memory-wiki parked.
+- Cloud sync automation parked.
+- Phone notifications parked.
+- Voice calling parked.
+- Chintu Agent voice/personality app parked as future direction only.
+- Local speech input/output, desktop wrappers, and background scheduling parked as future research only.
+- No backend, paid APIs, secrets, health-data transfer, external automation, or BALA app behavior changes during Stage 10.
+- Cloud sync remains an explicit founder-owned decision only.
+
+## 6. Parked systems
+
+- Telegram bot - parked
+- Discord bot - parked
+- Webhooks - parked
+- Cloud sync automation - parked
+- Phone notifications - parked
+- Voice calling - parked
+- Chintu Agent voice/personality app - parked future
+- External automation - parked
+- External health-data APIs - parked
+- DuckDuckGo plugin - disabled
+- memory-wiki plugin - not enabled
+- Codex agent - parked
+- AI / LLM coach endpoint - reserved
+- Live wearable sync - future
+- Native iOS HealthKit bridge - stub
+- Health data in Telegram / Discord / webhooks / notifications - prohibited
+- Secrets / tokens in repo - prohibited
+- Browser sessions / cookies / paired-device files - prohibited
+- Auto-push by any brain - prohibited
+- `openclaw.json` reads - prohibited
+- Automatic plugin install or enable - prohibited
+- Memory vault edits during a FAILed gate - prohibited
+
+## 7. Next exact action
+
+- STOP - review the working tree before continuing.
+
+## 8. Safety footer
+
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.</pre></details>
+    </section>
+    <section class="card snapshot">
+      <h2>Bridge state</h2>
+      <details><summary>Open Bridge Command Center snapshot</summary><pre># Chintu Bridge Command Center
+
+**Generated:** 2026-06-18 02:04
+**Repo:** C:\Users\Chintu\Desktop\test
+
+## 1. Repo state
+
+- Current branch: `main`
+- Latest commit: `3ef0e03 chore: add Chintu alive daily operator layer`
+- Working tree clean: **NO**
+- Unpushed commits count: **0**
+
+## 2. Validation state
+
+- chintu-validate result: **OK** | VERDICT: PASS (with 2 WARN - human glance)
+- release guard result: **OK** | RECOMMENDATION: NOTHING TO PUSH - origin/main is caught up.
+- agent board result (safe to run): **OK** | DECISION: REVIEW - validation PASS but the tree has uncommitted changes; validate and commit before pushing.
+- Known disclaimer warning: **PRESENT**
+
+## 3. App safety state
+
+- app.js unchanged: **YES**
+- index.html unchanged: **YES**
+- styles.css unchanged: **YES**
+- sw.js unchanged: **YES**
+
+## 4. Shared bridge state
+
+- Shared folder path: `C:\Users\Chintu\Desktop\CHINTU_SHARED_BRIDGE`
+- CHINTU_BRIDGE_LATEST.zip present: **YES**
+- MANIFEST.txt present: **YES**
+- LATEST_FLAT present: **YES**
+- LATEST_FLAT has 7 expected files: **YES**
+- SHA-256 from MANIFEST.txt: `31787D077C29C7C9ED7CEB7495DD5176C61C1DB72EF88382C69DF9672DDE1628`
+- Latest ZIP size: 7594 bytes
+
+## 5. iMac intake readiness
+
+- Manual option 11 path: `~/Documents/CHINTU_CONTROL_ROOM/scripts/bridge-sync.sh`
+- Manual option 11 desktop command: `~/Desktop/CHINTU_BRIDGE_SYNC.command`
+- Future option 12 path: `~/Documents/CHINTU_CONTROL_ROOM/scripts/bridge-pull-shared.sh`
+- Future option 12 desktop command: `~/Desktop/CHINTU_PULL_SHARED_BRIDGE.command`
+- Option 12 package ready in repo: **YES**
+- Option 12 install status on iMac: **NO (not verifiable from Windows)**
+- Founder move/sync target: Sync the iMac&apos;s local shared bridge folder so it contains CHINTU_BRIDGE_LATEST.zip and MANIFEST.txt from C:\Users\Chintu\Desktop\CHINTU_SHARED_BRIDGE.
+- Install note: Windows cannot verify iMac Option 12 installation directly, so the command center treats it as NOT INSTALLED until the founder confirms.
+
+## 6. Next action recommendation
+
+STOP and review the repo before any bridge action.
+
+## 7. Parked systems
+
+- Telegram parked
+- Discord parked
+- Webhooks parked
+- Memory-wiki parked
+- Cloud sync automation parked until explicit founder approval
+
+## 8. Safety footer
+
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.</pre></details>
+    </section>
+    <section class="card parked">
+      <h2>Parked systems</h2>
+      <ul><li>Telegram bot - parked</li>
+<li>Discord bot - parked</li>
+<li>Webhooks - parked</li>
+<li>Cloud sync automation - parked</li>
+<li>Phone notifications - parked</li>
+<li>Voice calling - parked</li>
+<li>Chintu Agent voice/personality app - parked future</li>
+<li>External automation - parked</li>
+<li>External health-data APIs - parked</li>
+<li>DuckDuckGo plugin - disabled</li>
+<li>memory-wiki plugin - not enabled</li>
+<li>Codex agent - parked</li>
+<li>AI / LLM coach endpoint - reserved</li>
+<li>Live wearable sync - future</li>
+<li>Native iOS HealthKit bridge - stub</li>
+<li>Health data in Telegram / Discord / webhooks / notifications - prohibited</li>
+<li>Secrets / tokens in repo - prohibited</li>
+<li>Browser sessions / cookies / paired-device files - prohibited</li>
+<li>Auto-push by any brain - prohibited</li>
+<li>`openclaw.json` reads - prohibited</li>
+<li>Automatic plugin install or enable - prohibited</li>
+<li>Memory vault edits during a FAILed gate - prohibited</li></ul>
+    </section>
+    <section class="card snapshot">
+      <h2>Tomorrow start</h2>
+      <details><summary>Open restart snapshot</summary><pre># Chintu Tomorrow Start
+
+Chintu closed the loop. Here is where we stopped.
+
+**Generated:** 2026-06-18 02:04
+**Repo:** C:\Users\Chintu\Desktop\test
+**Branch:** main
+
+## 1. Where we stopped
+
+- We stopped with local Chintu OS changes in the working tree awaiting review and commit.
+
+## 2. Latest safe commit
+
+- `3ef0e03 chore: add Chintu alive daily operator layer`
+
+## 3. What is pushed / not pushed
+
+- HEAD is caught up with origin/main.
+
+## 4. First action tomorrow
+
+- STOP - review the working tree before continuing.
+
+## 5. What not to touch
+
+- app.js
+- index.html
+- styles.css
+- sw.js
+- coach.js
+- manifest.webmanifest
+- privacy.html
+- functions/api/coach.js
+- Telegram / Discord / webhooks / memory-wiki / cloud sync / phone notifications / voice calling
+- BALA app feature work without explicit founder instruction
+
+## 6. Parked systems
+
+- Telegram bot - parked
+- Discord bot - parked
+- Webhooks - parked
+- Cloud sync automation - parked
+- Phone notifications - parked
+- Voice calling - parked
+- Chintu Agent voice/personality app - parked future
+- External automation - parked
+- External health-data APIs - parked
+- DuckDuckGo plugin - disabled
+- memory-wiki plugin - not enabled
+- Codex agent - parked
+- AI / LLM coach endpoint - reserved
+- Live wearable sync - future
+- Native iOS HealthKit bridge - stub
+- Health data in Telegram / Discord / webhooks / notifications - prohibited
+- Secrets / tokens in repo - prohibited
+- Browser sessions / cookies / paired-device files - prohibited
+- Auto-push by any brain - prohibited
+- `openclaw.json` reads - prohibited
+- Automatic plugin install or enable - prohibited
+- Memory vault edits during a FAILed gate - prohibited
+
+## 7. BALA safety reminder
+
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.
+
+## 8. One-line restart prompt
+
+Read CHINTU_TOMORROW_START.md and CHINTU_OPERATOR_STATUS.md, run scripts/chintu-daily-operator.ps1, then follow the one exact next action.</pre></details>
+    </section>
+    <section class="card snapshot">
+      <h2>Claude overnight lane</h2>
+      <p>Inspect Stage 8/9/10, harden Chintu OS reliability/docs/tests, and plan future BALA work without changing BALA app files.</p>
+      <details><summary>Open existing Claude handoff snapshot</summary><pre>Not present: CHINTU_CLAUDE_HANDOFF.md</pre></details>
+    </section>
+    <section class="card">
+      <h2>Codex lane</h2>
+      <p>Validate this local control-shell slice, prove protected BALA files are unchanged, commit if safe, and stop before push.</p>
+    </section>
+    <section class="card wide parked">
+      <h2>Future Chintu Agent vision - parked</h2>
+      <p>Local LLM routing, local speech input/output, desktop wrappers, launchd/Task Scheduler, and external channels remain research lanes only. No installs, activation, voice cloning, real-person imitation, cloud sync, webhooks, calls, or messages are part of Stage 10.</p>
+    </section>
+  </main>
+  <footer>
+    <p><strong>Local-only disclaimer:</strong> This dashboard is a generated snapshot of local repository reports. It does not read files live, send data, call a backend, track activity, or activate automation.</p>
+    <p>BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.</p>
+  </footer>
+  <script>
+    (() => {
+      const button = document.getElementById("snapshot-toggle");
+      const dashboard = document.getElementById("dashboard");
+      button.addEventListener("click", () => {
+        const compact = dashboard.classList.toggle("compact");
+        button.setAttribute("aria-pressed", String(compact));
+        button.textContent = compact ? "Show report snapshots" : "Hide report snapshots";
+      });
+    })();
+  </script>
+</body>
+</html>

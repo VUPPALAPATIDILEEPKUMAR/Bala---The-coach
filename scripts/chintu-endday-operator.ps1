@@ -239,7 +239,7 @@ $dailyLogPath = Join-Path $dailyLogsDir "$dateSlug.md"
 
 $whereStopped = ""
 if (-not $treeClean) {
-    $whereStopped = "We stopped with local Stage 9A script/doc changes in the working tree awaiting review and commit."
+    $whereStopped = "We stopped with local Chintu OS changes in the working tree awaiting review and commit."
 } elseif ($unpushedCount -gt 0) {
     $whereStopped = "We stopped after a clean local commit. Human push review is next."
 } else {
@@ -260,8 +260,9 @@ $whatNotToTouch = @(
     "coach.js",
     "manifest.webmanifest",
     "privacy.html",
+    "functions/api/coach.js",
     "Telegram / Discord / webhooks / memory-wiki / cloud sync / phone notifications / voice calling",
-    "BALA app feature work during Stage 9A"
+    "BALA app feature work without explicit founder instruction"
 )
 
 $tomorrowLines = New-Object System.Collections.Generic.List[string]

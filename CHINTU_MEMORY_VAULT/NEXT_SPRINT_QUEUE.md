@@ -1,86 +1,59 @@
 # Next Sprint Queue
 
-Ranked highest priority first. Each sprint must respect Chintu safety, privacy,
-and medical-claim rules. memory-wiki plugin stays disabled.
+Ranked highest priority first. Every sprint must respect Chintu safety,
+privacy, medical-claim, local-first, and founder-approval rules. The
+memory-wiki plugin stays disabled.
 
 | # | Sprint | Type | Status | Risk |
 |---|---|---|---|---|
-| 1 | Alive Daily Operator Layer | tooling | complete in repo (Stage 9A baseline) | Green |
-| 2 | iMac Option 12 install + test | tooling (iMac side) | current founder/operator action | Green |
-| 3 | Shared bridge smooth-loop check | tooling / docs | after Option 12 test | Green |
-| 4 | Daily operator shakeout | tooling / docs | after first live morning/end-day runs | Green |
-| 5 | BALA Voice Coach enhancement | product (BALA) | next after Stage 9 stability | Orange |
-| 6 | Memory-Wiki read-only enablement design | design only | needs founder approval | Black to implement |
-| 7 | Document-extract local proof | tooling (OpenClaw) | planned | Yellow |
-| 8 | Telegram / Discord summary design only | design only | parked | Black to implement |
+| 1 | iMac Option 12 install + test | tooling (iMac side) | current founder-run action | Green |
+| 2 | Shared bridge smooth-loop check | tooling / docs | after Option 12 test | Green |
+| 3 | Chintu Agent Desktop Control UI polish | tooling / docs | Stage 11A candidate | Green |
+| 4 | BALA Voice Coach safe enhancement | product (BALA) | Stage 11C; explicit founder instruction required | Orange |
+| 5 | BALA tester feedback and demo polish | product (BALA) | Stage 11D; explicit founder instruction required | Orange |
+| 6 | Local speech input/output research | design only | Stage 11E; parked | Black to activate |
+| 7 | Telegram / Discord / cloud / webhooks | external systems | Stage 11F; parked | Black to implement |
 
-## 1. Alive Daily Operator Layer
+## Completed baselines
 
-Stage 9A adds:
+### Stage 9A - Alive Daily Operator Layer
 
-- `scripts/chintu-daily-operator.ps1`
-- `scripts/chintu-next-action.ps1`
-- `scripts/chintu-endday-operator.ps1`
-- `CHINTU_OPERATOR_STATUS.md`
-- `CHINTU_TOMORROW_START.md`
-- `CHINTU_MEMORY_VAULT/DAILY_LOGS/`
-- `CHINTU_MEMORY_VAULT/DECISIONS.md`
-- `CHINTU_MEMORY_VAULT/BLOCKERS.md`
+The daily operator, next-action engine, end-day operator, operator status,
+tomorrow start, decisions, blockers, and daily-log archive are in the repo.
+The layer is local-first, file-based, validation-first, and founder-approved.
 
-This layer keeps Chintu local-first, file-based, validation-first, and founder
-approved. BALA app files remain unchanged. External automation stays parked.
+### Stage 10 - Chintu Agent Control Shell
 
-## 2. iMac Option 12 install + test
+The static dashboard, dashboard generator, Claude overnight package generator,
+BALA Safe Touchpoints, Free Power Lanes, and Stage 11 queue are in the repo.
+Stage 10 changes scripts/docs/control-shell artifacts only. BALA app files
+remain unchanged, and external automation remains parked.
 
-Copy `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/` to the iMac and run
-`install-option-12.sh`. Then complete the checks in
-`CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/IMAC_TEST_PLAN.md`. Manual option
-11 remains the fallback until Option 12 is confirmed working.
+## Current founder-run lane
 
-## 3. Shared bridge smooth-loop check
+Copy `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/` to the iMac, run
+`install-option-12.sh`, and complete `IMAC_TEST_PLAN.md`. Manual option 11
+remains the fallback until Option 12 passes on the iMac.
 
-After iMac Option 12 is installed, run one full loop: Windows daily export,
-shared bridge mirror refresh, iMac Omega option 12 intake, `bridge-sync.sh`,
-and dashboard open. Confirm the bridge command center and daily operator both
-report a stable next action. No app changes.
+After that test, run one complete Windows export -> shared bridge -> iMac
+Option 12 intake -> `bridge-sync.sh` -> dashboard-open loop. Record observed
+failures before changing scripts.
 
-## 4. Daily operator shakeout
+## Planned Stage 11 lanes
 
-Run the new morning and end-day operator scripts through a real founder day,
-review the generated status/handoff/log wording, and tighten only the scripts
-or docs if something feels noisy or unclear.
-
-## 5. BALA Voice Coach enhancement
-
-This stays behind Stage 9 stability work. Once the bridge loop is smooth and
-the operator layer feels reliable, the next BALA sprint candidate is Voice
-Coach enhancement. Keep it local-first, non-medical, and app-only when
-explicitly chosen.
-
-## 6. Memory-Wiki read-only enablement design
-
-A design doc only. Defines the safe enable procedure, the read-only seed
-content, the local-only boundary, and the rollback path. No actual enablement
-this sprint. memory-wiki plugin stays disabled until founder approval.
-
-## 7. Document-extract local proof
-
-Dry-run proof that the OpenClaw `document-extract` plugin can read a local
-non-PHI doc safely and return text. Artifacts only. Never PHI. Loopback only.
-
-## 8. Telegram / Discord summary design only
-
-Design doc only. Defines what a non-health-data status summary would look like,
-the transport, the boundary, and the founder approval gate. Implementation is
-parked.
+`CHINTU_STAGE_11_QUEUE.md` defines Stage 11A through 11F. It is the source of
+truth for desktop-shell polish, iMac hardening, BALA product candidates, local
+speech research, and parked external systems. Planning does not activate any
+lane.
 
 ## Sprint selection rules
 
-- Always pick the highest unblocked Green or Yellow sprint.
-- Stage 9A is now in repo; the live operator action is iMac Option 12 install + test.
-- Manual iMac option 11 remains the fallback until Option 12 is installed and checked.
+- Pick the highest unblocked Green or Yellow sprint.
+- The current action is the founder-run iMac Option 12 install/test.
+- Manual iMac option 11 remains the fallback until Option 12 is checked.
 - Auto Bridge Transfer V1 is already live at `a1480d5`.
-- Chintu Agent voice/personality work stays parked as future direction only.
-- Never pick an Orange / Red sprint without an explicit prompt that calls for it.
+- Chintu Agent voice/personality and local speech stay parked research.
+- BALA product work requires a separate explicit founder instruction.
+- Never pick an Orange or Red sprint without an explicit prompt for it.
 - Never pick a Black sprint without explicit founder approval recorded in
   `OPEN_QUESTIONS.md`.
