@@ -60,11 +60,29 @@ powershell -ExecutionPolicy Bypass -File scripts\chintu-heartbeat.ps1
 
 This is the one-command local founder loop. It refreshes the founder
 message, planner outputs, dry-run connector previews, control-room
-index, and writes [CHINTU_HEARTBEAT.md](CHINTU_HEARTBEAT.md) plus
+index, operator console, and writes
+[CHINTU_HEARTBEAT.md](CHINTU_HEARTBEAT.md) plus
 `CHINTU_OUTBOX/latest_heartbeat.json`.
 
 Open `CHINTU_HEARTBEAT.md` first if you want the shortest "what just
 happened / what should I do next" read.
+
+---
+
+## 2c. Open Operator Console
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-operator-console.ps1
+```
+
+Then open `CHINTU_OPERATOR_CONSOLE.html`.
+
+Review flow:
+
+- Run heartbeat.
+- Open operator console.
+- Review approval center.
+- Pick the next safe action.
 
 ---
 

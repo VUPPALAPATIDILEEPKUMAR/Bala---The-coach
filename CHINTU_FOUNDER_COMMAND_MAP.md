@@ -59,6 +59,7 @@ explicitly approves it.
 | `node scripts\chintu-action-planner.test.js` | Action queue + approval center + JSON mirror carry footer, parked listing, approve-id phrase or "no approval needed" header. |
 | `node scripts\chintu-action-planner-fixtures.test.js` | Fixture-driven planner ranking contract: safe-now before approval, push-only when unpushed, parked/research stay non-sending. |
 | `node scripts\chintu-approval-audit.test.js` | Approval-audit helper stays local-only; tracked audit log keeps the expected schema and footer. |
+| `node scripts\chintu-operator-console.test.js` | Operator console stays local-only, points at heartbeat/planner artifacts, and keeps no-send founder badges visible. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |
@@ -68,13 +69,14 @@ explicitly approves it.
 | Command | Output |
 |---|---|
 | `scripts\chintu-runtime-health.ps1` | `CHINTU_RUNTIME_HEALTH.md` (GREEN/YELLOW/RED) |
-| `scripts\chintu-heartbeat.ps1` | Founder message + planner + dry-run previews + control room refresh -> `CHINTU_HEARTBEAT.md` + `CHINTU_OUTBOX/latest_heartbeat.json` |
+| `scripts\chintu-heartbeat.ps1` | Founder message + planner + dry-run previews + control room refresh + operator console refresh -> `CHINTU_HEARTBEAT.md` + `CHINTU_OUTBOX/latest_heartbeat.json` |
 | `scripts\chintu-restart-recovery.ps1` | `CHINTU_RESTART_RECOVERY.md` + console resume action |
 | `scripts\chintu-bridge-loop-reality-check.ps1` | `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` (GREEN/YELLOW/RED bridge readiness) |
 | `scripts\chintu-founder-message.ps1` | `CHINTU_DAILY_BRIEF.md` + `CHINTU_OUTBOX/latest_founder_message.md` + appends to `founder_message_history.md` |
 | `node scripts\chintu-message-dry-run.js` | `CHINTU_OUTBOX/dry_run_payloads/{telegram,slack,discord}_preview.json` (NEVER sent) |
 | `scripts\chintu-action-planner.ps1` | `CHINTU_ACTION_QUEUE.md` + `CHINTU_ACTION_QUEUE_TRACKED.md` + `CHINTU_APPROVAL_CENTER.md` + `CHINTU_NEXT_OPERATOR_PROMPT.md` + `CHINTU_OUTBOX/latest_action_plan.json` |
 | `scripts\chintu-approval-audit.ps1 -ApprovalPhrase "approve <id>"` | Appends one founder approval row to `CHINTU_APPROVAL_AUDIT.md` |
+| `scripts\chintu-operator-console.ps1` | `CHINTU_OPERATOR_CONSOLE.html` + `CHINTU_OUTBOX/latest_operator_console.json` |
 
 ## Reporting / dashboards
 
@@ -82,6 +84,7 @@ explicitly approves it.
 |---|---|
 | `scripts\chintu-control-room-index.ps1` | `CHINTU_CONTROL_ROOM_INDEX.html` |
 | `scripts\chintu-agent-dashboard.ps1` | `CHINTU_AGENT_DASHBOARD.html` |
+| `scripts\chintu-operator-console.ps1` | `CHINTU_OPERATOR_CONSOLE.html` |
 | `scripts\chintu-windows-reporter.ps1` | `chintu-windows-reporter-report.md` |
 | `scripts\chintu-bridge-daily-export.ps1` | `chintu-bridge-daily-export-report.md` |
 | `scripts\chintu-openclaw-readiness.ps1` | `chintu-openclaw-readiness-report.md` |

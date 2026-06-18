@@ -1,5 +1,41 @@
 # Chintu Claude Survival Handoff
 
+## 0a-8. Cycle 11 - Stage 15 operator console
+
+Stage 15 adds a single local founder screen on top of the heartbeat
+loop. Chintu can now refresh the loop and render a calm static operator
+console that surfaces the latest status, message, queue, approvals, and
+next command in one place.
+
+New operator console layer:
+
+- `scripts/chintu-operator-console.ps1` reads the latest local Chintu
+  outputs and writes:
+  - `CHINTU_OPERATOR_CONSOLE.html`
+  - `CHINTU_OUTBOX/latest_operator_console.json`
+- `scripts/chintu-operator-console.test.js` guards the console against
+  network/send behavior and verifies it points at the expected local
+  upstream artifacts.
+
+Heartbeat / docs wiring:
+
+- `scripts/chintu-heartbeat.ps1` now refreshes the operator console as
+  part of the local founder loop when the console generator is present.
+- `CHINTU_OPEN_FIRST.md` now says: run heartbeat -> open operator
+  console -> review approval center -> pick next action.
+- `scripts/chintu-control-room-index.ps1`,
+  `CHINTU_FOUNDER_COMMAND_MAP.md`, and
+  `CHINTU_GENERATED_FILES_MAP.md` now surface the console and its JSON
+  mirror.
+
+Safety invariants remain unchanged:
+
+- No network egress.
+- No external connector send.
+- No BALA app file edits.
+- No hidden automation.
+- All connector-shaped artifacts remain DRY RUN ONLY.
+
 ## 0a-7. Cycle 10 - Stage 14 heartbeat loop
 
 Stage 14 starts the local founder heartbeat loop. The old heartbeat

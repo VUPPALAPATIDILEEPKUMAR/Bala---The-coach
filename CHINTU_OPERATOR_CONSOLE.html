@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Chintu Operator Console</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f2efe7;
+      --ink:#182229;
+      --muted:#5a686f;
+      --panel:#fffdfa;
+      --line:#d9d2c3;
+      --accent:#2f6c63;
+      --accent-soft:#dcece8;
+      --warn:#9b6a2b;
+      --warn-soft:#f6ead7;
+      --danger:#8f3a32;
+      --danger-soft:#f4dfdb;
+      --safe:#1d6a52;
+      --safe-soft:#d9eee7;
+      --badge:#24313a;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at top right, rgba(47,108,99,0.12), transparent 32rem),
+        linear-gradient(180deg, #faf7f1 0%, var(--bg) 100%);
+      line-height:1.55;
+    }
+    header, main, footer {
+      width:min(1180px, calc(100% - 1.4rem));
+      margin-inline:auto;
+    }
+    header { padding:2rem 0 1.2rem; }
+    h1 {
+      margin:0;
+      font-size:clamp(2rem, 4.6vw, 3.5rem);
+      letter-spacing:-0.04em;
+    }
+    h2 {
+      margin:0 0 .8rem;
+      font-size:1rem;
+      letter-spacing:.01em;
+    }
+    p { margin:.45rem 0; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code {
+      font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+      font-size:.94em;
+      overflow-wrap:anywhere;
+    }
+    pre {
+      margin:0;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+      font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;
+      color:#24313a;
+    }
+    .eyebrow {
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-size:.82rem;
+      margin-bottom:.4rem;
+    }
+    .summary {
+      max-width:760px;
+      font-size:1.08rem;
+      color:#324149;
+    }
+    .meta {
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    .badge-row {
+      display:flex;
+      gap:.6rem;
+      flex-wrap:wrap;
+      margin-top:1rem;
+    }
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      border-radius:999px;
+      padding:.35rem .75rem;
+      background:#eef2f3;
+      border:1px solid var(--line);
+      color:var(--badge);
+      font-weight:600;
+      font-size:.84rem;
+    }
+    .layout {
+      display:grid;
+      grid-template-columns:repeat(12, 1fr);
+      gap:1rem;
+      padding-bottom:1.6rem;
+    }
+    .card {
+      grid-column:span 6;
+      background:rgba(255,253,250,0.96);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:1.1rem;
+      box-shadow:0 16px 40px rgba(28,39,46,0.07);
+      min-width:0;
+    }
+    .wide { grid-column:1 / -1; }
+    .third { grid-column:span 4; }
+    .hero {
+      grid-column:1 / -1;
+      display:grid;
+      grid-template-columns:2.2fr 1fr;
+      gap:1rem;
+      background:linear-gradient(135deg, rgba(255,253,250,0.96), rgba(220,236,232,0.8));
+    }
+    .status-pill {
+      display:inline-block;
+      padding:.28rem .7rem;
+      border-radius:999px;
+      font-weight:700;
+      font-size:.86rem;
+      margin-bottom:.6rem;
+    }
+    .status-pill.awake { color:var(--safe); background:var(--safe-soft); }
+    .status-pill.attention { color:var(--warn); background:var(--warn-soft); }
+    .status-pill.blocked { color:var(--danger); background:var(--danger-soft); }
+    ul { margin:.4rem 0 0; padding-left:1.1rem; }
+    li { margin:.35rem 0; }
+    .mini {
+      color:var(--muted);
+      font-size:.88rem;
+    }
+    .link-list {
+      display:flex;
+      flex-wrap:wrap;
+      gap:.65rem 1rem;
+      margin-top:.5rem;
+    }
+    .callout {
+      border-left:4px solid var(--accent);
+      background:#f5fbf9;
+      padding:.8rem .9rem;
+      border-radius:12px;
+    }
+    footer {
+      padding:0 0 2.5rem;
+      color:var(--muted);
+      font-size:.9rem;
+    }
+    @media (max-width: 900px) {
+      .card, .third, .hero { grid-column:1 / -1; }
+      .hero { grid-template-columns:1fr; }
+    }
+    @media print {
+      body { background:#fff; }
+      .card { box-shadow:none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">CHINTU OS / LOCAL FOUNDER COMMAND CENTER</p>
+    <h1>Operator Console</h1>
+    <p class="summary">One calm local screen for the heartbeat, founder message, planner, approvals, dry-run previews, and the next safe move.</p>
+    <p class="meta">Generated 2026-06-18 13:48 -04:00 | Branch main | Latest 7f3fc03 chore: add Chintu heartbeat loop | Working tree 14 changed file(s)</p>
+    <div class="badge-row">
+      <span class="badge">No external messages sent</span>
+      <span class="badge">No BALA app files touched unless founder approves</span>
+      <span class="badge">DRY RUN ONLY connector previews</span>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="card hero">
+      <div>
+        <div class="status-pill attention">Chintu status: Needs attention</div>
+        <h2>Latest heartbeat summary</h2>
+        <p>Runtime YELLOW. Bridge GREEN. Working tree 12 uncommitted file(s). Unpushed commits 0.</p>
+        <div class="callout">
+          <p><strong>Next best action:</strong> Refresh Chintu&apos;s founder message</p>
+          <p><strong>Exact next human command:</strong> <code>powershell -ExecutionPolicy Bypass -File scripts\chintu-founder-message.ps1</code></p>
+        </div>
+      </div>
+      <div>
+        <h2>Console links</h2>
+        <p><a href="CHINTU_HEARTBEAT.md">Heartbeat report</a></p>
+        <p><a href="CHINTU_ACTION_QUEUE.md">Action queue</a></p>
+        <p><a href="CHINTU_APPROVAL_CENTER.md">Approval center</a></p>
+        <p><a href="CHINTU_APPROVAL_AUDIT.md">Approval audit</a></p>
+        <p><a href="CHINTU_NEXT_OPERATOR_PROMPT.md">Next Codex prompt file</a></p>
+      </div>
+    </section>
+    <section class="card third">
+      <h2>Founder message</h2>
+      <pre>**Date:** 2026-06-18
+Bro, here is the read on Chintu right now.
+- From latest_status.md: &lt;!-- generated by scripts/chintu-windows-reporter.ps1 at 2026-06-18 01:03 --&gt; &lt;!-- Source repo: C:\Users\Chintu\Desktop\test --&gt; &lt;!-- Privacy: no health data, no secrets, no network egress --&gt;  # Chintu Status - 2026-06-18 01:03
+- From latest_next_actions.md: &lt;!-- generated by scripts/chintu-windows-reporter.ps1 at 2026-06-18 01:03 --&gt; &lt;!-- Source repo: C:\Users\Chintu\Desktop\test --&gt; &lt;!-- Privacy: no health data, no secrets, no network egress --&gt;  # Next Actions - 2026-06-18 01:03
+- Branch `main` at `7f3fc03 chore: add Chintu heartbeat loop`.
+- Runtime health: YELLOW. Bridge loop reality: GREEN.
+- Bridge LATEST_FLAT: 7/7 files present.
+- 13 uncommitted file(s) in the working tree.
+Review the working tree with git status, decide commit vs discard, then re-run the master launcher.
+Telegram, Discord, webhooks, cloud sync, phone, voice, paid APIs, network egress, memory-wiki, health-data transfer.
+- Nothing this turn. Chintu is just standing by.
+---
+This message is local-only. Nothing was sent.
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, o...</pre>
+    </section>
+    <section class="card third">
+      <h2>Daily brief</h2>
+      <pre>**Repo:** C:\Users\Chintu\Desktop\test
+| Field | Value |
+|---|---|
+| Branch | `main` |
+| Latest commit | `7f3fc03 chore: add Chintu heartbeat loop` |
+| Uncommitted | 13 file(s) |
+| Unpushed | 0 commit(s) |
+| Runtime health | YELLOW |
+| Bridge loop reality | GREEN |
+| Bridge LATEST_FLAT | 7/7 |
+Review the working tree with git status, decide commit vs discard, then re-run the master launcher.
+See `CHINTU_OUTBOX/latest_founder_message.md` for the natural-language version. Same data, conversational tone.
+- Not sent anywhere.
+- Not a medical assessment.
+- Not a substitute for the master launcher.
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors...</pre>
+    </section>
+    <section class="card third">
+      <h2>Connector dry-run status</h2>
+      <p>3 of 3 preview files present. DRY RUN ONLY.</p>
+      <ul>
+<li>telegram_preview.json</li>
+<li>slack_preview.json</li>
+<li>discord_preview.json</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Top 5 action queue</h2>
+      <ul>
+<li>Refresh Chintu&apos;s founder message [safe-now] - safe now - command: powershell -ExecutionPolicy Bypass -File scripts\chintu-founder-message.ps1</li>
+<li>Render dry-run connector previews [safe-now] - safe now - command: node scripts/chintu-message-dry-run.js</li>
+<li>Re-run bridge loop reality check [safe-now] - safe now - command: powershell -ExecutionPolicy Bypass -File scripts\chintu-bridge-loop-reality-check.ps1</li>
+<li>BALA Tier 1 read-only audit (privacy.html + coach.js copy + phone walk) [safe-now] - safe now - command: open privacy.html and coach.js in your editor; open the PWA on a phone</li>
+<li>(Parked) Flip Telegram from parked -&gt; dry-run [needs-approval] - needs approval - command: (founder edits the registry and example config, then commits)</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Approval cards summary</h2>
+      <p>1 approval card(s) queued. Review CHINTU_APPROVAL_CENTER.md before any founder-gated change.</p>
+      <p><strong>Approval audit status:</strong> <a href="CHINTU_APPROVAL_AUDIT.md">CHINTU_APPROVAL_AUDIT.md</a> - No founder approvals recorded yet.</p>
+      <p class="mini">Total recorded approvals: 0</p>
+    </section>
+    <section class="card">
+      <h2>Parked items</h2>
+      <ul>
+<li>telegram</li>
+<li>discord</li>
+<li>webhooks</li>
+<li>cloud_sync</li>
+<li>phone</li>
+<li>voice</li>
+<li>gmail</li>
+<li>paid_apis</li>
+<li>network_egress</li>
+<li>memory_wiki</li>
+<li>health_data_transfer</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Exact next Codex prompt</h2>
+      <p><a href="CHINTU_NEXT_OPERATOR_PROMPT.md">CHINTU_NEXT_OPERATOR_PROMPT.md</a></p>
+      <p><strong>Suggested command from prompt:</strong> <code>Open CHINTU_NEXT_OPERATOR_PROMPT.md and copy the exact block.</code></p>
+    </section>
+    <section class="card wide">
+      <h2>Safety boundaries</h2>
+      <ul>
+        <li>No real Telegram, Slack, Discord, Gmail, webhook, or external send.</li>
+        <li>No secrets, no API keys, no network egress, no hidden background automation.</li>
+        <li>No health data transfer and no unsafe medical claims.</li>
+        <li>No BALA app file edits unless the founder explicitly approves that separate lane.</li>
+        <li>BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.</li>
+      </ul>
+      <div class="link-list">
+        <a href="CHINTU_OPEN_FIRST.md">Open First</a>
+        <a href="CHINTU_FOUNDER_COMMAND_MAP.md">Founder Command Map</a>
+        <a href="CHINTU_GENERATED_FILES_MAP.md">Generated Files Map</a>
+        <a href="CHINTU_CONTROL_ROOM_INDEX.html">Control Room Index</a>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <p><strong>Local-only disclaimer:</strong> This console is a generated static snapshot. It does not read files live after render, does not call a backend, does not send data, and does not activate connectors.</p>
+    <p>BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.</p>
+  </footer>
+</body>
+</html>

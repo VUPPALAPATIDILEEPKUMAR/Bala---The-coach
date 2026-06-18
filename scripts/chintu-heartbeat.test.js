@@ -36,6 +36,7 @@ const REQUIRED_REFERENCES = [
   'scripts\\chintu-action-planner.ps1',
   'scripts\\chintu-message-dry-run.js',
   'scripts\\chintu-control-room-index.ps1',
+  'scripts\\chintu-operator-console.ps1',
   'CHINTU_HEARTBEAT.md',
   'latest_heartbeat.json',
 ];
@@ -105,6 +106,7 @@ if (fs.existsSync(jsonPath)) {
     if (parsed._dry_run !== true) fail('latest_heartbeat.json missing _dry_run: true');
     if (parsed._label !== 'DRY RUN ONLY') fail('latest_heartbeat.json missing _label: "DRY RUN ONLY"');
     if (!parsed.next_human_command) fail('latest_heartbeat.json missing next_human_command');
+    if (!parsed.operator_console_status) fail('latest_heartbeat.json missing operator_console_status');
     if (!parsed.bala_safety_footer || !parsed.bala_safety_footer.includes('health-awareness companion')) {
       fail('latest_heartbeat.json missing BALA safety footer');
     }

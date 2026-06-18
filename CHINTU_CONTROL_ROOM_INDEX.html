@@ -36,7 +36,7 @@
     <p class="eyebrow">CHINTU OS / LOCAL CONTROL ROOM</p>
     <h1>Control Room Index</h1>
     <p>Every Chintu OS report, dashboard, doc, and script in one place. Open locally. Nothing phones home.</p>
-    <p class="meta">Generated 2026-06-18 12:46 -04:00 | Branch: main | Latest: fa23f6f chore: stabilize Chintu planner queue tests</p>
+    <p class="meta">Generated 2026-06-18 13:48 -04:00 | Branch: main | Latest: 7f3fc03 chore: add Chintu heartbeat loop</p>
     <p class="meta"><strong>Static snapshot.</strong> Re-run <code>scripts/chintu-control-room-index.ps1</code> to refresh.</p>
   </header>
   <main>
@@ -68,6 +68,7 @@
         <li class="present"><span class="file-status">present</span> Runtime Health (GREEN/YELLOW/RED) <code>CHINTU_RUNTIME_HEALTH.md</code></li>
         <li class="present"><span class="file-status">present</span> Heartbeat (local proof Chintu ran) <code>CHINTU_HEARTBEAT.md</code></li>
         <li class="present"><span class="file-status">present</span> Latest heartbeat JSON mirror (DRY RUN ONLY) <code>CHINTU_OUTBOX/latest_heartbeat.json</code></li>
+        <li class="present"><span class="file-status">present</span> Latest operator console JSON mirror (DRY RUN ONLY) <code>CHINTU_OUTBOX/latest_operator_console.json</code></li>
         <li class="present"><span class="file-status">present</span> Restart Recovery summary <code>CHINTU_RESTART_RECOVERY.md</code></li>
         <li class="present"><span class="file-status">present</span> Runtime Playbook <code>CHINTU_RUNTIME_PLAYBOOK.md</code></li>
         <li class="present"><span class="file-status">present</span> Telegram Status Plan (parked) <code>CHINTU_TELEGRAM_STATUS_PLAN.md</code></li>
@@ -126,6 +127,7 @@
       <h2>Dashboards</h2>
       <ul>
         <li class="present"><span class="file-status">present</span> <a href="CHINTU_AGENT_DASHBOARD.html">Agent Control Shell Dashboard</a> <code>CHINTU_AGENT_DASHBOARD.html</code></li>
+        <li class="present"><span class="file-status">present</span> <a href="CHINTU_OPERATOR_CONSOLE.html">Operator Console</a> <code>CHINTU_OPERATOR_CONSOLE.html</code></li>
         <li class="present"><span class="file-status">present</span> <a href="CHINTU_CONTROL_ROOM_INDEX.html">Control Room Index (this page)</a> <code>CHINTU_CONTROL_ROOM_INDEX.html</code></li>
       </ul>
     </section>
@@ -236,9 +238,11 @@
         <li class="present"><span class="file-status">present</span> Continuation Prompts Test <code>scripts/chintu-continuation-prompts.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Runtime Health Generator <code>scripts/chintu-runtime-health.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Heartbeat Generator <code>scripts/chintu-heartbeat.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Operator Console Generator <code>scripts/chintu-operator-console.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Restart Recovery Generator <code>scripts/chintu-restart-recovery.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Runtime Health Test <code>scripts/chintu-runtime-health.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Heartbeat Test <code>scripts/chintu-heartbeat.test.js</code></li>
+        <li class="present"><span class="file-status">present</span> Operator Console Test <code>scripts/chintu-operator-console.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Restart Recovery Test <code>scripts/chintu-restart-recovery.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Telegram Status Plan Test <code>scripts/chintu-telegram-status-plan.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Bridge Loop Reality Check Generator <code>scripts/chintu-bridge-loop-reality-check.ps1</code></li>

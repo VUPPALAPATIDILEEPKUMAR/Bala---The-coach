@@ -8,11 +8,13 @@
       2. action planner
       3. dry-run connector previews
       4. control-room dashboard generator
-      5. heartbeat report + JSON mirror
+      5. operator console generator
+      6. heartbeat report + JSON mirror
 
     Produces:
       - CHINTU_HEARTBEAT.md
       - CHINTU_OUTBOX/latest_heartbeat.json
+      - CHINTU_OPERATOR_CONSOLE.html (if generated)
 
     No network. No sending. No secrets. No BALA app edits. All
     connector-shaped outputs remain DRY RUN ONLY.
@@ -98,12 +100,18 @@ $null = $stepResults.Add((Run-LocalStep -Label "Founder message" -Runner "powers
 $null = $stepResults.Add((Run-LocalStep -Label "Action planner" -Runner "powershell" -Target "scripts\chintu-action-planner.ps1"))
 $null = $stepResults.Add((Run-LocalStep -Label "Dry-run connector previews" -Runner "node" -Target "scripts\chintu-message-dry-run.js"))
 $null = $stepResults.Add((Run-LocalStep -Label "Control room dashboard" -Runner "powershell" -Target "scripts\chintu-control-room-index.ps1"))
+$operatorConsoleScript = Join-Path $RepoRoot "scripts\chintu-operator-console.ps1"
+if (Test-Path -LiteralPath $operatorConsoleScript -PathType Leaf) {
+    $null = $stepResults.Add((Run-LocalStep -Label "Operator console" -Runner "powershell" -Target "scripts\chintu-operator-console.ps1"))
+}
 
 $founderMessageStatus = Get-FileStatus "CHINTU_OUTBOX/latest_founder_message.md"
 $plannerQueueStatus = Get-FileStatus "CHINTU_ACTION_QUEUE.md"
 $approvalCenterStatus = Get-FileStatus "CHINTU_APPROVAL_CENTER.md"
 $dryRunStatus = Get-FileStatus "CHINTU_OUTBOX/dry_run_payloads/telegram_preview.json"
 $dashboardStatus = Get-FileStatus "CHINTU_CONTROL_ROOM_INDEX.html"
+$operatorConsoleStatus = Get-FileStatus "CHINTU_OPERATOR_CONSOLE.html"
+$operatorConsoleJsonStatus = Get-FileStatus "CHINTU_OUTBOX/latest_operator_console.json"
 $trackedPlannerStatus = Get-FileStatus "CHINTU_ACTION_QUEUE_TRACKED.md"
 $heartbeatJsonStatus = "pending write"
 $runtimeStatus = Read-StatusFromReport "CHINTU_RUNTIME_HEALTH.md"
@@ -160,6 +168,8 @@ $null = $reportLines.Add("| Tracked planner snapshot | $trackedPlannerStatus |")
 $null = $reportLines.Add("| Approval center | $approvalCenterStatus |")
 $null = $reportLines.Add("| Dry-run preview | $dryRunStatus |")
 $null = $reportLines.Add("| Dashboard | $dashboardStatus |")
+$null = $reportLines.Add("| Operator console HTML | $operatorConsoleStatus |")
+$null = $reportLines.Add("| Operator console JSON mirror | $operatorConsoleJsonStatus |")
 $null = $reportLines.Add("| Heartbeat JSON mirror | $heartbeatJsonStatus |")
 $null = $reportLines.Add("")
 $null = $reportLines.Add("## Next best action")
@@ -204,6 +214,8 @@ $heartbeatJson = [ordered]@{
     approval_center_status = $approvalCenterStatus
     dry_run_preview_status = $dryRunStatus
     dashboard_status = $dashboardStatus
+    operator_console_status = $operatorConsoleStatus
+    operator_console_json_status = $operatorConsoleJsonStatus
     next_action_title = $nextActionTitle
     next_human_command = $nextHumanCommand
     parked = @("telegram","discord","webhooks","cloud_sync","phone","voice","gmail","paid_apis","network_egress","memory_wiki","health_data_transfer")

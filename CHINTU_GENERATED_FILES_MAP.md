@@ -30,6 +30,7 @@ These artifacts are rebuilt on every run and never need to be staged.
 | `CHINTU_RUNTIME_HEALTH.md` | `scripts/chintu-runtime-health.ps1` | PowerShell |
 | `CHINTU_HEARTBEAT.md` | `scripts/chintu-heartbeat.ps1` | PowerShell |
 | `CHINTU_OUTBOX/latest_heartbeat.json` | `scripts/chintu-heartbeat.ps1` | PowerShell |
+| `CHINTU_OUTBOX/latest_operator_console.json` | `scripts/chintu-operator-console.ps1` | PowerShell |
 | `CHINTU_RESTART_RECOVERY.md` | `scripts/chintu-restart-recovery.ps1` | PowerShell |
 | `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` | `scripts/chintu-bridge-loop-reality-check.ps1` | PowerShell |
 | `CHINTU_DAILY_BRIEF.md` | `scripts/chintu-founder-message.ps1` | PowerShell |
@@ -55,6 +56,7 @@ hashes) are expected after every run.
 |---|---|---|
 | `CHINTU_AGENT_DASHBOARD.html` | `scripts/chintu-agent-dashboard.ps1` | static snapshot card grid |
 | `CHINTU_CONTROL_ROOM_INDEX.html` | `scripts/chintu-control-room-index.ps1` | static index of safe commands |
+| `CHINTU_OPERATOR_CONSOLE.html` | `scripts/chintu-operator-console.ps1` | calm static founder command center |
 | `CHINTU_OS_HEALTH_CHECK.md` | `scripts/chintu-os-health-check.ps1` | repo + scripts + reports status |
 | `CHINTU_ALIVE_BRIEFING.md` | `scripts/chintu-alive-briefing.ps1` | plain-English daily briefing |
 | `CHINTU_ACTION_QUEUE_TRACKED.md` | `scripts/chintu-action-planner.ps1` | stable tracked reference snapshot of planner shape |

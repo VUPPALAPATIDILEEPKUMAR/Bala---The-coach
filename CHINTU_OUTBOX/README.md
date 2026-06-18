@@ -16,6 +16,7 @@ will read from this folder, not from anywhere else.
 | `latest_founder_message.md` | The most recent natural-language founder message. Overwritten each run. | No (gitignored). |
 | `founder_message_history.md` | Append-only log of every founder message Chintu has generated. | No (gitignored). |
 | `latest_heartbeat.json` | Machine-readable mirror of the latest local heartbeat loop. Marked DRY RUN ONLY. | No. |
+| `latest_operator_console.json` | Machine-readable mirror of the latest operator console snapshot. Marked DRY RUN ONLY. | No. |
 | `dry_run_payloads/telegram_preview.json` | What a future Telegram heartbeat *would* look like. Marked DRY RUN ONLY. | No. |
 | `dry_run_payloads/slack_preview.json` | Same idea, Slack-shaped. | No. |
 | `dry_run_payloads/discord_preview.json` | Same idea, Discord-shaped. | No. |

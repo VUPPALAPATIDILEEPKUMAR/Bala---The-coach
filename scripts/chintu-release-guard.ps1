@@ -99,6 +99,7 @@ Run-Extra "Parked systems"         "scripts\chintu-parked-systems.test.js" "node
 Run-Extra "Continuation prompts"   "scripts\chintu-continuation-prompts.test.js" "node"
 Run-Extra "Runtime health"         "scripts\chintu-runtime-health.test.js" "node"
 Run-Extra "Heartbeat"              "scripts\chintu-heartbeat.test.js" "node"
+Run-Extra "Operator console"       "scripts\chintu-operator-console.test.js" "node"
 Run-Extra "Restart recovery"       "scripts\chintu-restart-recovery.test.js" "node"
 Run-Extra "Telegram status plan"   "scripts\chintu-telegram-status-plan.test.js" "node"
 Run-Extra "Bridge loop reality"    "scripts\chintu-bridge-loop-reality-check.test.js" "node"
