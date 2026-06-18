@@ -62,6 +62,14 @@ $sections = @(
         @{ Path = "CHINTU_REPO_AUDIT_REPORT.md"; Label = "Repo Audit Report (polish pass)" },
         @{ Path = "CHINTU_CONTROL_ROOM_TROUBLESHOOTING.md"; Label = "Control Room Troubleshooting" }
     )},
+    @{ Title = "Runtime + Restart Recovery"; Files = @(
+        @{ Path = "CHINTU_RUNTIME_HEALTH.md"; Label = "Runtime Health (GREEN/YELLOW/RED)" },
+        @{ Path = "CHINTU_HEARTBEAT.md"; Label = "Heartbeat (local proof Chintu ran)" },
+        @{ Path = "CHINTU_RESTART_RECOVERY.md"; Label = "Restart Recovery summary" },
+        @{ Path = "CHINTU_RUNTIME_PLAYBOOK.md"; Label = "Runtime Playbook" },
+        @{ Path = "CHINTU_TELEGRAM_STATUS_PLAN.md"; Label = "Telegram Status Plan (parked)" },
+        @{ Path = "CHINTU_ALIVE_NEXT_LEVEL_PLAN.md"; Label = "Alive Next-Level Plan" }
+    )},
     @{ Title = "Dashboards"; Files = @(
         @{ Path = "CHINTU_AGENT_DASHBOARD.html"; Label = "Agent Control Shell Dashboard" },
         @{ Path = "CHINTU_CONTROL_ROOM_INDEX.html"; Label = "Control Room Index (this page)" }
@@ -142,6 +150,13 @@ $sections = @(
         @{ Path = "scripts/chintu-bala-safe-docs.test.js"; Label = "BALA Safe Docs Test" },
         @{ Path = "scripts/chintu-parked-systems.test.js"; Label = "Parked Systems Test" },
         @{ Path = "scripts/chintu-continuation-prompts.test.js"; Label = "Continuation Prompts Test" },
+        @{ Path = "scripts/chintu-runtime-health.ps1"; Label = "Runtime Health Generator" },
+        @{ Path = "scripts/chintu-heartbeat.ps1"; Label = "Heartbeat Generator" },
+        @{ Path = "scripts/chintu-restart-recovery.ps1"; Label = "Restart Recovery Generator" },
+        @{ Path = "scripts/chintu-runtime-health.test.js"; Label = "Runtime Health Test" },
+        @{ Path = "scripts/chintu-heartbeat.test.js"; Label = "Heartbeat Test" },
+        @{ Path = "scripts/chintu-restart-recovery.test.js"; Label = "Restart Recovery Test" },
+        @{ Path = "scripts/chintu-telegram-status-plan.test.js"; Label = "Telegram Status Plan Test" },
         @{ Path = "scripts/chintu-release-guard.ps1"; Label = "Release Guard" },
         @{ Path = "scripts/chintu-bridge-command-center.ps1"; Label = "Bridge Command Center Script" },
         @{ Path = "scripts/chintu-next-action.ps1"; Label = "Next Action" },

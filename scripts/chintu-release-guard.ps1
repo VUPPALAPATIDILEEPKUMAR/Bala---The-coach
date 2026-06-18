@@ -97,6 +97,10 @@ Run-Extra "Generated files map"    "scripts\chintu-generated-files-map.test.js" 
 Run-Extra "BALA safe docs"         "scripts\chintu-bala-safe-docs.test.js" "node"
 Run-Extra "Parked systems"         "scripts\chintu-parked-systems.test.js" "node"
 Run-Extra "Continuation prompts"   "scripts\chintu-continuation-prompts.test.js" "node"
+Run-Extra "Runtime health"         "scripts\chintu-runtime-health.test.js" "node"
+Run-Extra "Heartbeat"              "scripts\chintu-heartbeat.test.js" "node"
+Run-Extra "Restart recovery"       "scripts\chintu-restart-recovery.test.js" "node"
+Run-Extra "Telegram status plan"   "scripts\chintu-telegram-status-plan.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"

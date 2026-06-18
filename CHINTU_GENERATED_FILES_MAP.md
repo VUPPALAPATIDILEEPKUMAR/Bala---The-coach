@@ -27,6 +27,9 @@ These artifacts are rebuilt on every run and never need to be staged.
 | `chintu-windows-reporter-report.md` | `scripts/chintu-windows-reporter.ps1` | PowerShell |
 | `chintu-bridge-daily-export-report.md` | `scripts/chintu-bridge-daily-export.ps1` | PowerShell |
 | `chintu-bridge-command-center-report.md` | `scripts/chintu-bridge-command-center.ps1` | PowerShell |
+| `CHINTU_RUNTIME_HEALTH.md` | `scripts/chintu-runtime-health.ps1` | PowerShell |
+| `CHINTU_HEARTBEAT.md` | `scripts/chintu-heartbeat.ps1` | PowerShell |
+| `CHINTU_RESTART_RECOVERY.md` | `scripts/chintu-restart-recovery.ps1` | PowerShell |
 
 ---
 

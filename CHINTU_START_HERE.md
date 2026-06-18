@@ -40,6 +40,16 @@ read-only and safe.
 Open [CHINTU_WHEN_STUCK.md](CHINTU_WHEN_STUCK.md). It walks the most
 common failure modes and points at the right script or doc for each.
 
+## After laptop restart or Claude drop
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-restart-recovery.ps1
+```
+
+Pair with `scripts\chintu-runtime-health.ps1` for the longer report.
+Full reliability model:
+[CHINTU_RUNTIME_PLAYBOOK.md](CHINTU_RUNTIME_PLAYBOOK.md).
+
 ---
 
 ## The full command surface

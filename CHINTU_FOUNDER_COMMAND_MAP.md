@@ -47,9 +47,21 @@ explicitly approves it.
 | `node scripts\chintu-bala-safe-docs.test.js` | BALA_*.md docs carry footer + parked/planning header. |
 | `node scripts\chintu-parked-systems.test.js` | *_PARKED.md docs stay parked and footered. |
 | `node scripts\chintu-continuation-prompts.test.js` | Review/continuation prompts forbid push + name protected files. |
+| `node scripts\chintu-runtime-health.test.js` | Runtime health script + report safety contract. |
+| `node scripts\chintu-heartbeat.test.js` | Heartbeat script has no network egress; report carries footer. |
+| `node scripts\chintu-restart-recovery.test.js` | Restart-recovery script + report safety contract. |
+| `node scripts\chintu-telegram-status-plan.test.js` | Telegram status plan stays parked and no script targets api.telegram.org. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |
+
+## Runtime / restart recovery
+
+| Command | Output |
+|---|---|
+| `scripts\chintu-runtime-health.ps1` | `CHINTU_RUNTIME_HEALTH.md` (GREEN/YELLOW/RED) |
+| `scripts\chintu-heartbeat.ps1` | `CHINTU_HEARTBEAT.md` (local proof Chintu ran) |
+| `scripts\chintu-restart-recovery.ps1` | `CHINTU_RESTART_RECOVERY.md` + console resume action |
 
 ## Reporting / dashboards
 

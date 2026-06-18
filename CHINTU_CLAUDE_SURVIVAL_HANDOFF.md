@@ -1,8 +1,41 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (overnight builder cycle 4 — autonomous, self-expanding backlog)
+**Stage:** 11 (cycle 5 — Alive Runtime Reliability layer)
 **Date:** 2026-06-18
 **Mode:** local-first, founder-driven, push-pending-human-approval
+
+## 0a. What cycle 5 added (read first)
+
+Runtime reliability layer. Three new local scripts and four planning
+docs. No BALA app edits. No push. Telegram still parked.
+
+New scripts (read-only, no network):
+
+- `scripts/chintu-runtime-health.ps1` → `CHINTU_RUNTIME_HEALTH.md`
+  (GREEN/YELLOW/RED "is Chintu alive?" report)
+- `scripts/chintu-heartbeat.ps1` → `CHINTU_HEARTBEAT.md`
+  (timestamped local proof Chintu ran; never sends)
+- `scripts/chintu-restart-recovery.ps1` → `CHINTU_RESTART_RECOVERY.md`
+  (one-command re-orient after laptop restart / Claude drop)
+
+New planning docs:
+
+- `CHINTU_RUNTIME_PLAYBOOK.md` (reliability model)
+- `CHINTU_TELEGRAM_STATUS_PLAN.md` (parked, founder-gated)
+- `CHINTU_ALIVE_NEXT_LEVEL_PLAN.md` (ladder A→H)
+
+Four new tests, wired into release guard + command map:
+
+- `chintu-runtime-health.test.js`
+- `chintu-heartbeat.test.js`
+- `chintu-restart-recovery.test.js`
+- `chintu-telegram-status-plan.test.js`
+
+Founder one-liner after a restart:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-restart-recovery.ps1
+```
 
 ## 0. What cycle 4 added (read first)
 

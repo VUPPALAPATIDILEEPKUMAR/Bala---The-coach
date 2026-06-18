@@ -131,6 +131,21 @@ Then re-run the launcher. If a safety test stays red, stop and ask.
 
 ---
 
+## 11. After laptop restart or Claude drop
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-restart-recovery.ps1
+```
+
+Prints one exact resume action and writes
+[CHINTU_RESTART_RECOVERY.md](CHINTU_RESTART_RECOVERY.md). For the
+longer "is Chintu alive?" report run
+`scripts\chintu-runtime-health.ps1` →
+[CHINTU_RUNTIME_HEALTH.md](CHINTU_RUNTIME_HEALTH.md). Full reliability
+model: [CHINTU_RUNTIME_PLAYBOOK.md](CHINTU_RUNTIME_PLAYBOOK.md).
+
+---
+
 ## BALA safety footer
 
 BALA is a health-awareness companion. It does not diagnose, treat,
