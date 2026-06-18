@@ -50,6 +50,7 @@ explicitly approves it.
 | `scripts\chintu-windows-reporter.ps1` | `chintu-windows-reporter-report.md` |
 | `scripts\chintu-bridge-daily-export.ps1` | `chintu-bridge-daily-export-report.md` |
 | `scripts\chintu-openclaw-readiness.ps1` | `chintu-openclaw-readiness-report.md` |
+| `scripts\chintu-claude-overnight-package.ps1` | overnight builder package for Claude/Codex handoff |
 
 ## Master launcher (one command, full sweep)
 

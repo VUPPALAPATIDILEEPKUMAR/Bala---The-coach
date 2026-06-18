@@ -99,6 +99,15 @@ Add-Step "snapshot consistency test" {
     return $LASTEXITCODE
 } $true
 
+Add-Step "command map integrity test" {
+    if (Test-Path -LiteralPath "scripts/chintu-command-map.test.js") {
+        & node "scripts/chintu-command-map.test.js" | Out-Host
+        return $LASTEXITCODE
+    }
+    Write-Host "  (command map test not present, skipping)"
+    return 0
+} $true
+
 Add-Step "agent control shell test" {
     if (Test-Path -LiteralPath "scripts/chintu-agent-control-shell.test.js") {
         & node "scripts/chintu-agent-control-shell.test.js" | Out-Host
