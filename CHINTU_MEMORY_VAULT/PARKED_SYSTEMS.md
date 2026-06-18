@@ -8,6 +8,7 @@ install, or call them without explicit founder approval.
 | Telegram bot | parked | No implementation. Future notification channel for non-health status only. |
 | Discord bot | parked | No implementation. Future notification channel for non-health status only. |
 | Webhooks | parked | External send path removed from BALA runtime. Validator FAILs on outbound app-data patterns. |
+| Cloud sync automation | parked | Shared bridge can live in a cloud-synced folder only by explicit founder choice. Chintu never auto-configures or assumes cloud sync. |
 | External health-data APIs | parked | Privacy rule: no health data leaves the device. |
 | DuckDuckGo plugin | disabled | Available in OpenClaw but disabled. If later enabled, public non-sensitive queries only. Never a health query. |
 | memory-wiki plugin | not enabled | Available in OpenClaw but requires explicit founder approval. Vault stays plain Markdown until then. |
@@ -37,3 +38,5 @@ If a parked system is to be reactivated, the path is:
 7. Founder pushes.
 
 Skip any step => the system stays parked.
+
+Stage 8 note: Telegram, Discord, webhooks, memory-wiki, and cloud sync automation all remain parked. Auto Bridge Transfer V1 is live on Windows, but any cloud-backed shared folder is still founder-owned and explicit only.
