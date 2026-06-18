@@ -66,6 +66,30 @@ if ($swLine -match "(bala-shell-v\d+)") { $swVer = $Matches[1] }
 
 $isFail = ($verdict -match "FAIL") -or ($validatorExit -ne 0)
 
+# --- 3b. Extra integrity tests (read-only, local) ----------------------------
+$extraChecks = New-Object System.Collections.Generic.List[string]
+function Run-Extra([string]$label, [string]$relPath, [string]$cmd) {
+    $full = Join-Path $RepoRoot $relPath
+    if (-not (Test-Path -LiteralPath $full)) {
+        $extraChecks.Add("$label : SKIP (missing $relPath)") | Out-Null
+        return
+    }
+    if ($cmd -eq "node") {
+        & node $full | Out-Null
+    } else {
+        & powershell -ExecutionPolicy Bypass -File $full | Out-Null
+    }
+    if ($LASTEXITCODE -eq 0) {
+        $extraChecks.Add("$label : PASS") | Out-Null
+    } else {
+        $extraChecks.Add("$label : FAIL (exit $LASTEXITCODE)") | Out-Null
+        $script:isFail = $true
+    }
+}
+Run-Extra "Command map integrity" "scripts\chintu-command-map.test.js" "node"
+Run-Extra "Memory vault integrity" "scripts\chintu-memory-vault.test.js" "node"
+Run-Extra "Agent control shell"    "scripts\chintu-agent-control-shell.test.js" "node"
+
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"
 $branch = (& git rev-parse --abbrev-ref HEAD 2>$null)
@@ -121,6 +145,10 @@ $lines.Add("")
 $lines.Add('```')
 foreach ($l in $blockLines) { $lines.Add($l) }
 $lines.Add('```')
+$lines.Add("")
+$lines.Add("## Integrity tests")
+$lines.Add("")
+foreach ($e in $extraChecks) { $lines.Add("- $e") }
 $lines.Add("")
 $lines.Add("## Known WARN note")
 $lines.Add("")
