@@ -192,6 +192,10 @@ parked until explicitly activated.
 
 Memory-Wiki Seed Vault V1 added as markdown seed files in `CHINTU_MEMORY_VAULT/`. Contains: product state, medical safety rules, agent architecture, release history, next sprint queue, parked systems, founder preferences, and open questions. The memory-wiki plugin remains disabled until explicit approval.
 
+### Bridge Sync V1 Design (2026-06-17)
+
+`CHINTU_BRIDGE_CONTRACT.md` defines the shared file contract between Windows (build machine) and iMac (control room). Design-only: iMac filesystem was not accessible from this session. Six bridge files (`latest_status.md`, `latest_bala_validation.md`, `latest_git_status.md`, `latest_codex_handoff.md`, `latest_openclaw_report.md`, `latest_next_actions.md`) flow from Windows to iMac via a shared folder. Full design in `CHINTU_BRIDGE_SYNC_V1_DESIGN_2026-06-17.md` (Downloads). Implementation requires an iMac session.
+
 ### OpenClaw Integration Direction (2026-06-17)
 OpenClaw 2026.6.6 is installed locally (gateway loopback, Tailscale off; memory-core enabled). Staged plan
 (local-first; see `CHINTU_OPENCLAW_INTEGRATION_MAP_V1_2026-06-17.md`):
