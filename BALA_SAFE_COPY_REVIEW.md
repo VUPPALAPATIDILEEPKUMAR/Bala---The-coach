@@ -26,6 +26,8 @@ Use this whenever you spot a strong-claim word:
 | cardiac arrest, heart attack | (never appears in app copy at all) |
 | guaranteed / will improve | small steps can help / many people find |
 | AI doctor / AI clinician | companion / coach / guide |
+| alcohol caused X | alcohol may relate to body signals you noticed |
+| stress proves X | stress may relate to the pattern you noticed |
 
 ---
 
@@ -60,6 +62,7 @@ When in doubt, prefer:
 - reflect
 - support
 - recover
+- notice patterns
 
 Avoid:
 
@@ -69,6 +72,15 @@ Avoid:
 - evaluate (sounds judgemental)
 - assess (sounds clinical)
 - detect (sounds diagnostic)
+
+Behavior Journal phrases to prefer:
+
+- daily factors
+- may relate to
+- daily awareness
+- reflect
+- body signals
+- not medical advice
 
 ---
 
@@ -103,6 +115,7 @@ Open these in the app and audit each one against §1:
 - Each Health Signal Card
 - Ask BALA Coach welcome
 - Doctor-Ready Summary header (if shown)
+- Daily Factors / Behavior Journal copy
 - Import flow intro
 - Settings / privacy page
 - Footer disclaimer (must be visible, must include the safety footer)

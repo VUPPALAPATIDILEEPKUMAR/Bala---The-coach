@@ -27,32 +27,36 @@ a focused 30-minute session.
 4. **Hero hook line.** Try `"Your daily health guide from your own
    body signals."` as the home-screen subtitle. Soft, ownership-
    centered, no clinical framing.
-5. **BALA Score explanation card.** One line max. Suggested:
+5. **Behavior Journal review.** Re-read the Stage 17 Daily Factors
+   journal and keep every line in reflection language:
+   `"may relate to"`, `"notice patterns"`, `"daily awareness"`,
+   `"reflect"`, `"body signals"`, and `"not medical advice"`.
+6. **BALA Score explanation card.** One line max. Suggested:
    `"A simple read of today, from the signals you logged."` No promise
    of accuracy, no risk score.
-6. **Health Signal Cards label tone.** Replace any "alert" /
+7. **Health Signal Cards label tone.** Replace any "alert" /
    "warning" wording with "notice" / "worth a look".
-7. **Ask BALA Coach grounding.** Add a single-line prefix to the
+8. **Ask BALA Coach grounding.** Add a single-line prefix to the
    coach response area: `"This is a companion, not a clinician."`
-8. **Doctor-Ready Summary header.** If a summary view exists, lead
+9. **Doctor-Ready Summary header.** If a summary view exists, lead
    with `"Your own notes in your own words. BALA makes no claims."`
-9. **Demo Mode banner.** Make demo state visually unambiguous (a
+10. **Demo Mode banner.** Make demo state visually unambiguous (a
    strip across the top reading `"Demo data. Not your numbers."`).
-10. **Import flow clarity.** One sentence on what import does and does
+11. **Import flow clarity.** One sentence on what import does and does
     not do, before the file picker.
 
 ---
 
 ## Tier 3 — UX shape (still founder-only)
 
-11. **First-run trust card.** Per
+12. **First-run trust card.** Per
     [BALA_PRIVACY_TRUST_POLISH_PLAN.md](BALA_PRIVACY_TRUST_POLISH_PLAN.md)
     slice P1. Three lines, single dismiss.
-12. **PWA install guidance.** A short, calm, OS-aware tip ("Add to
+13. **PWA install guidance.** A short, calm, OS-aware tip ("Add to
     Home Screen") that appears once and never nags.
-13. **Footer disclaimer position.** Confirm the safety footer is
+14. **Footer disclaimer position.** Confirm the safety footer is
     visible from any screen, not buried two screens deep.
-14. **Tester feedback loop.** Per
+15. **Tester feedback loop.** Per
     [BALA_TESTER_FEEDBACK_PLAN.md](BALA_TESTER_FEEDBACK_PLAN.md).
     Markdown notes in the vault, no telemetry.
 
@@ -60,15 +64,18 @@ a focused 30-minute session.
 
 ## Tier 4 — feature-shape ideas (parked unless approved)
 
-15. **Voice coach slice V1.** Per
+16. **Voice coach slice V1.** Per
     [BALA_VOICE_COACH_SAFE_SPEC.md](BALA_VOICE_COACH_SAFE_SPEC.md).
     Web Speech API only. Local. Single play button.
-16. **Doctor-summary view.** Per
+17. **Doctor-summary view.** Per
     [BALA_DOCTOR_SUMMARY_POLISH_SPEC.md](BALA_DOCTOR_SUMMARY_POLISH_SPEC.md).
     User-driven, transcript-style, no inference.
-17. **Local-first AI coach.** Per
+18. **Local-first AI coach.** Per
     [BALA_LOCAL_FIRST_AI_COACH_SPEC.md](BALA_LOCAL_FIRST_AI_COACH_SPEC.md).
     Research only. Not on the roadmap.
+19. **Behavior Journal pattern view.** Per
+    [BALA_BEHAVIOR_JOURNAL_PLAN.md](BALA_BEHAVIOR_JOURNAL_PLAN.md).
+    Keep it local, reflective, and non-clinical.
 
 ---
 

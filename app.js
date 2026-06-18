@@ -81,6 +81,8 @@ const voiceStatus = document.querySelector("#voice-status");
 const coachLanguage = document.querySelector("#coach-language");
 const symptomDialog = document.querySelector("#symptom-dialog");
 const symptomForm = document.querySelector("#symptom-form");
+const behaviorDialog = document.querySelector("#behavior-dialog");
+const behaviorForm = document.querySelector("#behavior-form");
 const coachModeLabel = document.querySelector("#coach-mode-label");
 const shortcutDialog = document.querySelector("#shortcut-dialog");
 const shortcutTemplate = document.querySelector("#shortcut-template");
@@ -111,6 +113,7 @@ const balaImportFile = document.querySelector("#bala-import-file");
 const dataPortabilityStatus = document.querySelector("#data-portability-status");
 const STORAGE_KEY = "bala-local-health-v1";
 const SYMPTOM_KEY = "bala-symptoms-v1";
+const BEHAVIOR_KEY = "bala-behavior-journal-v1";
 const PROFILE_KEY = "bala-profile-v1";
 const EXPORT_FORMAT = "bala-data-export";
 const EXPORT_VERSION = 1;
@@ -184,6 +187,18 @@ const dataSourceLabels = {
   "manual-json": "Manual JSON Import",
   manual: "Manual Entry",
   demo: "Demo Mode",
+};
+
+const behaviorFactorLabels = {
+  alcohol: "Alcohol",
+  caffeine: "Caffeine",
+  lateMeal: "Late meal",
+  stress: "Stress",
+  soreness: "Soreness",
+  travel: "Travel",
+  lowMovement: "Low movement / long sitting",
+  exercise: "Exercise",
+  hydration: "Hydration",
 };
 
 const healthSourceGuides = {
@@ -380,6 +395,58 @@ function getSymptomHistory() {
   }
 }
 
+function getBehaviorHistory() {
+  try {
+    const entries = JSON.parse(localStorage.getItem(BEHAVIOR_KEY) || "[]");
+    return Array.isArray(entries) ? entries : [];
+  } catch {
+    return [];
+  }
+}
+
+function summarizeBehaviorFactors(entry) {
+  const labels = (entry?.factors || []).map((factor) => behaviorFactorLabels[factor]).filter(Boolean);
+  if (!labels.length) return "No daily factors saved yet.";
+  return labels.join(", ");
+}
+
+function getRecentBehaviorEntry() {
+  try {
+    const latest = getBehaviorHistory().at(-1);
+    if (!latest) return null;
+    const age = Date.now() - new Date(latest.date).getTime();
+    return age <= 36 * 60 * 60 * 1000 ? latest : null;
+  } catch {
+    return null;
+  }
+}
+
+function renderBehaviorJournal() {
+  const summaryNode = document.querySelector("#behavior-journal-summary");
+  const listNode = document.querySelector("#behavior-factor-list");
+  if (!summaryNode || !listNode) return;
+
+  const latest = getRecentBehaviorEntry();
+  listNode.replaceChildren();
+  if (!latest || !(latest.factors || []).length) {
+    summaryNode.textContent = "Log a few daily factors so you can reflect on what may relate to your body signals. Not medical advice.";
+    const empty = document.createElement("span");
+    empty.className = "behavior-factor-pill empty";
+    empty.textContent = "No daily factors saved yet";
+    listNode.append(empty);
+    return;
+  }
+
+  const dateLabel = new Date(latest.date).toLocaleDateString([], { month: "short", day: "numeric" });
+  summaryNode.textContent = `Saved for ${dateLabel}. These daily factors may relate to your body signals and can help you notice patterns. Not medical advice.`;
+  latest.factors.forEach((factor) => {
+    const pill = document.createElement("span");
+    pill.className = "behavior-factor-pill";
+    pill.textContent = behaviorFactorLabels[factor] || factor;
+    listNode.append(pill);
+  });
+}
+
 function inferDataSource(metrics = getLocalMetrics()) {
   const saved = localStorage.getItem(DATA_SOURCE_KEY);
   if (saved && dataSourceLabels[saved]) return saved;
@@ -495,8 +562,9 @@ function getRecentSymptoms() {
   }
 }
 
-function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory()) {
+function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory(), behaviors = getBehaviorHistory()) {
   if (!metrics) return "";
+  const latestBehavior = behaviors.at(-1);
   const baseline = baselineAnalysis(metrics);
   return [
     "BALA WELLNESS SUMMARY",
@@ -512,6 +580,11 @@ function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory()) {
     ...(symptoms.length
       ? symptoms.slice(-10).map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${(entry.symptoms || []).join(", ") || "No listed symptom"}${entry.note ? ` - ${entry.note}` : ""}`)
       : ["- None recorded"]),
+    "",
+    "RECENT DAILY FACTORS",
+    latestBehavior && (latestBehavior.factors || []).length
+      ? `- ${new Date(latestBehavior.date).toLocaleDateString()}: ${summarizeBehaviorFactors(latestBehavior)}${latestBehavior.note ? ` - ${latestBehavior.note}` : ""}`
+      : "- None recorded",
     "",
     "This report is health-awareness context from supported body signals. Discuss persistent concerns with a qualified clinician.",
   ].join("\n");
@@ -554,6 +627,7 @@ function exportBalaData() {
       profile: getProfile(),
       health: getLocalMetrics(),
       symptomCheckIns: getSymptomHistory(),
+      behaviorJournal: getBehaviorHistory(),
       settings: {
         language: localStorage.getItem("bala-language") || "en-IN",
         tone: localStorage.getItem("bala-tone") || "warm-family",
@@ -570,7 +644,7 @@ function supportedImportData(payload) {
   if (!payload || payload.format !== EXPORT_FORMAT || payload.version !== EXPORT_VERSION || !payload.data || typeof payload.data !== "object") {
     throw new Error("This file does not look like a supported BALA data export.");
   }
-  const { profile, health, symptomCheckIns, settings } = payload.data;
+  const { profile, health, symptomCheckIns, behaviorJournal, settings } = payload.data;
   if (profile !== null && profile !== undefined && (typeof profile !== "object" || Array.isArray(profile) || typeof profile.name !== "string")) {
     throw new Error("The BALA profile in this file is invalid.");
   }
@@ -579,6 +653,9 @@ function supportedImportData(payload) {
   }
   if (symptomCheckIns !== undefined && !Array.isArray(symptomCheckIns)) {
     throw new Error("The symptom check-in history in this file is invalid.");
+  }
+  if (behaviorJournal !== undefined && !Array.isArray(behaviorJournal)) {
+    throw new Error("The behavior journal in this file is invalid.");
   }
   const numericMetric = (value, min, max) => {
     const number = Number(value);
@@ -615,12 +692,22 @@ function supportedImportData(payload) {
       note: typeof entry?.note === "string" ? entry.note.slice(0, 240) : "",
     }))
     : [];
+  const cleanBehaviors = Array.isArray(behaviorJournal)
+    ? behaviorJournal.slice(-60).map((entry) => ({
+      date: typeof entry?.date === "string" ? entry.date : new Date().toISOString(),
+      factors: Array.isArray(entry?.factors)
+        ? entry.factors.filter((item) => typeof item === "string" && behaviorFactorLabels[item]).slice(0, 9)
+        : [],
+      note: typeof entry?.note === "string" ? entry.note.slice(0, 240) : "",
+    }))
+    : [];
   const allowedLanguages = new Set(["en-US", "en-IN", "hi-IN", "te-IN", "es-ES", "ta-IN", "kn-IN", "ml-IN", "mr-IN", "bn-IN"]);
   const allowedTones = new Set(["warm-family", "friendly-coach", "calm-clinical"]);
   return {
     profile: profile ? { name: String(profile.name).trim().slice(0, 40), updatedAt: profile.updatedAt || new Date().toISOString() } : null,
     health: health ? cleanMetricRecord(health, true) : null,
     symptomCheckIns: cleanSymptoms,
+    behaviorJournal: cleanBehaviors,
     settings: {
       language: allowedLanguages.has(settings?.language) ? settings.language : "en-US",
       tone: allowedTones.has(settings?.tone) ? settings.tone : "warm-family",
@@ -635,6 +722,7 @@ function restoreBalaData(data) {
   if (data.health) localStorage.setItem(STORAGE_KEY, JSON.stringify(data.health));
   else localStorage.removeItem(STORAGE_KEY);
   localStorage.setItem(SYMPTOM_KEY, JSON.stringify(data.symptomCheckIns));
+  localStorage.setItem(BEHAVIOR_KEY, JSON.stringify(data.behaviorJournal || []));
   localStorage.setItem("bala-language", data.settings.language);
   localStorage.setItem("bala-tone", data.settings.tone);
   if (data.settings.currentDataSource && dataSourceLabels[data.settings.currentDataSource]) {
@@ -909,6 +997,7 @@ function weeklyPatternsAnalysis(metrics) {
 
 function timelineSummary(metrics) {
   const baseline = baselineAnalysis(metrics);
+  const recentBehavior = getRecentBehaviorEntry();
   const lines = [
     "BALA DOCTOR-READY SUMMARY",
     `Generated: ${new Date().toLocaleString()}`,
@@ -916,7 +1005,7 @@ function timelineSummary(metrics) {
     "This is a personal health-awareness summary of body signals you entered.",
     "It is not medical advice and does not replace a healthcare professional.",
     ...(metrics?.source === "BALA demo"
-      ? ["", "NOTE: Sample demo data — not your own readings."]
+      ? ["", "NOTE: Sample demo data - not your own readings."]
       : []),
     "",
     "BASELINE (latest 3 check-ins)",
@@ -941,7 +1030,12 @@ function timelineSummary(metrics) {
       })
       : ["- No valid check-ins yet."]),
     "",
-    "TO SHARE WITH YOUR HEALTHCARE PROFESSIONAL (your notes — not medical advice)",
+    "RECENT DAILY FACTORS",
+    recentBehavior && (recentBehavior.factors || []).length
+      ? `- ${new Date(recentBehavior.date).toLocaleDateString()}: ${summarizeBehaviorFactors(recentBehavior)}${recentBehavior.note ? `; note: ${recentBehavior.note}` : ""}`
+      : "- None recorded.",
+    "",
+    "TO SHARE WITH YOUR HEALTHCARE PROFESSIONAL (your notes - not medical advice)",
     "- How you have been feeling and anything you noticed",
     "- Any changes in sleep, activity, or how you have been resting",
     "- Anything you would like to ask",
@@ -1267,6 +1361,8 @@ function downloadTimelineSummary() {
 
 function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
   const symptoms = symptomContext?.symptoms || [];
+  const behaviorEntry = getRecentBehaviorEntry();
+  const behaviorCopy = behaviorReflectionCopy(behaviorEntry);
   const note = String(metrics?.note || "").trim();
   const history = Array.isArray(metrics?.history) ? metrics.history.slice(0, -1).slice(-14) : [];
   const rhrBase = averageValues(history.map((day) => day.rhr));
@@ -1282,7 +1378,7 @@ function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
   if (symptoms.length) {
     return {
       title: "Choose a gentler day and check in again",
-      copy: `You recorded ${symptoms.join(", ")}. Keep activity comfortable, support rest and hydration, and notice whether the symptom improves or persists.`,
+      copy: `You recorded ${symptoms.join(", ")}. Keep activity comfortable, support rest and hydration, and notice whether the symptom improves or persists.${behaviorCopy}`,
     };
   }
   if (note && /chest pain|shortness of breath|faint|severe dizziness|blue lips|confusion/i.test(note)) {
@@ -1300,30 +1396,30 @@ function buildRecommendation(metrics, symptomContext = getRecentSymptoms()) {
   if (metrics.sleep && metrics.sleep < 6.5) {
     return {
       title: "Choose recovery over intensity today",
-      copy: "Your recorded sleep was short. Favor an easy walk, regular meals, hydration, and an earlier wind-down.",
+      copy: `Your recorded sleep was short. Favor an easy walk, regular meals, hydration, and an earlier wind-down.${behaviorCopy}`,
     };
   }
   if (higherRhr) {
     return {
       title: "Give recovery a little more room today",
-      copy: "Your resting heart rate is higher than your recent pattern or usual wellness range. Favor rest, hydration, a stress check, and comfortable activity while you monitor the trend.",
+      copy: `Your resting heart rate is higher than your recent pattern or usual wellness range. Favor rest, hydration, a stress check, and comfortable activity while you monitor the trend.${behaviorCopy}`,
     };
   }
   if (lowerHrv) {
     return {
       title: "Choose a lighter recovery-focused day",
-      copy: "Your HRV is lower than your recent pattern or still building a baseline. Focus on sleep, gentle movement, hydration, and a few minutes of slow breathing.",
+      copy: `Your HRV is lower than your recent pattern or still building a baseline. Focus on sleep, gentle movement, hydration, and a few minutes of slow breathing.${behaviorCopy}`,
     };
   }
   if ((metrics.steps || 0) < 6000 || (metrics.exercise || 0) < 20) {
     return {
       title: "Take a 20-minute comfortable walk",
-      copy: "This is the clearest low-risk action from today’s activity. Stop if you feel unwell and choose an effort where conversation stays easy.",
+      copy: `This is the clearest low-risk action from today’s activity. Stop if you feel unwell and choose an effort where conversation stays easy.${behaviorCopy}`,
     };
   }
   return {
     title: "Protect the routine that is working",
-    copy: "Your sleep and movement entries support a normal day. Keep activity comfortable and preserve a consistent bedtime.",
+      copy: `Your sleep and movement entries support a normal day. Keep activity comfortable and preserve a consistent bedtime.${behaviorCopy}`,
   };
 }
 
@@ -1337,6 +1433,11 @@ function metricEvidence(metrics) {
     metrics?.exercise !== undefined && `${Math.round(metrics.exercise)} exercise minutes`,
     metrics?.note && `your note: "${String(metrics.note).slice(0, 120)}"`,
   ].filter(Boolean);
+}
+
+function behaviorReflectionCopy(entry = getRecentBehaviorEntry()) {
+  if (!entry || !(entry.factors || []).length) return "";
+  return ` Recent daily factors such as ${summarizeBehaviorFactors(entry).toLowerCase()} may relate to these body signals, so notice patterns and reflect on the day as a whole.`;
 }
 
 function coachResponseCore(question, metrics) {
@@ -1375,6 +1476,8 @@ function coachResponseCore(question, metrics) {
   const hrvBase = averageValues(history.map((day) => day.hrv));
   const baseline = baselineAnalysis(metrics);
   const weekly = weeklyPatternsAnalysis(metrics);
+  const recentBehavior = getRecentBehaviorEntry();
+  const behaviorText = recentBehavior?.factors?.length ? summarizeBehaviorFactors(recentBehavior) : "";
 
   if (/how was my week|what patterns|weekly pattern|this week|am i improving|improv|focus on this week|focus this week/.test(normalized)) {
     if (!weekly.ready) return "Add a few more check-ins to see weekly patterns. With at least 3 valid check-ins, I can summarize recent averages, pattern directions, and one simple focus.";
@@ -1409,7 +1512,13 @@ function coachResponseCore(question, metrics) {
     if (!recent.length) return "There are no valid check-ins to summarize yet. Add dated signals and symptom notes, then BALA can organize them for a healthcare conversation.";
     const dates = recent.map((entry) => entry.date).join(", ");
     const change = baseline.ready ? baseline.copy : "Your baseline is still building.";
-    return `You can share that BALA has ${recent.length} recent check-in${recent.length === 1 ? "" : "s"} dated ${dates}. Mention the recorded sleep, resting heart rate, HRV, steps, SpO2 estimates, and any symptom notes. ${change} Use the Doctor-Ready Timeline for the exact values, and describe any persistent or concerning symptoms directly to the healthcare professional.`;
+    const behaviorSentence = behaviorText ? ` You can also mention daily factors such as ${behaviorText.toLowerCase()} if they may relate to what you noticed.` : "";
+    return `You can share that BALA has ${recent.length} recent check-in${recent.length === 1 ? "" : "s"} dated ${dates}. Mention the recorded sleep, resting heart rate, HRV, steps, SpO2 estimates, and any symptom notes. ${change}${behaviorSentence} Use the Doctor-Ready Timeline for the exact values, and describe any persistent or concerning symptoms directly to the healthcare professional.`;
+  }
+
+  if (/alcohol|caffeine|late meal|stress|soreness|travel|sitting|movement|hydration/.test(normalized)) {
+    if (!behaviorText) return "I do not have a recent Daily Factors entry yet. Save one in the Behavior Journal so I can help you reflect on what may relate to your body signals.";
+    return `Your recent Daily Factors entry includes ${behaviorText.toLowerCase()}. Those factors may relate to sleep, recovery, heart, or activity patterns, so use them for daily awareness and reflection rather than a medical conclusion.`;
   }
 
   if (/symptom|feel|feeling|unwell|pain|dizz|faint|breath|palpitation|fatigue|fever/.test(normalized)) {
@@ -1504,12 +1613,14 @@ function coachResponse(question, metrics) {
   const breakdown = scoreBreakdown(metrics, symptomContext);
   const source = dataSourceLabels[inferDataSource(metrics)] || "Local health data";
   const evidence = metricEvidence(metrics).slice(0, 5);
+  const recentBehavior = getRecentBehaviorEntry();
   const contextParts = [
     `BALA Score ${breakdown.total}`,
     `data source ${source}`,
     evidence.length ? `latest signals: ${evidence.join(", ")}` : "",
     baseline.ready ? `baseline: ${baseline.copy}` : "baseline: still building",
     weekly.ready ? `weekly pattern: ${weekly.insights.slice(0, 2).join(" ")}` : "weekly pattern: add a few more check-ins",
+    recentBehavior?.factors?.length ? `daily factors: ${summarizeBehaviorFactors(recentBehavior).toLowerCase()} may relate to this pattern` : "",
     metrics.note ? `your note: "${String(metrics.note).slice(0, 120)}"` : "",
   ].filter(Boolean);
   const gentleNext = weekly.ready
@@ -1532,6 +1643,7 @@ function updateDashboard(metrics) {
   if (!metrics) {
     renderBaselineAndTimeline(null);
     renderWeeklyPatterns(null);
+    renderBehaviorJournal();
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -1608,6 +1720,7 @@ function updateDashboard(metrics) {
   document.querySelector("#chart-copy").textContent = "Local wellness estimate";
   renderBaselineAndTimeline(metrics);
   renderWeeklyPatterns(metrics);
+  renderBehaviorJournal();
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);
@@ -2205,7 +2318,7 @@ balaImportFile.addEventListener("change", async () => {
     if (file.size > 5 * 1024 * 1024) throw new Error("This backup is too large. Choose a BALA JSON export smaller than 5 MB.");
     const payload = JSON.parse(await file.text());
     const data = supportedImportData(payload);
-    const confirmed = window.confirm("Importing this BALA backup will replace the supported profile, health signals, check-ins, and settings currently stored on this device. Continue?");
+    const confirmed = window.confirm("Importing this BALA backup will replace the supported profile, health signals, check-ins, Daily Factors, and settings currently stored on this device. Continue?");
     if (!confirmed) {
       dataPortabilityStatus.textContent = "Import canceled. Your current BALA data was not changed.";
       return;
@@ -2224,14 +2337,17 @@ balaImportFile.addEventListener("change", async () => {
 document.querySelector("#clear-button").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(SYMPTOM_KEY);
+  localStorage.removeItem(BEHAVIOR_KEY);
   window.location.reload();
 });
 document.querySelector("#symptom-button").addEventListener("click", () => symptomDialog.showModal());
 document.querySelector("#symptom-card-button").addEventListener("click", () => symptomDialog.showModal());
+document.querySelector("#behavior-journal-button").addEventListener("click", () => behaviorDialog.showModal());
 document.querySelector("#coach-card-button").addEventListener("click", () => openCoach());
 document.querySelector("#report-card-button").addEventListener("click", () => document.querySelector("#report-button").click());
 document.querySelector("#voice-preview-button").addEventListener("click", () => openCoach());
 document.querySelector("#symptom-close").addEventListener("click", () => symptomDialog.close());
+document.querySelector("#behavior-close").addEventListener("click", () => behaviorDialog.close());
 symptomForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(symptomForm);
@@ -2251,9 +2367,26 @@ symptomForm.addEventListener("submit", (event) => {
     : `<div class="source-list"><p>Your symptom check-in was saved only on this device and will be included in your report.</p></div>`;
   dialog.showModal();
 });
+behaviorForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const formData = new FormData(behaviorForm);
+  const factors = formData.getAll("factor").filter((item) => typeof item === "string" && behaviorFactorLabels[item]);
+  const note = String(formData.get("note") || "").trim();
+  const entry = { date: new Date().toISOString(), factors, note };
+  const history = JSON.parse(localStorage.getItem(BEHAVIOR_KEY) || "[]");
+  localStorage.setItem(BEHAVIOR_KEY, JSON.stringify([...history, entry].slice(-60)));
+  updateDashboard(getLocalMetrics() || DEMO_METRICS);
+  behaviorDialog.close();
+  behaviorForm.reset();
+  dialogLabel.textContent = "Daily factors saved";
+  dialogTitle.textContent = "BALA will use this for reflection";
+  dialogContentNode.innerHTML = `<div class="source-list"><p>Your Daily Factors entry stays on this device and may help you notice patterns that relate to your body signals. Not medical advice.</p></div>`;
+  dialog.showModal();
+});
 document.querySelector("#report-button").addEventListener("click", () => {
   const metrics = getLocalMetrics();
   const symptoms = getSymptomHistory();
+  const behaviors = getBehaviorHistory();
   if (!metrics) {
     dialogLabel.textContent = "Report unavailable";
     dialogTitle.textContent = "Add health data first";
@@ -2261,23 +2394,8 @@ document.querySelector("#report-button").addEventListener("click", () => {
     dialog.showModal();
     return;
   }
-  const baseline = baselineAnalysis(metrics);
-  const lines = [
-    "BALA WELLNESS SUMMARY",
-    `Generated: ${new Date().toLocaleString()}`,
-    `Source: ${metrics.source || "Local check-in"}`,
-    `Baseline: ${baseline.days} days · ${baseline.level}`,
-    baseline.copy,
-    "",
-    "LATEST SUPPORTED METRICS",
-    ...metricEvidence(metrics).map((item) => `- ${item}`),
-    "",
-    "RECENT SYMPTOM CHECK-INS",
-    ...(symptoms.length ? symptoms.slice(-10).map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${entry.symptoms.join(", ") || "No listed symptom"}${entry.note ? ` · ${entry.note}` : ""}`) : ["- None recorded"]),
-    "",
-    "This report is health-awareness context from supported body signals. Discuss persistent concerns with a qualified clinician.",
-  ];
-  const url = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/plain" }));
+  const reportText = buildDoctorReadySummary(metrics, symptoms, behaviors);
+  const url = URL.createObjectURL(new Blob([reportText], { type: "text/plain" }));
   const link = document.createElement("a");
   link.href = url;
   link.download = `bala-health-summary-${new Date().toISOString().slice(0, 10)}.txt`;

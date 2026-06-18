@@ -321,6 +321,14 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .pattern-insights li::before { content: "·"; position: absolute; left: 4px; color: var(--green); font-size: 18px; line-height: 12px; }
 .weekly-focus { color: var(--ink); background: var(--green-pale); }
 .weekly-focus strong { display: block; margin: 12px 0 7px; font-size: 20px; letter-spacing: -.4px; }
+.behavior-journal { margin-top: 14px; padding: clamp(20px, 3vw, 30px); border: 1px solid #dce5df; border-radius: 24px; display: grid; gap: 18px; background: var(--white); }
+.behavior-journal-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.behavior-journal h2 { margin: 3px 0 7px; font-size: clamp(24px, 2.7vw, 36px); letter-spacing: -1px; }
+.behavior-journal p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.behavior-journal button { min-height: 42px; padding: 0 15px; border: 1px solid var(--line); border-radius: 11px; color: var(--white); background: var(--ink); cursor: pointer; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.behavior-factor-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.behavior-factor-pill { padding: 9px 11px; border: 1px solid #dbe5df; border-radius: 999px; color: #46504b; background: #f3f7f4; font-size: 9px; font-weight: 760; }
+.behavior-factor-pill.empty { border-style: dashed; color: var(--muted); font-weight: 700; }
 
 .source-rail {
   margin-top: 18px;
@@ -590,6 +598,8 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .onboarding-reset { margin-top: 12px; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 11px; }
 .symptom-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .symptom-grid label { padding: 11px; border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 8px; align-items: center; font-size: 11px; }
+.behavior-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.behavior-grid label { padding: 11px; border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 8px; align-items: center; font-size: 11px; }
 .symptom-note { margin-top: 14px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
 .symptom-note textarea { min-height: 80px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; resize: vertical; font: inherit; }
 .shortcut-template { margin-top: 15px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
@@ -740,6 +750,7 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .weekly-averages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .weekly-averages > div:last-child { grid-column: 1 / -1; }
   .weekly-insight-grid { grid-template-columns: 1fr; }
+  .behavior-journal-heading { align-items: stretch; flex-direction: column; }
   .capture-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .setup-card { grid-template-columns: 42px 1fr; }
   .setup-card button { grid-column: 1 / -1; width: 100%; }
@@ -773,6 +784,7 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .ask-button { display: none; }
   .metric-form-grid { grid-template-columns: 1fr; }
   .symptom-grid { grid-template-columns: 1fr; }
+  .behavior-grid { grid-template-columns: 1fr; }
   .platform-grid { grid-template-columns: 1fr; }
   .device-grid { grid-template-columns: 1fr 1fr; }
   .priority-table > div { grid-template-columns: 100px 1fr; }

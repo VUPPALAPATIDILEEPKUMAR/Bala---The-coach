@@ -242,6 +242,18 @@
           </div>
         </section>
 
+        <section class="behavior-journal" aria-labelledby="behavior-journal-title">
+          <header class="behavior-journal-heading">
+            <div>
+              <p class="section-label">Daily awareness</p>
+              <h2 id="behavior-journal-title">Behavior Journal</h2>
+              <p id="behavior-journal-summary">Log a few daily factors so you can reflect on what may relate to your body signals. Not medical advice.</p>
+            </div>
+            <button id="behavior-journal-button" type="button">Open Daily Factors</button>
+          </header>
+          <div class="behavior-factor-list" id="behavior-factor-list" aria-label="Recent daily factors"></div>
+        </section>
+
         <section class="connections-section" aria-labelledby="connections-title">
           <div class="connections-heading">
             <div>
@@ -786,6 +798,28 @@
         </div>
         <label class="symptom-note">Optional note<textarea name="note" maxlength="240" placeholder="Medicine change, stress, alcohol, hard workout…"></textarea></label>
         <button class="dialog-primary" type="submit">Save check-in</button>
+      </form>
+    </dialog>
+
+    <dialog id="behavior-dialog">
+      <form id="behavior-form">
+        <button class="dialog-close" type="button" id="behavior-close" aria-label="Close daily factors">Ã—</button>
+        <p class="section-label">Daily awareness</p>
+        <h2>Daily Factors</h2>
+        <p class="form-intro">Save a few everyday factors that may relate to your body signals. Use this to notice patterns and reflect. Not medical advice.</p>
+        <div class="behavior-grid">
+          <label><input type="checkbox" name="factor" value="alcohol" /> Alcohol</label>
+          <label><input type="checkbox" name="factor" value="caffeine" /> Caffeine</label>
+          <label><input type="checkbox" name="factor" value="lateMeal" /> Late meal</label>
+          <label><input type="checkbox" name="factor" value="stress" /> Stress</label>
+          <label><input type="checkbox" name="factor" value="soreness" /> Soreness</label>
+          <label><input type="checkbox" name="factor" value="travel" /> Travel</label>
+          <label><input type="checkbox" name="factor" value="lowMovement" /> Low movement / long sitting</label>
+          <label><input type="checkbox" name="factor" value="exercise" /> Exercise</label>
+          <label><input type="checkbox" name="factor" value="hydration" /> Hydration</label>
+        </div>
+        <label class="symptom-note">Optional reflection note<textarea name="note" maxlength="240" placeholder="For example: long travel day, extra coffee, hydrated well, or a pattern you want to reflect on"></textarea></label>
+        <button class="dialog-primary" type="submit">Save daily factors</button>
       </form>
     </dialog>
 
