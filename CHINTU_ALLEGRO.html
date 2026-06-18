@@ -1,0 +1,1529 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Chintu Allegro — local-first voice/text operator shell for BALA and Chintu OS">
+  <title>Chintu Allegro — Local Operator Shell</title>
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2430;
+      --surface3: #21262d;
+      --border: #30363d;
+      --ink: #e6edf3;
+      --muted: #7d8590;
+      --accent: #58a6ff;
+      --accent-soft: rgba(88,166,255,0.12);
+      --accent-glow: rgba(88,166,255,0.3);
+      --green: #2ea043;
+      --green-soft: rgba(46,160,67,0.15);
+      --warn: #d29922;
+      --warn-soft: rgba(210,153,34,0.15);
+      --danger: #f85149;
+      --danger-soft: rgba(248,81,73,0.12);
+      --info: #388bfd;
+      --purple: #bc8cff;
+      --purple-soft: rgba(188,140,255,0.12);
+      --parked: #6e7681;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --topbar-h: 56px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      height: 100%;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--topbar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 18px;
+      z-index: 100;
+    }
+    .topbar .logo {
+      width: 34px; height: 34px; flex-shrink: 0;
+      background: linear-gradient(135deg, #58a6ff, #1a6bb5);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; color: #fff; letter-spacing: -0.5px;
+    }
+    .topbar-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .topbar-sub { font-size: 0.72rem; color: var(--muted); margin-left: 4px; }
+    .topbar-badges { display: flex; gap: 6px; margin-left: auto; }
+    .badge {
+      border-radius: 20px; padding: 2px 9px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+      border: 1px solid currentColor;
+    }
+    .badge-stage { color: var(--accent); background: var(--accent-soft); }
+    .badge-local { color: var(--green); background: var(--green-soft); }
+    .badge-safe  { color: var(--warn); background: var(--warn-soft); }
+    .install-hint {
+      font-size: 0.68rem; color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px 8px; cursor: pointer;
+    }
+    .install-hint:hover { color: var(--ink); border-color: var(--accent); }
+
+    /* ── Shell layout ── */
+    .shell {
+      display: grid;
+      grid-template-columns: 252px 1fr;
+      min-height: 100vh;
+      padding-top: var(--topbar-h);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 18px;
+      overflow-y: auto;
+      position: sticky; top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+    }
+    .section-label {
+      font-size: 0.66rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .status-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px; margin-bottom: 5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-amber  { background: var(--warn); }
+    .dot-blue   { background: var(--accent); }
+    .dot-purple { background: var(--purple); }
+    .dot-gray   { background: var(--parked); }
+    .status-card-body { flex: 1; min-width: 0; }
+    .status-card-title { font-size: 0.74rem; font-weight: 600; }
+    .status-card-note  { font-size: 0.65rem; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Quick action grid ── */
+    .qa-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+    }
+    .qa-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--ink);
+      padding: 7px 6px;
+      font-size: 0.67rem; font-weight: 500;
+      cursor: pointer; text-align: left; line-height: 1.3;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .qa-btn:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .qa-btn.qa-wide { grid-column: 1 / -1; }
+
+    /* ── Main area ── */
+    .main {
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Tabs ── */
+    .tabs-bar {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      padding: 0 18px;
+    }
+    .tab-btn {
+      padding: 12px 16px;
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); background: transparent;
+      border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; transition: color 0.15s;
+      letter-spacing: 0.01em;
+    }
+    .tab-btn:hover { color: var(--ink); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; flex: 1; overflow-y: auto; padding: 20px 22px; }
+    .tab-panel.active { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Operator tab ── */
+    .input-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .input-row { display: flex; gap: 8px; align-items: flex-start; }
+    .cmd-textarea {
+      flex: 1; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--ink); font-family: inherit; font-size: 0.88rem;
+      padding: 10px 12px; resize: none; min-height: 72px; line-height: 1.5;
+      outline: none; transition: border-color 0.15s;
+    }
+    .cmd-textarea:focus { border-color: var(--accent); }
+    .cmd-textarea::placeholder { color: var(--muted); }
+    .input-controls { display: flex; flex-direction: column; gap: 6px; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface2); color: var(--muted);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 15px; transition: all 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .icon-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .run-btn {
+      height: 36px; padding: 0 14px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 0.8rem; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .run-btn:hover { opacity: 0.88; }
+    .input-footer {
+      display: flex; align-items: center; gap: 10px; margin-top: 8px;
+      font-size: 0.68rem; color: var(--muted);
+    }
+    .toggle-row { display: flex; align-items: center; gap: 6px; }
+    .toggle { position: relative; width: 30px; height: 16px; cursor: pointer; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: var(--surface3); border-radius: 16px; transition: 0.2s;
+    }
+    .slider:before {
+      content: ""; position: absolute;
+      width: 10px; height: 10px; left: 3px; bottom: 3px;
+      background: var(--muted); border-radius: 50%; transition: 0.2s;
+    }
+    .toggle input:checked + .slider { background: var(--accent); }
+    .toggle input:checked + .slider:before { transform: translateX(14px); background: #fff; }
+    .voice-indicator {
+      display: none; align-items: center; gap: 5px;
+      font-size: 0.72rem; color: var(--danger);
+    }
+    .voice-indicator.visible { display: flex; }
+    .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── Response panel ── */
+    .response-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .response-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .response-title { font-size: 0.78rem; font-weight: 700; flex: 1; }
+    .copy-all-btn {
+      font-size: 0.68rem; padding: 3px 8px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--muted); cursor: pointer;
+    }
+    .copy-all-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .response-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    .response-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--muted); font-size: 0.82rem;
+    }
+    .response-empty .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+    /* ── Response sections ── */
+    .rs { border-left: 2px solid var(--border); padding-left: 12px; }
+    .rs.understood { border-color: var(--accent); }
+    .rs.lane       { border-color: var(--green); }
+    .rs.safety     { border-color: var(--danger); }
+    .rs.files      { border-color: var(--purple); }
+    .rs.prompt     { border-color: var(--warn); }
+    .rs.validation { border-color: var(--accent); }
+    .rs.parked     { border-color: var(--parked); }
+    .rs.nextaction { border-color: var(--green); }
+    .rs-label {
+      font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+    .rs.understood .rs-label { color: var(--accent); }
+    .rs.lane .rs-label       { color: var(--green); }
+    .rs.safety .rs-label     { color: var(--danger); }
+    .rs.files .rs-label      { color: var(--purple); }
+    .rs.prompt .rs-label     { color: var(--warn); }
+    .rs.validation .rs-label { color: var(--accent); }
+    .rs.parked .rs-label     { color: var(--parked); }
+    .rs.nextaction .rs-label { color: var(--green); }
+    .rs-content { font-size: 0.82rem; line-height: 1.7; }
+    .rs-list { list-style: none; padding: 0; }
+    .rs-list li::before { content: "·  "; color: var(--muted); }
+    .rs-list li { font-size: 0.8rem; line-height: 1.5; }
+    .code-block {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 12px;
+      font-family: var(--mono); font-size: 0.76rem; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-all; position: relative;
+      margin-top: 6px;
+    }
+    .code-copy {
+      position: absolute; top: 6px; right: 6px;
+      font-size: 0.65rem; padding: 2px 7px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--muted); cursor: pointer;
+    }
+    .code-copy:hover { color: var(--accent); border-color: var(--accent); }
+    .next-action-text {
+      font-size: 0.84rem; font-weight: 600; color: var(--ink);
+    }
+
+    /* ── Command Center tab ── */
+    .cmd-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .cmd-group-header {
+      padding: 10px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.76rem; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cmd-group-icon { font-size: 14px; }
+    .cmd-group-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .cmd-item { position: relative; }
+    .cmd-label { font-size: 0.68rem; color: var(--muted); margin-bottom: 3px; }
+    .cmd-line {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 7px 70px 7px 10px;
+      font-family: var(--mono); font-size: 0.74rem; color: var(--ink);
+      word-break: break-all; line-height: 1.5;
+    }
+    .cmd-copy {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      font-size: 0.65rem; padding: 2px 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--muted); cursor: pointer;
+    }
+    .cmd-copy:hover { color: var(--accent); border-color: var(--accent); }
+    .safety-note {
+      margin-top: 4px; padding: 8px 12px;
+      background: var(--danger-soft); border: 1px solid var(--danger);
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem; color: var(--danger); line-height: 1.5;
+    }
+
+    /* ── Action Packet tab ── */
+    .packet-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .packet-header {
+      padding: 10px 14px;
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .packet-title { font-size: 0.82rem; font-weight: 700; flex: 1; }
+    .packet-id { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+    .packet-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .packet-row { display: flex; gap: 10px; align-items: flex-start; }
+    .packet-key {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); min-width: 110px; margin-top: 2px;
+    }
+    .packet-val { font-size: 0.8rem; flex: 1; line-height: 1.5; }
+    .risk-low { color: var(--green); }
+    .risk-med { color: var(--warn); }
+    .risk-high { color: var(--danger); }
+    .packet-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--muted); font-size: 0.8rem;
+    }
+    .export-btn {
+      align-self: flex-start;
+      padding: 7px 14px; font-size: 0.76rem; font-weight: 600;
+      background: var(--green-soft); border: 1px solid var(--green);
+      border-radius: var(--radius-sm); color: var(--green); cursor: pointer;
+    }
+    .export-btn:hover { background: var(--green); color: #fff; }
+
+    /* ── Install modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px;
+      max-width: 480px; width: 90%; max-height: 80vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; }
+    .install-step {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px;
+    }
+    .install-step-title { font-size: 0.76rem; font-weight: 700; margin-bottom: 4px; }
+    .install-step-body { font-size: 0.76rem; color: var(--muted); line-height: 1.5; }
+    .modal-close {
+      margin-top: 14px; width: 100%; padding: 9px;
+      background: var(--accent-soft); border: 1px solid var(--accent);
+      border-radius: var(--radius-sm); color: var(--accent);
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      .topbar-sub, .badge-safe { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="topbar">
+  <div class="logo">CA</div>
+  <div>
+    <span class="topbar-title">Chintu Allegro</span>
+    <span class="topbar-sub">local operator shell</span>
+  </div>
+  <div class="topbar-badges">
+    <span class="badge badge-stage">Stage 22</span>
+    <span class="badge badge-local">LOCAL-FIRST</span>
+    <span class="badge badge-safe">SAFE BY DESIGN</span>
+    <button class="install-hint" onclick="openInstall()">⬇ Install as app</button>
+  </div>
+</header>
+
+<!-- Install modal -->
+<div class="modal-overlay" id="installModal" onclick="if(event.target===this)closeInstall()">
+  <div class="modal">
+    <h2>📲 Install Chintu Allegro as an App</h2>
+    <div class="install-step">
+      <div class="install-step-title">🖥️ Chrome / Edge (Desktop)</div>
+      <div class="install-step-body">Open this file in Chrome or Edge → look for the <strong>install icon (⊕)</strong> in the address bar → click <em>Install</em>. You can also go to the browser menu → <em>Install app</em> or <em>Add to Desktop</em>.</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-title">📱 iPhone / iPad (Safari)</div>
+      <div class="install-step-body">Open in Safari → tap the <strong>Share button (□↑)</strong> → scroll down → tap <em>Add to Home Screen</em> → tap <em>Add</em>. Opens as a full-screen app.</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-title">🤖 Android (Chrome)</div>
+      <div class="install-step-body">Open in Chrome → tap the <strong>three-dot menu</strong> → tap <em>Add to Home screen</em> or <em>Install app</em> → confirm. Appears as a standalone icon.</div>
+    </div>
+    <div class="install-step">
+      <div class="install-step-title">⚠️ Voice + Local Notes</div>
+      <div class="install-step-body">Voice recognition requires Chrome or Edge on desktop. Speech synthesis uses your OS voices. Shell commands shown here are <strong>copy-only</strong> — run them in your local PowerShell/terminal.</div>
+    </div>
+    <button class="modal-close" onclick="closeInstall()">Got it, close</button>
+  </div>
+</div>
+
+<!-- Main shell -->
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- Status cards -->
+    <div>
+      <div class="section-label">System Status</div>
+      <div class="status-card">
+        <div class="status-dot dot-green"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Local Mode</div>
+          <div class="status-card-note">No cloud sync · Data stays local</div>
+        </div>
+      </div>
+      <div class="status-card" id="sc-voice">
+        <div class="status-dot dot-amber" id="sc-voice-dot"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Voice Input</div>
+          <div class="status-card-note" id="sc-voice-note">Checking browser support…</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-amber"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Connector Mode</div>
+          <div class="status-card-note">Dry-run only · Real send needs env + approval</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-amber"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Telegram</div>
+          <div class="status-card-note">First activation parked · check readiness cmd</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-green"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Prompt Engine</div>
+          <div class="status-card-note">scripts/chintu-prompt-engine.js · ready</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-blue"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Agent Runner</div>
+          <div class="status-card-note">Dry-run mode active · no live execution</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-purple"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Approval Gate</div>
+          <div class="status-card-note">All external sends require phrase approval</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div>
+      <div class="section-label">Quick Actions</div>
+      <div class="qa-grid">
+        <button class="qa-btn" onclick="quickAction('Build next BALA sprint')">🏃 Build BALA sprint</button>
+        <button class="qa-btn" onclick="quickAction('Generate Claude prompt')">✦ Claude prompt</button>
+        <button class="qa-btn" onclick="quickAction('Generate Codex prompt')">⚡ Codex prompt</button>
+        <button class="qa-btn" onclick="quickAction('Run validator agent dry run')">🔍 Validator dry run</button>
+        <button class="qa-btn" onclick="quickAction('Check connector readiness')">🔌 Connector check</button>
+        <button class="qa-btn" onclick="quickAction('Prepare Telegram first test')">📨 Telegram setup</button>
+        <button class="qa-btn" onclick="quickAction('Create founder brief')">📋 Founder brief</button>
+        <button class="qa-btn" onclick="quickAction('Review BALA scoring model')">📊 BALA scoring</button>
+        <button class="qa-btn" onclick="quickAction('Plan report explainer MVP')">🩺 Report explainer</button>
+        <button class="qa-btn" onclick="quickAction('Plan language lock MVP')">🌐 Language lock</button>
+        <button class="qa-btn qa-wide" onclick="quickAction('Create app-builder prompt')">🏗️ App-builder prompt</button>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <nav class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('operator', this)">🎯 Operator</button>
+      <button class="tab-btn" onclick="switchTab('commands', this)">⚙️ Command Center</button>
+      <button class="tab-btn" onclick="switchTab('packet', this)">📦 Action Packet</button>
+    </nav>
+
+    <!-- ── Tab: Operator ── -->
+    <div class="tab-panel active" id="tab-operator">
+
+      <!-- Command input -->
+      <div class="input-area">
+        <div class="input-row">
+          <textarea
+            class="cmd-textarea"
+            id="cmdInput"
+            placeholder="Bro, build next BALA sprint. — or — Create the app-builder prompt. — or — Check connector readiness."
+            onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){runCommand();}"
+          ></textarea>
+          <div class="input-controls">
+            <button class="icon-btn" id="voiceBtn" title="Voice input" onclick="toggleVoice()">🎙</button>
+            <button class="icon-btn" id="speakBtn" title="Read response aloud" onclick="toggleSpeak()">🔈</button>
+            <button class="run-btn" onclick="runCommand()">↵ Run</button>
+          </div>
+        </div>
+        <div class="input-footer">
+          <div class="voice-indicator" id="voiceIndicator">
+            <div class="pulse"></div> Listening…
+          </div>
+          <span style="margin-left:auto; color:var(--muted)">Ctrl+Enter to run · browser executes nothing · commands are copy-only</span>
+        </div>
+      </div>
+
+      <!-- Response panel -->
+      <div class="response-panel">
+        <div class="response-header">
+          <span class="response-title" id="responseTitle">Chintu Allegro</span>
+          <button class="copy-all-btn" onclick="copyAll()">Copy all</button>
+        </div>
+        <div class="response-body" id="responseBody">
+          <div class="response-empty">
+            <div class="empty-icon">⚡</div>
+            <div>Type a command or pick a quick action.<br>Chintu will break it down and generate the right prompt, commands, and plan.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Tab: Command Center ── -->
+    <div class="tab-panel" id="tab-commands">
+
+      <div class="safety-note">
+        ⛔ These commands run in your local PowerShell or terminal — not in this browser. Copy, paste, and run them yourself. The browser never executes shell commands.
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-header"><span class="cmd-group-icon">🔌</span> Connector Readiness</div>
+        <div class="cmd-group-body">
+          <div class="cmd-item">
+            <div class="cmd-label">Full readiness check</div>
+            <div class="cmd-line">node scripts\chintu-connector-send.js --readiness</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Status report</div>
+            <div class="cmd-line">node scripts\chintu-connector-send.js --status</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Validate env vars (no secrets printed)</div>
+            <div class="cmd-line">node scripts\chintu-connector-send.js --validate-env</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-header"><span class="cmd-group-icon">🤖</span> Agent Dry Run</div>
+        <div class="cmd-group-body">
+          <div class="cmd-item">
+            <div class="cmd-label">Validator agent — dry run</div>
+            <div class="cmd-line">powershell -ExecutionPolicy Bypass -File scripts\chintu-agent-runner.ps1 -Agent "validator-agent" -DryRun</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Agent runner test suite</div>
+            <div class="cmd-line">node scripts\chintu-agent-runner.test.js</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Operator console</div>
+            <div class="cmd-line">powershell -ExecutionPolicy Bypass -File scripts\chintu-operator-console.ps1</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-header"><span class="cmd-group-icon">📝</span> Prompt Engine</div>
+        <div class="cmd-group-body">
+          <div class="cmd-item">
+            <div class="cmd-label">Generate sprint prompt (XML, both tracks)</div>
+            <div class="cmd-line">node scripts\chintu-prompt-engine.js --framework xml --track both --task "Build next Chintu/BALA sprint"</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Voice operator template</div>
+            <div class="cmd-line">node scripts\chintu-prompt-engine.js --template voice-operator</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Connector activation template</div>
+            <div class="cmd-line">node scripts\chintu-prompt-engine.js --template connector-activation</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">BALA report explainer template</div>
+            <div class="cmd-line">node scripts\chintu-prompt-engine.js --template bala-report-explainer</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-header"><span class="cmd-group-icon">🛡</span> Release Guard + Validation</div>
+        <div class="cmd-group-body">
+          <div class="cmd-item">
+            <div class="cmd-label">Release guard (pre-commit safety check)</div>
+            <div class="cmd-line">powershell -ExecutionPolicy Bypass -File scripts\chintu-release-guard.ps1</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Medical claims safety test</div>
+            <div class="cmd-line">node scripts\chintu-medical-claims.test.js</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">No-network-egress test</div>
+            <div class="cmd-line">node scripts\chintu-no-network-egress.test.js</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">BALA safe docs test</div>
+            <div class="cmd-line">node scripts\chintu-bala-safe-docs.test.js</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">JS syntax check</div>
+            <div class="cmd-line">node --check app.js &amp;&amp; node --check scripts\chintu-prompt-engine.js &amp;&amp; node --check scripts\chintu-connector-send.js</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cmd-group">
+        <div class="cmd-group-header"><span class="cmd-group-icon">🗂</span> Git Status</div>
+        <div class="cmd-group-body">
+          <div class="cmd-item">
+            <div class="cmd-label">Short status</div>
+            <div class="cmd-line">git status --short</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Recent commits</div>
+            <div class="cmd-line">git log --oneline -6</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Diff stat</div>
+            <div class="cmd-line">git diff --stat</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Tab: Action Packet ── -->
+    <div class="tab-panel" id="tab-packet">
+      <div class="packet-card" id="packetCard">
+        <div class="packet-header">
+          <span class="packet-title">Action Packet</span>
+          <span class="packet-id" id="packetId">—</span>
+        </div>
+        <div class="packet-body" id="packetBody">
+          <div class="packet-empty">No packet generated yet. Run a command in the Operator tab first.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+'use strict';
+
+// ── Voice recognition ──
+let recognition = null;
+let recognizing = false;
+let speakEnabled = false;
+
+const voiceBtn       = document.getElementById('voiceBtn');
+const speakBtn       = document.getElementById('speakBtn');
+const voiceIndicator = document.getElementById('voiceIndicator');
+const scVoiceDot     = document.getElementById('sc-voice-dot');
+const scVoiceNote    = document.getElementById('sc-voice-note');
+
+(function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    scVoiceDot.className = 'status-dot dot-gray';
+    scVoiceNote.textContent = 'Not available in this browser';
+    voiceBtn.title = 'Voice not supported';
+    voiceBtn.style.opacity = '0.4';
+    return;
+  }
+  scVoiceDot.className = 'status-dot dot-green';
+  scVoiceNote.textContent = 'Available — click 🎙 to activate';
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+  recognition.onstart  = () => { recognizing = true; voiceIndicator.classList.add('visible'); voiceBtn.classList.add('active'); };
+  recognition.onend    = () => { recognizing = false; voiceIndicator.classList.remove('visible'); voiceBtn.classList.remove('active'); };
+  recognition.onerror  = (e) => { recognizing = false; voiceIndicator.classList.remove('visible'); voiceBtn.classList.remove('active'); };
+  recognition.onresult = (e) => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('cmdInput').value = t;
+    setTimeout(runCommand, 300);
+  };
+})();
+
+function toggleVoice() {
+  if (!recognition) return;
+  if (recognizing) { recognition.stop(); return; }
+  recognition.start();
+}
+
+function toggleSpeak() {
+  speakEnabled = !speakEnabled;
+  speakBtn.classList.toggle('active', speakEnabled);
+  speakBtn.title = speakEnabled ? 'Stop reading aloud' : 'Read response aloud';
+}
+
+function speak(text) {
+  if (!speakEnabled || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, '').substring(0, 800));
+  u.rate = 1.1;
+  window.speechSynthesis.speak(u);
+}
+
+// ── Tab switching ──
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Modal ──
+function openInstall()  { document.getElementById('installModal').classList.add('open'); }
+function closeInstall() { document.getElementById('installModal').classList.remove('open'); }
+
+// ── Quick actions ──
+function quickAction(cmd) {
+  document.getElementById('cmdInput').value = cmd;
+  runCommand();
+}
+
+// ── Copy helpers ──
+function copyCmd(btn) {
+  const text = btn.previousElementSibling.textContent.replace(/&amp;/g, '&');
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = '✓'; setTimeout(() => btn.textContent = 'Copy', 1500); });
+}
+function copyBlock(btn) {
+  const code = btn.nextElementSibling || btn.previousElementSibling;
+  const text = (code.tagName === 'PRE' || code.classList.contains('code-block'))
+    ? code.textContent : btn.closest('.code-block').textContent.replace('Copy','').trim();
+  const raw = btn.closest('.code-block')?.textContent.replace(/\nCopy$/,'').trim() || text;
+  navigator.clipboard.writeText(raw).then(() => { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 1500); });
+}
+function copyAll() {
+  const body = document.getElementById('responseBody');
+  navigator.clipboard.writeText(body.innerText).then(() => {
+    const btn = body.closest('.response-panel').querySelector('.copy-all-btn');
+    btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy all', 1500);
+  });
+}
+
+// ── Render helpers ──
+function section(cls, label, html) {
+  return `<div class="rs ${cls}"><div class="rs-label">${label}</div><div class="rs-content">${html}</div></div>`;
+}
+function codeBlock(content) {
+  return `<div class="code-block"><button class="code-copy" onclick="copyBlock(this)">Copy</button>${escHtml(content)}</div>`;
+}
+function bulletList(items) {
+  return '<ul class="rs-list">' + items.map(i => `<li>${escHtml(i)}</li>`).join('') + '</ul>';
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Current packet store ──
+let currentPacket = null;
+
+// ── Render response ──
+function renderResponse(packet) {
+  currentPacket = packet;
+  document.getElementById('responseTitle').textContent = '✦ ' + packet.understood.split('.')[0].substring(0, 60);
+
+  let html = '';
+  html += section('understood', 'What I understood', escHtml(packet.understood));
+  html += section('lane', '🏷 Suggested lane', `<strong>${escHtml(packet.lane)}</strong>`);
+  html += section('safety', '🛡 Safety gates', bulletList(packet.safetyGates));
+  html += section('files', '📂 Files likely involved', bulletList(packet.filesInvolved));
+  html += section('prompt', '📋 Copy-paste prompt for Claude/Codex', codeBlock(packet.prompt));
+  html += section('validation', '⚡ Validation commands', codeBlock(packet.validationCommands.join('\n')));
+  html += section('parked', '⛔ Parked / not doing now', bulletList(packet.parked));
+  html += section('nextaction', '→ Next human action', `<div class="next-action-text">${escHtml(packet.nextAction)}</div>`);
+
+  document.getElementById('responseBody').innerHTML = html;
+  renderPacket(packet);
+  speak(packet.understood + '. Next action: ' + packet.nextAction);
+}
+
+function renderPacket(p) {
+  const id = 'CA-' + Date.now().toString(36).toUpperCase();
+  document.getElementById('packetId').textContent = id;
+  const ts = new Date().toISOString().replace('T',' ').substring(0,19);
+  const riskColor = p.riskLevel === 'low' ? 'risk-low' : p.riskLevel === 'medium' ? 'risk-med' : 'risk-high';
+  document.getElementById('packetBody').innerHTML = `
+    <div class="packet-row"><div class="packet-key">ID</div><div class="packet-val" style="font-family:var(--mono);font-size:0.74rem">${id}</div></div>
+    <div class="packet-row"><div class="packet-key">Timestamp</div><div class="packet-val">${ts}</div></div>
+    <div class="packet-row"><div class="packet-key">Source</div><div class="packet-val">Chintu Allegro UI — founder command</div></div>
+    <div class="packet-row"><div class="packet-key">Intent</div><div class="packet-val">${escHtml(p.understood)}</div></div>
+    <div class="packet-row"><div class="packet-key">Track</div><div class="packet-val">${escHtml(p.track)}</div></div>
+    <div class="packet-row"><div class="packet-key">Risk Level</div><div class="packet-val ${riskColor}">${escHtml(p.riskLevel)}</div></div>
+    <div class="packet-row"><div class="packet-key">Approval Needed</div><div class="packet-val">${p.approvalRequired ? '⚠️ Yes — requires explicit phrase' : '✅ No'}</div></div>
+    <div class="packet-row"><div class="packet-key">Connector</div><div class="packet-val">${escHtml(p.connectorRequired)}</div></div>
+    <div class="packet-row"><div class="packet-key">Next Action</div><div class="packet-val">${escHtml(p.nextAction)}</div></div>
+    <button class="export-btn" onclick="exportPacket()">⬇ Export packet as JSON</button>
+  `;
+}
+
+function exportPacket() {
+  if (!currentPacket) return;
+  const json = JSON.stringify(currentPacket, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'chintu-action-packet-' + Date.now() + '.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Intent mapper ──
+function runCommand() {
+  const raw = document.getElementById('cmdInput').value.trim();
+  if (!raw) return;
+
+  const lower = raw.toLowerCase();
+  let packet;
+
+  if (lower.includes('bala sprint') || lower.includes('next bala') || lower.includes('bala enhance')) {
+    packet = packetBALASprint();
+  } else if (lower.includes('claude prompt') && !lower.includes('codex')) {
+    packet = packetClaudePrompt();
+  } else if (lower.includes('codex prompt') || lower.includes('codex')) {
+    packet = packetCodexPrompt();
+  } else if (lower.includes('validator') || lower.includes('dry run') || lower.includes('dryrun')) {
+    packet = packetValidatorDryRun();
+  } else if (lower.includes('connector readiness') || lower.includes('connector check') || (lower.includes('connector') && lower.includes('ready'))) {
+    packet = packetConnectorReadiness();
+  } else if (lower.includes('telegram') || lower.includes('first test')) {
+    packet = packetTelegramSetup();
+  } else if (lower.includes('founder brief') || lower.includes('daily brief')) {
+    packet = packetFounderBrief();
+  } else if (lower.includes('scoring') || lower.includes('score model') || lower.includes('bala score')) {
+    packet = packetBALAScoring();
+  } else if (lower.includes('report explainer') || lower.includes('report metric') || lower.includes('report mvp')) {
+    packet = packetReportExplainer();
+  } else if (lower.includes('language lock') || lower.includes('language mvp')) {
+    packet = packetLanguageLock();
+  } else if (lower.includes('app-builder') || lower.includes('app builder') || lower.includes('appbuilder')) {
+    packet = packetAppBuilder();
+  } else {
+    packet = packetDefault(raw);
+  }
+
+  renderResponse(packet);
+}
+
+// ── Packet generators ──
+
+function packetBALASprint() {
+  return {
+    understood: "You want to plan the next BALA product sprint — scope, features, and a ready-to-use Claude/Codex prompt.",
+    lane: "BALA Your Coach — Sprint Planning (Track 1)",
+    safetyGates: [
+      "No medical diagnosis copy in any new UI",
+      "Health data stays local by default — no cloud sync added",
+      "No external API keys added to frontend files",
+      "BALA safety disclaimer on all new screens or report flows",
+      "Emergency symptoms → always redirect to urgent care, never rely on BALA score",
+    ],
+    filesInvolved: [
+      "BALA_NEXT_SAFE_SPRINT_PLAN.md — current sprint queue",
+      "BALA_PRODUCT_POLISH_QUEUE.md — polish backlog",
+      "BALA_SCORE_MODEL_REVIEW_PLAN.md — scoring changes",
+      "index.html, app.js, styles.css — UI changes",
+      "BALA_REPORT_METRIC_EXPLAINER_PLAN.md — if report flow added",
+    ],
+    prompt: `<role>
+You are a senior product engineer and safety reviewer for BALA, a mobile-first health-awareness PWA.
+</role>
+<context>
+BALA helps users understand daily body signals from sleep, HRV, resting heart rate, SpO₂, steps, activity, recovery, and symptoms.
+It is NOT a medical device. It is a local-first health-awareness companion.
+Previous stage: Stage 22. Last commit: feat: add Chintu Allegro operator app shell.
+</context>
+<task>
+Plan the next BALA sprint. Identify the top 3-5 features from the backlog that are:
+- MVP-ready (can be implemented in one session)
+- Safe (no medical diagnosis, no external data sharing)
+- High-value (founder-facing demo quality)
+- Mobile-first (375px, no horizontal overflow)
+</task>
+<rules>
+NEVER claim: diagnosis, prediction, treatment, prevention, cardiac arrest, emergency monitoring.
+ALWAYS use: signals, awareness, reflection, patterns, "may help you notice", "not medical advice".
+Health data stays local by default.
+No paid APIs. No analytics. No tracking scripts.
+</rules>
+<output_format>
+Return:
+1. Sprint name + goal (1 line)
+2. Feature list (3-5 items) with: feature name, why it's safe, why it's impactful, files to change
+3. Safety checklist for this sprint
+4. One copy-paste implementation prompt for each feature
+</output_format>`,
+    validationCommands: [
+      "node --check app.js",
+      "node scripts\\chintu-medical-claims.test.js",
+      "node scripts\\chintu-bala-safe-docs.test.js",
+      "node scripts\\chintu-no-network-egress.test.js",
+      "powershell -ExecutionPolicy Bypass -File scripts\\chintu-release-guard.ps1",
+    ],
+    parked: [
+      "Live wearable API integration (HealthKit, Fitbit)",
+      "AI model inference or cloud-based coaching",
+      "Push notifications (requires backend)",
+      "Cloud sync or account system",
+      "Medical report upload in this sprint",
+    ],
+    nextAction: "Copy the prompt above → paste into Claude or Codex → review the sprint plan it generates → bring the approved scope back here. Then pick the first feature and start.",
+    track: "BALA Your Coach",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None — local-only implementation",
+  };
+}
+
+function packetClaudePrompt() {
+  return {
+    understood: "You want a structured XML prompt to use with Claude for a BALA or Chintu implementation task.",
+    lane: "Chintu OS — Prompt Engine (Track 2)",
+    safetyGates: [
+      "Prompt must include BALA safety rules if BALA track is involved",
+      "No secrets, tokens, or keys in the prompt",
+      "No instruction to make BALA a medical device",
+      "Output format must be copy-paste ready",
+    ],
+    filesInvolved: [
+      "scripts/chintu-prompt-engine.js — run this for full templates",
+      "CHINTU_INTELLIGENCE_CORE.md — stack reference",
+      "CHINTU_TONE_PROFILE.md — tone guidance",
+    ],
+    prompt: `<role>
+Act as a senior product engineer, safety reviewer, and implementation partner for [BALA / Chintu OS — pick one].
+</role>
+<context>
+[Describe the current state: what stage, what files exist, what the last commit was.]
+</context>
+<task>
+[One clear, specific task. Example: "Add a BALA scoring explainer card to the Today's Guide section."]
+</task>
+<rules>
+[Insert relevant rules. For BALA: no diagnosis, local-first, mobile-first, safe copy.
+For Chintu: no secrets, dry-run default, no yolo execution, approval gates.]
+</rules>
+<output_format>
+1. What you understood
+2. Plan (max 5 steps)
+3. Files to change
+4. Changes made (code or copy)
+5. Validation results
+6. Safety/privacy check
+7. Next recommended step
+</output_format>`,
+    validationCommands: [
+      "node scripts\\chintu-prompt-engine.js --framework xml --track both --task \"Your task here\"",
+      "node scripts\\chintu-prompt-engine.js --template voice-operator",
+    ],
+    parked: [
+      "COSTAR/ACR formats (run prompt engine with --framework costar)",
+      "Multi-agent orchestration prompts (Stage 23+)",
+    ],
+    nextAction: "Fill in the [placeholders] in the prompt above → paste into Claude → implement the task.",
+    track: "Chintu OS — Prompt Engine",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None",
+  };
+}
+
+function packetCodexPrompt() {
+  return {
+    understood: "You want a structured prompt for Codex / GPT-4o for a focused implementation slice.",
+    lane: "Chintu OS — Prompt Engine for Codex (Track 2)",
+    safetyGates: [
+      "Keep scope tight — one file or one feature per Codex session",
+      "Include BALA safety rules if touching BALA files",
+      "Specify output format: diff or full file, not both",
+    ],
+    filesInvolved: [
+      "scripts/chintu-prompt-engine.js — run for ACR/COSTAR templates",
+      "CHINTU_CODEX_REVIEW_PROMPT.md — reference",
+    ],
+    prompt: `# Codex implementation prompt
+
+## Context
+Project: BALA Your Coach (mobile-first health-awareness PWA) + Chintu OS (local agent operating system).
+Current file: [filename]
+Current state: [brief description of what exists]
+
+## Task
+[Single clear task — one function, one section, one fix.]
+
+## Constraints
+- Mobile-first (375px, no horizontal overflow)
+- No external API calls
+- No localStorage for sensitive data
+- No medical diagnosis claims
+- Preserve existing class names and design tokens
+- Return complete updated file (not diff)
+
+## Output
+Return only the updated file content with no explanation, no markdown fences.`,
+    validationCommands: [
+      "node --check app.js",
+      "node scripts\\chintu-medical-claims.test.js",
+    ],
+    parked: [
+      "Full multi-file refactors via Codex",
+      "Agent-to-Codex handoff automation (Stage 23+)",
+    ],
+    nextAction: "Fill the [placeholders] → paste into Codex or GPT-4o → review the output → validate before committing.",
+    track: "Chintu OS — Prompt Engine",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None",
+  };
+}
+
+function packetValidatorDryRun() {
+  return {
+    understood: "You want to run the validator agent in dry-run mode to check repo health without making changes.",
+    lane: "Chintu OS — Agent Runner (Track 2)",
+    safetyGates: [
+      "DryRun flag must be set — no real commits or sends",
+      "Check output carefully before approving any follow-on action",
+      "Agent runner does not push; push is always a separate founder step",
+    ],
+    filesInvolved: [
+      "scripts/chintu-agent-runner.ps1 — agent runner",
+      "scripts/chintu-agent-runner.test.js — test suite",
+      "CHINTU_AGENT_RUNS/ — dry run outputs stored here",
+      "CHINTU_AGENT_RUNS_INDEX.md — run log index",
+    ],
+    prompt: `# Run validator agent — dry run\n\npowershell -ExecutionPolicy Bypass -File scripts\\chintu-agent-runner.ps1 -Agent "validator-agent" -DryRun\n\n# Then review output in CHINTU_AGENT_RUNS/ folder\n# Do NOT commit or push from agent runner output without founder review`,
+    validationCommands: [
+      "powershell -ExecutionPolicy Bypass -File scripts\\chintu-agent-runner.ps1 -Agent \"validator-agent\" -DryRun",
+      "node scripts\\chintu-agent-runner.test.js",
+      "git status --short",
+    ],
+    parked: [
+      "Live agent execution (no dry-run flag) — requires explicit approval",
+      "Automated push from agent runner",
+    ],
+    nextAction: "Run the PowerShell command above in your local terminal. Review the output in CHINTU_AGENT_RUNS/. Come back with the validation report.",
+    track: "Chintu OS",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None — local execution only",
+  };
+}
+
+function packetConnectorReadiness() {
+  return {
+    understood: "You want to check the readiness of all Chintu connectors — Telegram status, env vars, dry-run health.",
+    lane: "Chintu OS — Connector Readiness (Track 2)",
+    safetyGates: [
+      "Validate env only — no secrets printed",
+      "Dry-run mode stays on until founder explicitly approves live send",
+      "Telegram first test requires: env vars set + allowlist confirmed + approval phrase spoken",
+      "No health data transferred via connectors by default",
+    ],
+    filesInvolved: [
+      "scripts/chintu-connector-send.js — connector logic",
+      "scripts/chintu-connector-send.test.js — safety tests",
+      "CHINTU_CONNECTOR_READINESS.md — readiness state",
+      "CHINTU_FREE_CONNECTOR_PLUGIN_ROADMAP.md — activation roadmap",
+    ],
+    prompt: `# Connector readiness check sequence\n\n# Step 1: Full readiness report\nnode scripts\\chintu-connector-send.js --readiness\n\n# Step 2: Validate env vars (no secrets printed)\nnode scripts\\chintu-connector-send.js --validate-env\n\n# Step 3: Check test suite (should pass, no network calls)\nnode scripts\\chintu-connector-send.test.js\n\n# Step 4: Check connector policy\nnode scripts\\chintu-connector-policy.test.js`,
+    validationCommands: [
+      "node scripts\\chintu-connector-send.js --readiness",
+      "node scripts\\chintu-connector-send.js --validate-env",
+      "node scripts\\chintu-connector-send.test.js",
+      "node scripts\\chintu-connector-policy.test.js",
+    ],
+    parked: [
+      "GitHub connector (next planned activation after Telegram)",
+      "Slack/Discord connectors (roadmap only)",
+      "Any live external send until explicitly approved",
+    ],
+    nextAction: "Run the readiness commands in your terminal. Review the output. If Telegram shows READY, you can request the live activation flow with: 'Prepare Telegram first test'.",
+    track: "Chintu OS — Connectors",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None for readiness check — live send needs env + approval",
+  };
+}
+
+function packetTelegramSetup() {
+  return {
+    understood: "You want to set up and test the Telegram connector for the first time — safely, with all gates active.",
+    lane: "Chintu OS — Telegram First Activation (Track 2)",
+    safetyGates: [
+      "Never print TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in any file or log",
+      "Set env vars locally — never commit to repo",
+      "Preview message must be shown before send",
+      "Explicit approval phrase required: 'approve telegram-test-send'",
+      "Message must go to personal chat only (not a public group)",
+      "No BALA health data in Telegram messages by default",
+    ],
+    filesInvolved: [
+      "scripts/chintu-connector-send.js — Telegram send logic",
+      "CHINTU_CONNECTOR_ACTIVATION_GUIDE.md — step-by-step guide",
+      "CHINTU_CONNECTOR_ACTIVATION_MATRIX.md — status matrix",
+      ".env.local — where to store secrets (never commit)",
+    ],
+    prompt: `# Telegram first activation sequence\n\n# 1. Set env vars (PowerShell — never commit these)\n$env:TELEGRAM_BOT_TOKEN = "your-token-here"\n$env:TELEGRAM_CHAT_ID  = "your-chat-id-here"\n\n# 2. Validate env (no secrets printed)\nnode scripts\\chintu-connector-send.js --validate-env\n\n# 3. Preview the dry-run message\nnode scripts\\chintu-connector-send.js --dry-run --message "Chintu first test"\n\n# 4. Only after reviewing preview — live send requires approval phrase\n# node scripts\\chintu-connector-send.js --message "Chintu first test" --approve "approve telegram-test-send"`,
+    validationCommands: [
+      "node scripts\\chintu-connector-send.js --validate-env",
+      "node scripts\\chintu-connector-send.js --dry-run --message \"Chintu first test\"",
+      "node scripts\\chintu-connector-send.test.js",
+    ],
+    parked: [
+      "Live send — requires env vars set + approval phrase 'approve telegram-test-send'",
+      "Automated scheduled messages (Stage 23+)",
+      "Telegram group sends (approval required separately)",
+    ],
+    nextAction: "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in your local PowerShell session (do NOT commit). Run the validate and dry-run commands. Review the preview. Then return and say: 'approve telegram-test-send' when ready.",
+    track: "Chintu OS — Connectors",
+    riskLevel: "medium",
+    approvalRequired: true,
+    connectorRequired: "Telegram — requires env vars set locally, never committed",
+  };
+}
+
+function packetFounderBrief() {
+  return {
+    understood: "You want a daily founder brief — what's green, what needs a look, and today's best next move.",
+    lane: "Chintu OS — Operator Console (Track 2)",
+    safetyGates: [
+      "Brief is local-only — not sent anywhere by default",
+      "No secrets or tokens in the brief",
+      "No BALA health data included unless explicitly requested",
+    ],
+    filesInvolved: [
+      "scripts/chintu-alive-briefing.ps1 — brief generator",
+      "CHINTU_ALIVE_BRIEFING.md — latest brief output",
+      "CHINTU_OPERATOR_STATUS.md — system status",
+      "scripts/chintu-operator-console.ps1 — console runner",
+    ],
+    prompt: `# Refresh founder brief\npowershell -ExecutionPolicy Bypass -File scripts\\chintu-alive-briefing.ps1\n\n# Or via operator console\npowershell -ExecutionPolicy Bypass -File scripts\\chintu-operator-console.ps1`,
+    validationCommands: [
+      "powershell -ExecutionPolicy Bypass -File scripts\\chintu-alive-briefing.ps1",
+      "powershell -ExecutionPolicy Bypass -File scripts\\chintu-operator-console.ps1",
+      "git log --oneline -5",
+    ],
+    parked: [
+      "Automated daily brief via scheduled task (Stage 23+)",
+      "Telegram delivery of brief (requires live connector)",
+    ],
+    nextAction: "Run the briefing script in your local PowerShell. Review CHINTU_ALIVE_BRIEFING.md. The brief will tell you what to prioritize next.",
+    track: "Chintu OS",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None — local script only",
+  };
+}
+
+function packetBALAScoring() {
+  return {
+    understood: "You want to review the BALA scoring model — inputs, weights, transparency, and safe math boundaries.",
+    lane: "BALA Your Coach — Score Model Review (Track 1)",
+    safetyGates: [
+      "Score is awareness-only — never claims diagnosis or prediction",
+      "Emergency symptoms override the score with urgent-care guidance",
+      "Score should show confidence level and missing-data note",
+      "No shame-based wording for lifestyle signals (alcohol, sleep, etc.)",
+      "No fertility/contraception predictions in score",
+    ],
+    filesInvolved: [
+      "BALA_SCORE_MODEL_REVIEW_PLAN.md — full review plan (Stage 22)",
+      "BALA_NEXT_PRODUCT_INTELLIGENCE_PLAN.md — intelligence roadmap",
+      "app.js — current BALA score logic",
+      "index.html — score display UI",
+    ],
+    prompt: `<role>
+Senior product engineer + safety reviewer for BALA health-awareness scoring.
+</role>
+<context>
+BALA currently shows a health score based on demo data. The founder wants to model every real signal correctly with safe math, transparent inputs, and awareness-only framing.
+</context>
+<task>
+Design a BALA Score model that:
+1. Lists all possible signal inputs and their contribution weight range
+2. Handles missing data gracefully (confidence level + note)
+3. Shows "what changed today vs baseline"
+4. Shows "what contributed to today's guide"
+5. Overrides with urgent-care guidance for chest pain / breathing / fainting
+6. Never claims prediction, diagnosis, or prevention
+</task>
+<rules>
+Safe language only: signals, awareness, reflection, patterns, "may help you notice", "not medical advice".
+Score range: 0-100 (not "good" or "bad" labels — use warm neutral labels).
+No fertility tracking in score without privacy gating.
+No score-based emergency claims — always: "If symptoms feel serious, contact emergency services immediately."
+</rules>
+<output_format>
+1. Signal input table (name, type, weight range, safe label)
+2. Score algorithm pseudocode (safe math, no ML claims)
+3. Missing-data handling spec
+4. "Why this changed" copy examples
+5. Emergency override spec
+</output_format>`,
+    validationCommands: [
+      "node --check app.js",
+      "node scripts\\chintu-medical-claims.test.js",
+      "node scripts\\chintu-bala-safe-docs.test.js",
+    ],
+    parked: [
+      "ML-based predictive scoring (never — awareness only)",
+      "Lab report values in base score (parked — review explainer track only)",
+      "Cardiac risk prediction in score (never)",
+    ],
+    nextAction: "Review BALA_SCORE_MODEL_REVIEW_PLAN.md (Stage 22 doc). Copy the prompt above into Claude. Review the model it generates. Bring back the approved scoring spec.",
+    track: "BALA Your Coach",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None",
+  };
+}
+
+function packetReportExplainer() {
+  return {
+    understood: "You want to plan the BALA Report Metric Explainer MVP — helping users understand their own lab reports safely.",
+    lane: "BALA Your Coach — Report Explainer (Track 1 — Planning)",
+    safetyGates: [
+      "No diagnosis: never say 'you have disease X'",
+      "No medication recommendations",
+      "No treatment plans",
+      "No uploading report to external server by default",
+      "Must show safe copy: 'I can explain values and prepare questions for your doctor. I cannot diagnose.'",
+      "Emergency signals in report → redirect to clinician immediately",
+    ],
+    filesInvolved: [
+      "BALA_REPORT_METRIC_EXPLAINER_PLAN.md — Stage 22 plan",
+      "BALA_REPORT_EXPLAINER_ARCHITECTURE.md — Stage 21 architecture",
+      "BALA_REPORT_EXPLAINER_SAFETY_PLAN.md — safety boundaries",
+    ],
+    prompt: `<role>
+Senior product engineer + medical safety reviewer for BALA's Report Metric Explainer.
+</role>
+<context>
+BALA users want to understand their lab reports (blood panel, HbA1c, thyroid, CBC, lipid profile, vitamin levels) in plain language.
+BALA must never diagnose. It must help users arrive at doctor appointments prepared.
+</context>
+<task>
+Design the BALA Report Metric Explainer MVP flow:
+1. User pastes/types report text or manually enters metric + value + unit + reference range
+2. BALA extracts: metric name, value, unit, reference range, flag (high/low/normal per report)
+3. BALA explains the metric in 2-3 calm sentences (what it generally measures)
+4. BALA notes whether the report itself flagged it outside range
+5. BALA generates 2-3 doctor-ready questions for the user
+6. BALA creates a visit-prep summary
+</task>
+<rules>
+NEVER say: "You have [disease]", "You should take [medication]", "This means [diagnosis]".
+ALWAYS say: "Your report shows…", "This is worth discussing with your doctor", "These are possible questions to ask".
+Safe copy must appear before any interaction: "I can help explain this report in simpler language and prepare questions for your doctor. I cannot diagnose conditions or tell you what treatment to take."
+No report data uploaded externally. Local processing only.
+</rules>
+<output_format>
+1. MVP flow diagram (text-based)
+2. Metric explainer template (safe copy pattern)
+3. Doctor-question generation template
+4. Visit-prep summary template
+5. Safety disclaimer spec
+</output_format>`,
+    validationCommands: [
+      "node scripts\\chintu-medical-claims.test.js",
+      "node scripts\\chintu-bala-safe-docs.test.js",
+    ],
+    parked: [
+      "X-ray / imaging interpretation",
+      "Genetic report analysis",
+      "Medication interaction checking",
+      "Building the UI (this is planning stage only)",
+    ],
+    nextAction: "Review BALA_REPORT_METRIC_EXPLAINER_PLAN.md (Stage 22). Copy the prompt into Claude. Review the MVP flow. Get founder approval before building the UI.",
+    track: "BALA Your Coach",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None — local processing only",
+  };
+}
+
+function packetLanguageLock() {
+  return {
+    understood: "You want to plan the BALA Indian Language Lock MVP — multi-language support for health awareness copy.",
+    lane: "BALA Your Coach — Language Lock (Track 1 — Planning)",
+    safetyGates: [
+      "Medical safety rules apply in all languages — no diagnosis in any translation",
+      "Translations must preserve safe copy intent, not just word-for-word",
+      "No external translation API calls by default",
+      "Privacy: no health data sent to translation service",
+    ],
+    filesInvolved: [
+      "BALA_INDIAN_LANGUAGE_LOCK_PLAN.md — current plan",
+      "index.html, app.js — language toggle implementation",
+    ],
+    prompt: `<role>
+Senior product engineer for BALA, planning multi-language (English + Indian regional languages) health-awareness copy.
+</role>
+<context>
+BALA currently operates in English. The founder wants to support Tamil, Hindi, and possibly Telugu as a first-phase language lock. Health copy must be medically safe in all languages.
+</context>
+<task>
+Design the BALA Language Lock MVP:
+1. Language detection or user toggle (EN / தமிழ் / हिंदी)
+2. Key string table for all BALA copy
+3. Safe translation spec for medical/health strings (preserve intent, not just words)
+4. Implementation approach: JSON i18n file + data-i18n attributes or JS interpolation
+5. Testing plan: ensure no medical claims slip in through translation
+</task>
+<rules>
+BALA medical safety rules apply in every language.
+No external translation API in frontend — use a local JSON string table.
+Default to English if translation missing (never show raw key).
+</rules>
+<output_format>
+1. Language support plan (which languages, which phase)
+2. JSON string table structure (example)
+3. Implementation steps
+4. Safety QA plan for translated strings
+</output_format>`,
+    validationCommands: [
+      "node --check app.js",
+      "node scripts\\chintu-medical-claims.test.js",
+    ],
+    parked: [
+      "Real-time translation API",
+      "Voice coach in regional languages (Stage 25+)",
+      "Full locale formatting (dates, numbers)",
+    ],
+    nextAction: "Review BALA_INDIAN_LANGUAGE_LOCK_PLAN.md. Copy the prompt into Claude. Review the language architecture. Bring back an approved string table structure.",
+    track: "BALA Your Coach",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None",
+  };
+}
+
+function packetAppBuilder() {
+  return {
+    understood: "You want a structured prompt to use with an AI app-builder (Replit, Bolt, v0, Lovable, etc.) to scaffold a new BALA or Chintu app feature.",
+    lane: "Chintu OS — App-Builder Prompt (Track 2)",
+    safetyGates: [
+      "Generated app must not include tracking scripts or analytics",
+      "Health data must stay local by default",
+      "No paid API keys hardcoded in frontend",
+      "BALA medical safety copy required in any health-facing UI",
+      "Review app-builder output before deploying",
+    ],
+    filesInvolved: [
+      "index.html, app.js, styles.css — reference for BALA app shell",
+      "CHINTU_ALLEGRO.html — reference for operator shell style",
+      "manifest.webmanifest — PWA reference",
+    ],
+    prompt: `# App-builder prompt for BALA / Chintu OS
+
+## What to build
+[Describe the feature or mini-app in 1-2 sentences.]
+
+## Tech stack
+- Single HTML file (no build tools required)
+- Vanilla JS or minimal framework
+- CSS custom properties for theming
+- PWA-ready (add manifest + service worker if standalone)
+- Mobile-first (375px min-width)
+
+## Design reference
+- Background: #0d1117 (dark) or #f5f7f8 (BALA light)
+- Accent: #58a6ff (Chintu) or #2ea043 (BALA green)
+- Font: system-ui, -apple-system, Segoe UI
+- No external CSS frameworks (no Bootstrap, no Tailwind CDN)
+
+## Rules
+- No localStorage for health data
+- No external API calls without user action
+- No tracking scripts
+- BALA health copy: awareness-only, no diagnosis, no medical claims
+- Mobile-first, no horizontal overflow at 375px
+
+## Output
+Return a single index.html file, complete and ready to open in a browser.
+No explanation, no markdown, no separate files.`,
+    validationCommands: [
+      "node scripts\\chintu-medical-claims.test.js",
+      "node scripts\\chintu-no-network-egress.test.js",
+    ],
+    parked: [
+      "Full multi-file React app builds via app-builder (use BALA PWA for that)",
+      "Automated deployment from app-builder output",
+    ],
+    nextAction: "Fill in the [placeholders] in the prompt above → paste into your app-builder of choice → review the output before committing or deploying.",
+    track: "Both",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None",
+  };
+}
+
+function packetDefault(raw) {
+  return {
+    understood: `I received: "${raw.substring(0, 120)}". I don't have a specific packet for this exact command, but here's a general planning packet.`,
+    lane: "Both tracks — needs clarification",
+    safetyGates: [
+      "Clarify which track: BALA Your Coach or Chintu OS",
+      "No live external sends without approval",
+      "No medical claims if BALA is involved",
+    ],
+    filesInvolved: [
+      "CHINTU_FOUNDER_COMMAND_MAP.md — existing command map",
+      "BALA_NEXT_SAFE_SPRINT_PLAN.md — BALA backlog",
+      "CHINTU_ACTION_QUEUE.md — Chintu task queue",
+    ],
+    prompt: `<role>
+Act as Chintu, the local-first operator for BALA and Chintu OS.
+</role>
+<context>
+Founder command: "${raw.substring(0, 200)}"
+</context>
+<task>
+Interpret this command and produce:
+1. What you understood
+2. Which track this belongs to (BALA / Chintu / Both)
+3. A safe, practical next step
+4. Files likely involved
+5. Copy-paste validation commands
+</task>
+<rules>
+BALA safety rules apply if health is involved.
+No external sends without approval gate.
+Prefer dry-run and preview before any real action.
+</rules>`,
+    validationCommands: [
+      "git status --short",
+      "node scripts\\chintu-prompt-engine.js --framework xml --track both --task \"" + raw.substring(0, 80) + "\"",
+    ],
+    parked: [
+      "Live execution — use the Command Center tab for copy-paste commands",
+    ],
+    nextAction: "Try a more specific command — e.g. 'Build next BALA sprint', 'Check connector readiness', or 'Generate Claude prompt'. Or run the prompt above in Claude to get a more tailored plan.",
+    track: "Unknown — needs clarification",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "None",
+  };
+}
+</script>
+</body>
+</html>
