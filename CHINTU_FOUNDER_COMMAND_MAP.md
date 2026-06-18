@@ -37,6 +37,11 @@ explicitly approves it.
 | `node --check sw.js` | Service worker syntax. |
 | `node scripts\chintu-snapshot-consistency.test.js` | History vs dashboard snapshot. |
 | `node scripts\chintu-agent-control-shell.test.js` | Agent control shell contract. |
+| `node scripts\chintu-command-map.test.js` | This map vs scripts/ integrity. |
+| `node scripts\chintu-memory-vault.test.js` | Vault README vs files integrity. |
+| `node scripts\chintu-no-network-egress.test.js` | Chintu scripts contain no egress patterns. |
+| `node scripts\chintu-medical-claims.test.js` | Chintu/BALA docs contain no unsafe claims. |
+| `node scripts\chintu-safety-boundary.test.js` | Protected BALA file list stays canonical. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |

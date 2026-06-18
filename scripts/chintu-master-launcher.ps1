@@ -126,6 +126,33 @@ Add-Step "agent control shell test" {
     return 0
 } $true
 
+Add-Step "no network egress test" {
+    if (Test-Path -LiteralPath "scripts/chintu-no-network-egress.test.js") {
+        & node "scripts/chintu-no-network-egress.test.js" | Out-Host
+        return $LASTEXITCODE
+    }
+    Write-Host "  (no-network-egress test not present, skipping)"
+    return 0
+} $true
+
+Add-Step "medical claims test" {
+    if (Test-Path -LiteralPath "scripts/chintu-medical-claims.test.js") {
+        & node "scripts/chintu-medical-claims.test.js" | Out-Host
+        return $LASTEXITCODE
+    }
+    Write-Host "  (medical-claims test not present, skipping)"
+    return 0
+} $true
+
+Add-Step "safety boundary test" {
+    if (Test-Path -LiteralPath "scripts/chintu-safety-boundary.test.js") {
+        & node "scripts/chintu-safety-boundary.test.js" | Out-Host
+        return $LASTEXITCODE
+    }
+    Write-Host "  (safety-boundary test not present, skipping)"
+    return 0
+} $true
+
 Add-Step "chintu-validate" {
     & powershell -ExecutionPolicy Bypass -File "scripts/chintu-validate.ps1" -NoFile | Out-Host
     return $LASTEXITCODE

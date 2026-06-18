@@ -89,6 +89,9 @@ function Run-Extra([string]$label, [string]$relPath, [string]$cmd) {
 Run-Extra "Command map integrity" "scripts\chintu-command-map.test.js" "node"
 Run-Extra "Memory vault integrity" "scripts\chintu-memory-vault.test.js" "node"
 Run-Extra "Agent control shell"    "scripts\chintu-agent-control-shell.test.js" "node"
+Run-Extra "No network egress"      "scripts\chintu-no-network-egress.test.js" "node"
+Run-Extra "Medical claims"         "scripts\chintu-medical-claims.test.js" "node"
+Run-Extra "Safety boundary"        "scripts\chintu-safety-boundary.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"
