@@ -50,6 +50,10 @@ $sections = @(
         @{ Path = "CHINTU_AGENT_DASHBOARD.html"; Label = "Agent Control Shell Dashboard" },
         @{ Path = "CHINTU_CONTROL_ROOM_INDEX.html"; Label = "Control Room Index (this page)" }
     )},
+    @{ Title = "Founder Command Map"; Files = @(
+        @{ Path = "CHINTU_FOUNDER_COMMAND_MAP.md"; Label = "Founder Command Map" },
+        @{ Path = "scripts/chintu-master-launcher.ps1"; Label = "Master Launcher Script" }
+    )},
     @{ Title = "Operator Reports"; Files = @(
         @{ Path = "CHINTU_OPERATOR_STATUS.md"; Label = "Operator Status" },
         @{ Path = "CHINTU_ALIVE_BRIEFING.md"; Label = "Alive Briefing" },
@@ -91,7 +95,12 @@ $sections = @(
         @{ Path = "CHINTU_MEMORY_VAULT/CHINTU_AGENT_ARCHITECTURE.md"; Label = "Agent Architecture" }
     )},
     @{ Title = "Validation Scripts"; Files = @(
+        @{ Path = "scripts/chintu-master-launcher.ps1"; Label = "Master Launcher (one-command sweep)" },
         @{ Path = "scripts/chintu-validate.ps1"; Label = "Validator" },
+        @{ Path = "scripts/chintu-command-map.test.js"; Label = "Command Map Integrity Test" },
+        @{ Path = "scripts/chintu-memory-vault.test.js"; Label = "Memory Vault Integrity Test" },
+        @{ Path = "scripts/chintu-snapshot-consistency.test.js"; Label = "Snapshot Consistency Test" },
+        @{ Path = "scripts/chintu-agent-control-shell.test.js"; Label = "Agent Control Shell Test" },
         @{ Path = "scripts/chintu-release-guard.ps1"; Label = "Release Guard" },
         @{ Path = "scripts/chintu-bridge-command-center.ps1"; Label = "Bridge Command Center Script" },
         @{ Path = "scripts/chintu-next-action.ps1"; Label = "Next Action" },

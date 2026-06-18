@@ -36,7 +36,7 @@
     <p class="eyebrow">CHINTU OS / LOCAL CONTROL ROOM</p>
     <h1>Control Room Index</h1>
     <p>Every Chintu OS report, dashboard, doc, and script in one place. Open locally. Nothing phones home.</p>
-    <p class="meta">Generated 2026-06-18 02:38 -04:00 | Branch: main | Latest: f0adfdb chore: add Chintu agent control shell and BALA touchpoints</p>
+    <p class="meta">Generated 2026-06-18 02:56 -04:00 | Branch: main | Latest: ca4cee6 chore: add Chintu memory vault integrity test and complete vault index</p>
     <p class="meta"><strong>Static snapshot.</strong> Re-run <code>scripts/chintu-control-room-index.ps1</code> to refresh.</p>
   </header>
   <main>
@@ -44,7 +44,14 @@
       <h2>Dashboards</h2>
       <ul>
         <li class="present"><span class="file-status">present</span> <a href="CHINTU_AGENT_DASHBOARD.html">Agent Control Shell Dashboard</a> <code>CHINTU_AGENT_DASHBOARD.html</code></li>
-        <li class="missing"><span class="file-status">not yet created</span> Control Room Index (this page) <code>CHINTU_CONTROL_ROOM_INDEX.html</code></li>
+        <li class="present"><span class="file-status">present</span> <a href="CHINTU_CONTROL_ROOM_INDEX.html">Control Room Index (this page)</a> <code>CHINTU_CONTROL_ROOM_INDEX.html</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Founder Command Map</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Founder Command Map <code>CHINTU_FOUNDER_COMMAND_MAP.md</code></li>
+        <li class="present"><span class="file-status">present</span> Master Launcher Script <code>scripts/chintu-master-launcher.ps1</code></li>
       </ul>
     </section>
     <section class="card">
@@ -84,8 +91,8 @@
       <h2>Claude / Codex Builder Lanes</h2>
       <ul>
         <li class="present"><span class="file-status">present</span> Claude Overnight Prompt <code>CHINTU_CLAUDE_OVERNIGHT_PROMPT.md</code></li>
-        <li class="missing"><span class="file-status">not yet created</span> Claude Builder Report <code>CHINTU_CLAUDE_BUILDER_REPORT.md</code></li>
-        <li class="missing"><span class="file-status">not yet created</span> Claude Survival Handoff <code>CHINTU_CLAUDE_SURVIVAL_HANDOFF.md</code></li>
+        <li class="present"><span class="file-status">present</span> Claude Builder Report <code>CHINTU_CLAUDE_BUILDER_REPORT.md</code></li>
+        <li class="present"><span class="file-status">present</span> Claude Survival Handoff <code>CHINTU_CLAUDE_SURVIVAL_HANDOFF.md</code></li>
       </ul>
     </section>
     <section class="card">
@@ -108,7 +115,12 @@
     <section class="card">
       <h2>Validation Scripts</h2>
       <ul>
+        <li class="present"><span class="file-status">present</span> Master Launcher (one-command sweep) <code>scripts/chintu-master-launcher.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Validator <code>scripts/chintu-validate.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Command Map Integrity Test <code>scripts/chintu-command-map.test.js</code></li>
+        <li class="present"><span class="file-status">present</span> Memory Vault Integrity Test <code>scripts/chintu-memory-vault.test.js</code></li>
+        <li class="present"><span class="file-status">present</span> Snapshot Consistency Test <code>scripts/chintu-snapshot-consistency.test.js</code></li>
+        <li class="present"><span class="file-status">present</span> Agent Control Shell Test <code>scripts/chintu-agent-control-shell.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Release Guard <code>scripts/chintu-release-guard.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Bridge Command Center Script <code>scripts/chintu-bridge-command-center.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Next Action <code>scripts/chintu-next-action.ps1</code></li>
