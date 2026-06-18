@@ -1,6 +1,6 @@
 # Chintu Alive Briefing
 
-**Generated:** 2026-06-18 02:38
+**Generated:** 2026-06-18 03:31
 **Branch:** main
 
 ---
@@ -8,14 +8,14 @@
 ## Bro, here is what changed
 
 Latest commits:
-- `f0adfdb chore: add Chintu agent control shell and BALA touchpoints`
-- `3ef0e03 chore: add Chintu alive daily operator layer`
-- `05abebb chore: add Chintu bridge command center and iMac option 12 package`
-- `a1480d5 chore: add Chintu auto bridge transfer`
-- `0745626 chore: add Chintu bridge daily export`
+- `c4ea653 docs: add Chintu safety invariants + operator FAQ, update cycle-4 survival handoff`
+- `9210ddf chore: add Chintu BALA-safe-docs, parked-systems, continuation-prompts integrity tests`
+- `00a8fd5 docs: add Chintu codex review, claude continuation, next-thread, push checklist`
+- `0496544 docs: park future agent architecture and local LLM/voice/phone research notes`
+- `4426990 docs: add BALA safe planning specs (voice, tester feedback, privacy, doctor summary, local AI)`
 
-Working tree has 7 uncommitted change(s). Review before continuing.
-1 commit(s) not yet pushed. Founder owns every push.
+Working tree has 4 uncommitted change(s). Review before continuing.
+15 commit(s) not yet pushed. Founder owns every push.
 
 ## What is safe
 

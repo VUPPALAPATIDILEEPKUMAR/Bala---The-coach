@@ -1,25 +1,25 @@
 # Chintu OS Health Check
 
-**Generated:** 2026-06-18 02:38
+**Generated:** 2026-06-18 03:31
 **Repo:** C:\Users\Chintu\Desktop\test
 **Branch:** main
-**Latest commit:** `f0adfdb chore: add Chintu agent control shell and BALA touchpoints`
+**Latest commit:** `c4ea653 docs: add Chintu safety invariants + operator FAQ, update cycle-4 survival handoff`
 
-## Overall status: **YELLOW**
+## Overall status: **RED**
 
-Needs review. 2 item(s) need attention.
+STOP. 1 critical issue(s) found. Review before continuing.
 
 - GREEN checks: 36
-- YELLOW checks: 2
-- RED checks: 0
+- YELLOW checks: 1
+- RED checks: 1
 
 ## Detailed checks
 
 | Category | Check | Status | Detail |
 |---|---|---|---|
-| Repo | Working tree | **YELLOW** | 6 changes |
-| Repo | Latest commit | **GREEN** | `f0adfdb chore: add Chintu agent control shell and BALA touchpoints` |
-| Repo | Unpushed commits | **YELLOW** | 1 |
+| Repo | Working tree | **YELLOW** | 4 changes |
+| Repo | Latest commit | **GREEN** | `c4ea653 docs: add Chintu safety invariants + operator FAQ, update cycle-4 survival handoff` |
+| Repo | Unpushed commits | **RED** | 15 - review and push |
 | Validation | chintu-validate | **GREEN** | Present |
 | Validation | chintu-release-guard | **GREEN** | Present |
 | Validation | chintu-bridge-command-center | **GREEN** | Present |
