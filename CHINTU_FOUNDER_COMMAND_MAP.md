@@ -52,6 +52,7 @@ explicitly approves it.
 | `node scripts\chintu-restart-recovery.test.js` | Restart-recovery script + report safety contract. |
 | `node scripts\chintu-telegram-status-plan.test.js` | Telegram status plan stays parked and no script targets api.telegram.org. |
 | `node scripts\chintu-bridge-loop-reality-check.test.js` | Bridge reality-check script + docs carry footer, no forbidden URLs or secrets. |
+| `node scripts\chintu-imac-option-12-sha-parse.test.js` | iMac Option 12 install script uses robust SHA-256 parsing + lowercase compare. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |

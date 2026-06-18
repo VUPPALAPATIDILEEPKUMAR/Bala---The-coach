@@ -1,8 +1,38 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (cycle 6 — Bridge Loop Reality Test layer)
+**Stage:** 11 (cycle 6b — iMac Option 12 SHA-parse fix landed)
 **Date:** 2026-06-18
 **Mode:** local-first, founder-driven, push-pending-human-approval
+
+## 0a-2. What cycle 6b added (real-bug fix)
+
+Founder ran iMac Option 12 manually. The first install + pull failed
+with a **false** SHA-256 mismatch. Root cause: the iMac
+`bridge-pull-shared.sh` (emitted as a heredoc by
+`install-option-12.sh`) parsed `MANIFEST.txt` with `awk -F': '`, which
+mis-handles multi-space alignment after the colon, and used a
+case-sensitive compare against an uppercase manifest hash vs the
+lowercase `shasum -a 256` output.
+
+Fix in `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/install-option-12.sh`:
+
+- `EXPECTED_SHA=$(sed -n 's/^ZIP_SHA256:[[:space:]]*//p' "$MANIFEST_PATH" | head -n 1 | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')`
+- `ACTUAL_SHA=$(compute_sha256 "$ZIP_PATH" | tr '[:upper:]' '[:lower:]') || { ... }`
+
+Regression guard:
+
+- `scripts/chintu-imac-option-12-sha-parse.test.js` — asserts both
+  the sed-based parse and the lowercase compare are present, and
+  that the old `awk -F': '` pattern has not returned. Wired into the
+  release guard and the founder command map.
+
+Docs updated to mention the false-mismatch root cause and the verified
+successful run after the patch:
+`CHINTU_IMAC_OPTION_12_INSTALL_NOW.md` (status block + failure table
+row), `CHINTU_BRIDGE_LOOP_TEST_LOG.md` (first-run record),
+`CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/README.md` (SHA-parse note
+section), `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/IMAC_TEST_PLAN.md`
+(historical note in §4).
 
 ## 0a. What cycle 6 added (read first)
 

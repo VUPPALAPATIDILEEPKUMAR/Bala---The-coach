@@ -7,6 +7,14 @@ A founder step-by-step for today. Read top to bottom. Pair with
 reports **GREEN**. If it reports YELLOW or RED, fix that before
 installing.
 
+**Status:** verified end-to-end on 2026-06-18. The first manual run
+surfaced a parsing bug in `bridge-pull-shared.sh` that caused a *false*
+SHA-256 mismatch. Root cause: `awk -F': '` mis-parsed `MANIFEST.txt`
+when the colon had multiple spaces after it, and the hashes weren't
+case-normalized. The package in this repo now uses
+`sed -n 's/^ZIP_SHA256:[[:space:]]*//p'` and lowercases both sides.
+A fresh `bash install-option-12.sh` on the iMac picks up the fix.
+
 ---
 
 ## 1. Where the package lives on Windows
@@ -117,7 +125,8 @@ Fill `CHINTU_BRIDGE_LOOP_TEST_LOG.md` as you go.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Installer says "Omega could not be patched" | Older Omega script shape | Keep using the Desktop `.command`; review Omega manually later. |
-| Hash mismatch on first pull | Zip mid-sync from cloud | Wait for sync to complete on iMac, retry. |
+| Hash mismatch on first pull (real) | Zip mid-sync from cloud | Wait for sync to complete on iMac, retry. |
+| Hash mismatch on first pull (false) | Pre-fix `bridge-pull-shared.sh` with `awk -F': '` parsing | Rerun `bash install-option-12.sh` from this repo's package — it overwrites the pull script with the sed-based, lowercase-normalized version. |
 | "shared folder path not found" | iCloud not signed in or wrong path | Confirm Finder can open the folder, then re-enter the path. |
 | Option 12 missing from Omega menu | Patch step skipped | Use the Desktop `.command`; or rerun the installer. |
 | `bridge-sync.sh` fails | iMac control room scripts moved | Re-clone iMac control room from your last known good state. |

@@ -36,6 +36,16 @@
    `~/Documents/CHINTU_CONTROL_ROOM/logs/bridge-pull-shared.log`.
 3. Confirm no extraction happens when the hash does not match.
 
+**Historical note:** earlier versions of `bridge-pull-shared.sh` parsed
+`MANIFEST.txt` with `awk -F': '`, which truncated/misread the
+`ZIP_SHA256` value when the manifest used variable spacing. That
+caused a *false* SHA mismatch even when the zip was intact. The fix
+is to use `sed -n 's/^ZIP_SHA256:[[:space:]]*//p'` and normalize both
+expected and actual hashes to lowercase. The current package contains
+this fix; if you patched an earlier install manually, rerunning
+`install-option-12.sh` overwrites the script with the corrected
+version.
+
 ## 5. Bridge status opens check
 
 1. After a successful run, confirm:

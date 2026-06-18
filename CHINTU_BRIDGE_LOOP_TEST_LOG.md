@@ -6,6 +6,40 @@ happened, what worked, and what to retry tomorrow.
 
 ---
 
+## First verified end-to-end run — 2026-06-18
+
+**Outcome:** PASS after one in-place patch.
+
+What happened: install completed, shared bridge package was present
+on iMac, but `bridge-pull-shared.sh` stopped with a SHA-256 mismatch
+that turned out to be a *false* mismatch. The script parsed
+`MANIFEST.txt` with `awk -F': '`, which truncated/misread the
+`ZIP_SHA256` value when the manifest had variable spacing after the
+colon. The manifest also stored the hash uppercase while
+`shasum -a 256` returned lowercase.
+
+Manual iMac patch that worked:
+
+```bash
+# In bridge-pull-shared.sh, robust parse + case normalize:
+EXPECTED_SHA=$(sed -n 's/^ZIP_SHA256:[[:space:]]*//p' "$MANIFEST_PATH" \
+  | head -n 1 | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+ACTUAL_SHA=$(compute_sha256 "$ZIP_PATH" | tr '[:upper:]' '[:lower:]') || {
+```
+
+After the patch the pull succeeded: SHA-256 verified, `FROM_WINDOWS/`
+refreshed from `CHINTU_BRIDGE_LATEST.zip`, bridge sync processed 7/7,
+`BRIDGE_STATUS.html` opened.
+
+The source package (`CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/install-option-12.sh`)
+has been updated with the same fix, so future iMac installs are
+correct from the start. Reinstall on the iMac with
+`bash install-option-12.sh` to pick up the fix without manual patching.
+
+---
+
+---
+
 ## Run metadata
 
 - **Date / time:** ___________

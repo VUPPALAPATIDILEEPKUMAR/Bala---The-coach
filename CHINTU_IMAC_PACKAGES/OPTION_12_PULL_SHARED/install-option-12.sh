@@ -147,14 +147,17 @@ if [ ! -f "$MANIFEST_PATH" ]; then
   exit 1
 fi
 
-EXPECTED_SHA=$(awk -F': ' '/^ZIP_SHA256:/ {print $2; exit}' "$MANIFEST_PATH")
+# Robust manifest parsing: tolerate variable whitespace after the
+# colon and case differences between the manifest's hex (often
+# uppercase on Windows) and shasum/openssl output (lowercase on macOS).
+EXPECTED_SHA=$(sed -n 's/^ZIP_SHA256:[[:space:]]*//p' "$MANIFEST_PATH" | head -n 1 | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
 if [ -z "$EXPECTED_SHA" ]; then
   log "WARN: ZIP_SHA256 is missing in MANIFEST.txt"
   log "Use manual option 11 or rerun the Windows daily export."
   exit 1
 fi
 
-ACTUAL_SHA=$(compute_sha256 "$ZIP_PATH") || {
+ACTUAL_SHA=$(compute_sha256 "$ZIP_PATH" | tr '[:upper:]' '[:lower:]') || {
   log "WARN: Could not compute SHA-256 on this iMac."
   log "Use manual option 11 or rerun the Windows daily export."
   exit 1

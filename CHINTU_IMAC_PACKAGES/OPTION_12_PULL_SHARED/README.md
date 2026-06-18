@@ -63,6 +63,18 @@ It saves that folder path to:
 
 Later runs reuse the saved path unless the founder types a new one.
 
+## SHA-256 parsing note (post-2026-06-18 fix)
+
+`bridge-pull-shared.sh` parses `ZIP_SHA256` from `MANIFEST.txt` using
+`sed -n 's/^ZIP_SHA256:[[:space:]]*//p'` and normalizes both the
+expected and actual hashes to lowercase before comparing. An earlier
+version used `awk -F': '` and a case-sensitive compare, which produced
+a false SHA mismatch on iMac when the manifest had multi-space
+alignment after the colon and the manifest hash was uppercase while
+`shasum -a 256` output was lowercase. Reinstalling Option 12 with the
+current `install-option-12.sh` overwrites the script and picks up the
+fix.
+
 ## Option 11 remains the manual fallback
 
 Manual Omega option 11 is still the fallback path. If Option 12 stops because
