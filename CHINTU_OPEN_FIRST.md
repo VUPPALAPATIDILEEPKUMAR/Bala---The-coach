@@ -32,6 +32,26 @@ reminder*, not a safety failure. See `CHINTU_SAFETY_INVARIANTS.md` §5.
 
 ---
 
+## 2a. Run the planner
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-action-planner.ps1
+```
+
+Then open `CHINTU_ACTION_QUEUE.md`, `CHINTU_APPROVAL_CENTER.md`, and
+`CHINTU_NEXT_OPERATOR_PROMPT.md`. They tell you the top 5 safe next
+actions, any founder approvals required, and the one best safe-now
+command.
+
+If you approve a queued item by hand, record it locally in
+[CHINTU_APPROVAL_AUDIT.md](CHINTU_APPROVAL_AUDIT.md):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-approval-audit.ps1 -ApprovalPhrase "approve <id>"
+```
+
+---
+
 ## 3. The first file to open after the launcher
 
 [CHINTU_TOMORROW_MORNING_BRIEF.md](CHINTU_TOMORROW_MORNING_BRIEF.md) —

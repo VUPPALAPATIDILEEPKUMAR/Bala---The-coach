@@ -1,5 +1,8 @@
 # Chintu Stage 13 Progress
 
+Update 2026-06-18: items 3, 5, and 6 are now done. Stage 13B remains
+open only for items 1 and 2.
+
 **Stage 13A status:** SHIPPED.
 **Stage 13B status:** PARTIAL — visibility slice landed (item 4).
 Remaining items (1, 2, 3, 5, 6) still open for Codex.
@@ -50,9 +53,12 @@ In priority order:
    inputs and asserts which action `id`s end up in the top 5. This
    guards the heuristic in `scripts/chintu-action-planner.ps1`.
 
-3. **Approval audit log.** Append a tracked `CHINTU_APPROVAL_AUDIT.md`
-   row every time the founder runs an `approve <id>` action by hand.
-   Tracked, append-only, no auto-edits.
+3. ~~**Approval audit log.** Append a tracked
+   `CHINTU_APPROVAL_AUDIT.md` row every time the founder runs an
+   `approve <id>` action by hand. Tracked, append-only, no
+   auto-edits.~~ **DONE 2026-06-18** - tracked audit log added,
+   helper script appends one row per founder approval, and planner
+   approval cards point to the logging step.
 
 4. ~~**Control-room generator update.** Surface the action queue,
    approval center, and next-operator prompt under a new
@@ -61,11 +67,13 @@ In priority order:
    "Chintu Planner" section added (action queue + approval center +
    next operator prompt + JSON mirror + generator + test).
 
-5. **`CHINTU_OPEN_FIRST.md` polish.** Add a "Run the planner" section
-   pointing at the new script.
+5. ~~**`CHINTU_OPEN_FIRST.md` polish.** Add a "Run the planner"
+   section pointing at the new script.~~ **DONE 2026-06-18** -
+   planner command + audit helper now live in Open First.
 
-6. **Survival handoff section.** Add a cycle-8 section to
-   `CHINTU_CLAUDE_SURVIVAL_HANDOFF.md`.
+6. ~~**Survival handoff section.** Add a cycle-8 section to
+   `CHINTU_CLAUDE_SURVIVAL_HANDOFF.md`.~~ **DONE 2026-06-18** -
+   cycle-8 planner approval workflow handoff added.
 
 Stage 13B should NOT:
 

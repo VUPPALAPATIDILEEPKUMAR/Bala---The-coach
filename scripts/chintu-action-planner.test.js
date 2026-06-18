@@ -84,6 +84,14 @@ if (fs.existsSync(center)) {
   if (!hasApprovePhrase && !hasNoneHeader) {
     fail('CHINTU_APPROVAL_CENTER.md has neither an "approve <id>" phrase nor a "no approval needed" header');
   }
+  if (hasApprovePhrase) {
+    if (!t.includes('CHINTU_APPROVAL_AUDIT.md')) {
+      fail('CHINTU_APPROVAL_CENTER.md missing CHINTU_APPROVAL_AUDIT.md reference for approval workflow');
+    }
+    if (!t.includes('scripts\\chintu-approval-audit.ps1')) {
+      fail('CHINTU_APPROVAL_CENTER.md missing approval-audit helper command');
+    }
+  }
 }
 
 if (fs.existsSync(jsonP)) {

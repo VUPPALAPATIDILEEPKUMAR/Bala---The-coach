@@ -56,6 +56,7 @@ hashes) are expected after every run.
 | `CHINTU_CONTROL_ROOM_INDEX.html` | `scripts/chintu-control-room-index.ps1` | static index of safe commands |
 | `CHINTU_OS_HEALTH_CHECK.md` | `scripts/chintu-os-health-check.ps1` | repo + scripts + reports status |
 | `CHINTU_ALIVE_BRIEFING.md` | `scripts/chintu-alive-briefing.ps1` | plain-English daily briefing |
+| `CHINTU_APPROVAL_AUDIT.md` | `scripts/chintu-approval-audit.ps1` | tracked, append-only founder approval log |
 
 ---
 

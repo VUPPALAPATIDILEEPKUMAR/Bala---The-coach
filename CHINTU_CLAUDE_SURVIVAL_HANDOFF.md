@@ -1,5 +1,40 @@
 # Chintu Claude Survival Handoff
 
+## 0a-5. Cycle 8 - Stage 13B planner approval workflow
+
+Stage 13B moved from planner visibility into planner workflow polish.
+The approval path now has a tracked local audit, Open First points at
+the planner directly, and the control-room planner surface includes the
+new audit artifacts.
+
+New local approval-audit lane:
+
+- `CHINTU_APPROVAL_AUDIT.md` - tracked, append-only markdown audit log
+  for founder approvals of `approve <id>` planner actions.
+- `scripts/chintu-approval-audit.ps1` - validates an exact
+  `approve <id>` phrase, reads only local git metadata, and appends one
+  row to the audit log.
+- `scripts/chintu-approval-audit.test.js` - regression guard for the
+  helper + tracked audit doc. Wired into the release guard and founder
+  command map.
+
+Planner workflow polish:
+
+- `scripts/chintu-action-planner.ps1` approval cards now tell the
+  founder exactly how to record the approval in the audit log after
+  typing the phrase by hand.
+- `CHINTU_OPEN_FIRST.md` now has a dedicated "Run the planner" section.
+- `scripts/chintu-control-room-index.ps1` planner section now surfaces
+  the approval audit doc, helper, and test beside the existing planner
+  queue outputs.
+
+Stage 13B remains intentionally partial after this cycle:
+
+- Still open: tracked queue snapshot (`CHINTU_ACTION_QUEUE_TRACKED.md`)
+  and fixture-driven categoriser tests.
+- Still parked: all external connectors, network egress, health-data
+  transfer, and every protected BALA app file.
+
 **Stage:** 12 (cycle 7 — Alive Core + Connector-Ready Operator Layer + BALA Intelligence)
 **Date:** 2026-06-18
 **Mode:** local-first + dry-run, founder-driven, push-pending-human-approval

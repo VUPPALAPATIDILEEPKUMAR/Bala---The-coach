@@ -73,10 +73,13 @@ $sections = @(
     @{ Title = "Chintu Planner"; Files = @(
         @{ Path = "CHINTU_ACTION_QUEUE.md"; Label = "Action Queue (top 5 next actions)" },
         @{ Path = "CHINTU_APPROVAL_CENTER.md"; Label = "Approval Center (one card per needs-approval action)" },
+        @{ Path = "CHINTU_APPROVAL_AUDIT.md"; Label = "Approval Audit (tracked founder approval log)" },
         @{ Path = "CHINTU_NEXT_OPERATOR_PROMPT.md"; Label = "Next Operator Prompt (copy-paste-ready)" },
         @{ Path = "CHINTU_OUTBOX/latest_action_plan.json"; Label = "Latest Action Plan JSON mirror (DRY RUN ONLY)" },
         @{ Path = "scripts/chintu-action-planner.ps1"; Label = "Action Planner Generator" },
-        @{ Path = "scripts/chintu-action-planner.test.js"; Label = "Action Planner Test" }
+        @{ Path = "scripts/chintu-action-planner.test.js"; Label = "Action Planner Test" },
+        @{ Path = "scripts/chintu-approval-audit.ps1"; Label = "Approval Audit Helper" },
+        @{ Path = "scripts/chintu-approval-audit.test.js"; Label = "Approval Audit Test" }
     )},
     @{ Title = "Chintu Alive Outbox + Connectors"; Files = @(
         @{ Path = "CHINTU_DAILY_BRIEF.md"; Label = "Daily Brief (generated)" },
