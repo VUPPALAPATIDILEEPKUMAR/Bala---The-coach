@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// chintu-prompt-engine.js — Stage 20
+// chintu-prompt-engine.js — Stage 21
 // Generates copy-paste-ready XML / COSTAR / ACR prompt skeletons for Codex/Claude.
 // Local-only. No network calls. No secrets.
+// Stage 21 additions: voice-operator, bala-report-explainer, bala-language-lock, connector-activation task templates.
 'use strict';
 
 const fs = require('fs');
@@ -164,6 +165,60 @@ ${task}
 5. Stop and wait`;
 }
 
+
+// ---------------------------------------------------------------------------
+// Stage 21 task templates — ready-made --task values with recommended framework
+// Usage: node scripts/chintu-prompt-engine.js --template voice-operator
+//        node scripts/chintu-prompt-engine.js --list-templates
+// ---------------------------------------------------------------------------
+
+const TASK_TEMPLATES = {
+  'voice-operator': {
+    framework: 'xml',
+    track: 'chintu',
+    task: 'Build Chintu Voice Operator — local HTML app with SpeechRecognition/SpeechSynthesis, command-intent mapper, action preview panel, quick action buttons, and founder-tone response layer. No network calls. No secrets. No real connector sends from browser.',
+    notes: 'Stage 21 core deliverable. See CHINTU_VOICE_OPERATOR.html.'
+  },
+  'jarvis-console': {
+    framework: 'costar',
+    track: 'chintu',
+    task: 'Evolve Chintu Operator Console into a live readiness dashboard — agent board status, connector gate summary, action queue priority, and last-run pointers from CHINTU_AGENT_RUNS/. Local HTML only.',
+    notes: 'Planned for Stage 22. See CHINTU_OPERATOR_CONSOLE.html.'
+  },
+  'bala-report-explainer': {
+    framework: 'xml',
+    track: 'bala',
+    task: 'Build BALA Report Explainer — in-browser PDF/text parser that extracts flagged values from user-provided lab reports, explains terms in plain language, generates doctor-ready questions, and prepares a visit-prep summary. No diagnosis. No medication advice. No X-ray interpretation. No cloud upload. All local. User confirms data stays on device.',
+    notes: 'Stage 22+ target. Safety plan in BALA_REPORT_EXPLAINER_ARCHITECTURE.md. Build only after founder approval and in-browser PDF approach is validated.'
+  },
+  'bala-language-lock': {
+    framework: 'xml',
+    track: 'bala',
+    task: 'Implement BALA Indian language lock — deterministic language routing so that if user selects Telugu or Hindi, all coach responses and UI copy render in that language. No external translation API. All translations pre-built and local. Safe copy preserved in all languages. Telugu and Hindi first targets.',
+    notes: 'Stage 22+ target. Plan in BALA_INDIAN_LANGUAGE_LOCK_PLAN.md. Requires native speaker review before launch.'
+  },
+  'connector-activation': {
+    framework: 'acr',
+    track: 'chintu',
+    task: 'Activate Telegram connector safely — set CHINTU_BOT_TOKEN + CHINTU_CHAT_ID as env vars, verify allowlist, implement preview-before-send, approval phrase gate, local audit log entry, and pause/revoke path. No secrets in repo. No real send during tests. Dry-run must remain default unless CHINTU_CONNECTOR_MODE=active.',
+    notes: 'First real connector activation path. See CHINTU_REAL_CONNECTOR_TELEGRAM_RUNBOOK.md.'
+  }
+};
+
+/**
+ * buildFromTemplate(templateName)
+ * Returns { framework, track, task, notes, output } or null if not found.
+ */
+function buildFromTemplate(templateName) {
+  const tpl = TASK_TEMPLATES[templateName];
+  if (!tpl) return null;
+  let output = '';
+  if (tpl.framework === 'xml')    output = buildXML(tpl.task, tpl.track);
+  else if (tpl.framework === 'costar') output = buildCOSTAR(tpl.task, tpl.track);
+  else                            output = buildACR(tpl.task, tpl.track);
+  return { ...tpl, output };
+}
+
 // ---------------------------------------------------------------------------
 // Argument parser
 // ---------------------------------------------------------------------------
@@ -196,6 +251,40 @@ function parseArgs(argv) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
+
+  // --list-templates: show available task templates
+  if (args['list-templates'] || args.listTemplates) {
+    console.log('Available Stage 21 task templates (use with --template <name>):');
+    for (const [name, tpl] of Object.entries(TASK_TEMPLATES)) {
+      console.log('  --template ' + name);
+      console.log('      Framework: ' + tpl.framework + ' | Track: ' + tpl.track);
+      console.log('      Notes: ' + tpl.notes);
+    }
+    process.stderr.write('');
+    return;
+  }
+
+  // --template: use a pre-built Stage 21 task template
+  if (args.template) {
+    const templateName = String(args.template).toLowerCase();
+    const result = buildFromTemplate(templateName);
+    if (!result) {
+      console.error('FAIL: unknown template "' + templateName + '". Run with --list-templates to see options.');
+      process.exit(1);
+    }
+    const outFile = String(args.out || '');
+    if (outFile) {
+      const outPath = path.resolve(repoRoot, outFile);
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, result.output, 'utf8');
+      console.log('Template prompt written: ' + outFile);
+      console.log('Template: ' + templateName + ' | Framework: ' + result.framework + ' | Track: ' + result.track);
+    } else {
+      console.log(result.output);
+    }
+    process.stderr.write('');
+    return;
+  }
 
   const framework = String(args.framework || 'xml').toLowerCase();
   const track = String(args.track || 'both').toLowerCase();
@@ -233,4 +322,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { buildXML, buildCOSTAR, buildACR, parseArgs };
+module.exports = { buildXML, buildCOSTAR, buildACR, parseArgs, buildFromTemplate, TASK_TEMPLATES };

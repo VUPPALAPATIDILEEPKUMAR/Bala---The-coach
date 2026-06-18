@@ -835,7 +835,8 @@
           <label><input type="checkbox" name="factor" value="hydration" /> Hydration</label>
         </div>
         <div class="alcohol-calc-panel" id="alcohol-calc-panel" hidden>
-          <p class="alcohol-calc-title">Alcohol reflection (optional)</p>
+          <p class="alcohol-calc-title">Alcohol reflection — optional check-in</p>
+          <p class="alcohol-calc-subtitle">Estimate how much pure alcohol was in what you had. Useful if you notice patterns between alcohol and sleep or recovery signals.</p>
           <div class="alcohol-calc-grid">
             <label class="alcohol-label">Drink type
               <select name="alcohol_type" id="alcohol-type">
@@ -863,10 +864,10 @@
           </div>
           <div class="alcohol-result" id="alcohol-result" hidden>
             <p class="alcohol-estimate" id="alcohol-estimate"></p>
-            <p class="alcohol-note">Alcohol may affect sleep, recovery, hydration, and resting heart rate for some people.</p>
-            <p class="alcohol-disclaimer">Use this as reflection, not medical advice.</p>
+            <p class="alcohol-note">Some people notice changes in sleep quality, HRV, hydration, or resting heart rate after alcohol — this helps you track that pattern for yourself.</p>
+            <p class="alcohol-disclaimer">This is for personal reflection only — not medical advice. One US standard drink = 14 g pure alcohol (e.g. 355 ml of 5% beer, 148 ml of 12% wine, or 44 ml of 40% spirits).</p>
           </div>
-          <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks</button>
+          <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks (US)</button>
         </div>
         <label class="symptom-note">Optional reflection note<textarea name="note" maxlength="240" placeholder="For example: long travel day, extra coffee, hydrated well, or a pattern you want to reflect on"></textarea></label>
         <button class="dialog-primary" type="submit">Save daily factors</button>

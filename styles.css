@@ -623,6 +623,7 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 /* Alcohol standard drink calculator */
 .alcohol-calc-panel { margin-top: 10px; padding: 14px; border: 1px dashed #c8d9cc; border-radius: 14px; background: #f7faf7; display: grid; gap: 10px; }
 .alcohol-calc-title { margin: 0; font-size: 10px; font-weight: 750; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.alcohol-calc-subtitle { margin: 4px 0 0; font-size: 10px; color: var(--muted); line-height: 1.45; }
 .alcohol-calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .alcohol-label { display: grid; gap: 4px; font-size: 10px; color: var(--muted); }
 .alcohol-label select, .alcohol-label input[type="number"] { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 11px; background: var(--white); }
@@ -823,26 +824,4 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .device-grid { grid-template-columns: 1fr; }
   .page-header h1 { font-size: 39px; letter-spacing: -1.9px; }
   .score-panel { grid-template-columns: 88px 1fr; }
-  .score-ring { width: 88px; height: 88px; }
-  .score-ring strong { font-size: 30px; }
-  .score-checks { display: none; }
-  .voice-preview { flex-direction: column; }
-  #voice-preview-button { width: 100%; height: 72px; }
-  .trust-strip { padding: 14px 16px; grid-template-columns: 1fr; gap: 9px; }
-  .hero-intro { align-items: flex-start; flex-direction: column; gap: 8px; }
-  .onboarding-dialog form { padding: 34px 24px; }
-  .connections-section { padding: 22px 16px; border-radius: 22px; }
-  .connection-card { padding: 16px; }
-  .connection-card header > div { align-items: flex-start; flex-direction: column; gap: 6px; }
-  .connection-card dl > div { grid-template-columns: 1fr; gap: 4px; }
-  .source-card > p { min-height: 0; }
-  .source-card-actions, .import-dialog-actions { grid-template-columns: 1fr; }
-  .source-card-actions button:only-child { grid-column: auto; }
-  .import-result-list li { grid-template-columns: 1fr; gap: 3px; }
-  .data-portability-actions { grid-template-columns: 1fr; }
-  .future-vision { padding: 28px 23px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
-}
+  

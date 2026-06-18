@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Chintu Voice Operator</title>
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2430;
+      --border: #30363d;
+      --ink: #e6edf3;
+      --muted: #7d8590;
+      --accent: #2ea043;
+      --accent-soft: rgba(46,160,67,0.15);
+      --accent-glow: rgba(46,160,67,0.35);
+      --warn: #d29922;
+      --warn-soft: rgba(210,153,34,0.15);
+      --danger: #f85149;
+      --danger-soft: rgba(248,81,73,0.12);
+      --info: #388bfd;
+      --info-soft: rgba(56,139,253,0.15);
+      --parked: #6e7681;
+      --parked-soft: rgba(110,118,129,0.15);
+      --radius: 10px;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+    .topbar {
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .topbar .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #1a7f37);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .topbar h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+    .topbar .stage-badge {
+      margin-left: auto;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .topbar .mode-badge {
+      background: var(--info-soft);
+      color: var(--info);
+      border: 1px solid var(--info);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    /* ── Status cards ── */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .status-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      margin-bottom: 6px;
+    }
+    .status-card .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .status-card .card-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-green  { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+    .dot-warn   { background: var(--warn); }
+    .dot-danger { background: var(--danger); }
+    .dot-parked { background: var(--parked); }
+    .dot-info   { background: var(--info); }
+
+    /* ── Quick actions ── */
+    .quick-actions { display: flex; flex-direction: column; gap: 6px; }
+    .qa-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--ink);
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .qa-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .qa-btn .qi { font-size: 1em; flex-shrink: 0; }
+
+    /* ── Main panels ── */
+    .panel-area {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-area h2 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Voice + command input ── */
+    .command-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .command-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--ink);
+      font-size: 0.96rem;
+      padding: 10px 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .command-input::placeholder { color: var(--muted); }
+    .command-input:focus { border-color: var(--accent); }
+    .voice-btn, .stop-btn, .send-btn {
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .voice-btn { background: var(--accent); color: #fff; }
+    .voice-btn:hover { opacity: 0.88; }
+    .voice-btn.listening { background: var(--danger); animation: pulse 1.2s infinite; }
+    .stop-btn  { background: var(--surface2); border: 1px solid var(--border); color: var(--ink); }
+    .stop-btn:hover { border-color: var(--danger); color: var(--danger); }
+    .send-btn  { background: var(--info); color: #fff; }
+    .send-btn:hover { opacity: 0.88; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+    .voice-fallback {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn);
+      border-radius: var(--radius);
+      color: var(--warn);
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      margin-top: 8px;
+      display: none;
+    }
+    .voice-status-bar {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 8px;
+      min-height: 20px;
+    }
+    .voice-status-bar.listening-state { color: var(--danger); }
+    .voice-status-bar.speaking-state  { color: var(--accent); }
+
+    /* ── Response panel ── */
+    .response-panel {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 100px;
+      padding: 14px 16px;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: var(--ink);
+      position: relative;
+    }
+    .response-panel .resp-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .response-text { white-space: pre-wrap; }
+    .response-panel.empty .response-text { color: var(--muted); font-style: italic; }
+    .response-panel .speak-response-btn {
+      position: absolute; top: 12px; right: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      cursor: pointer;
+    }
+    .response-panel .speak-response-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ── Action preview panel ── */
+    .action-preview {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 80px;
+      overflow: hidden;
+    }
+    .action-preview-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .intent-pill {
+      background: var(--info-soft);
+      color: var(--info);
+      border-radius: 20px;
+      padding: 1px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .approval-pill {
+      background: var(--warn-soft);
+      color: var(--warn);
+      border-radius: 20px;
+      padding: 1px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .local-pill {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 1px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .parked-pill {
+      background: var(--parked-soft);
+      color: var(--parked);
+      border-radius: 20px;
+      padding: 1px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .action-preview-body { padding: 12px 14px; }
+    .action-next-step { font-size: 0.88rem; color: var(--ink); margin-bottom: 10px; }
+    .command-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: #a5d6ff;
+      position: relative;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .copy-btn {
+      position: absolute; top: 6px; right: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .copy-btn.copied { color: var(--accent); }
+    .action-preview.empty .action-preview-body { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+
+    /* ── Conversation history ── */
+    .conversation-history {
+      flex: 1;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .conv-turn {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .conv-user {
+      background: var(--info-soft);
+      border: 1px solid rgba(56,139,253,0.3);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      color: #cae8ff;
+      align-self: flex-end;
+      max-width: 80%;
+    }
+    .conv-user .who { font-size: 0.7rem; color: var(--info); font-weight: 700; margin-bottom: 3px; }
+    .conv-chintu {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      max-width: 88%;
+    }
+    .conv-chintu .who { font-size: 0.7rem; color: var(--accent); font-weight: 700; margin-bottom: 3px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Footer ── */
+    .footer-note {
+      padding: 10px 24px;
+      font-size: 0.74rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 300px; }
+      .command-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="logo">⚡</div>
+    <h1>Chintu Voice Operator</h1>
+    <span class="mode-badge">LOCAL ONLY</span>
+    <span class="stage-badge">STAGE 21</span>
+  </header>
+
+  <!-- Sidebar: status + quick actions -->
+  <aside class="sidebar">
+    <div>
+      <div class="section-label">System Status</div>
+
+      <div class="status-card">
+        <div class="card-title">Local Mode</div>
+        <div class="card-value"><span class="dot dot-green"></span>Active — all ops local</div>
+      </div>
+
+      <div class="status-card">
+        <div class="card-title">Connector Mode</div>
+        <div class="card-value"><span class="dot dot-warn"></span>Dry-run (no real sends)</div>
+      </div>
+
+      <div class="status-card">
+        <div class="card-title">Telegram</div>
+        <div class="card-value" id="telegram-status"><span class="dot dot-parked"></span>Parked — env var needed</div>
+      </div>
+
+      <div class="status-card">
+        <div class="card-title">Agent Runner</div>
+        <div class="card-value"><span class="dot dot-green"></span>Ready (dry-run default)</div>
+      </div>
+
+      <div class="status-card">
+        <div class="card-title">Prompt Engine</div>
+        <div class="card-value"><span class="dot dot-green"></span>Active — all frameworks</div>
+      </div>
+
+      <div class="status-card">
+        <div class="card-title">Voice</div>
+        <div class="card-value" id="voice-hw-status"><span class="dot dot-warn"></span>Checking…</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Quick Actions</div>
+      <div class="quick-actions">
+        <button class="qa-btn" onclick="runIntent('generateBALAPrompt')"><span class="qi">📋</span>Generate BALA Codex Prompt</button>
+        <button class="qa-btn" onclick="runIntent('runValidator')"><span class="qi">✅</span>Run Validator Agent Dry Run</button>
+        <button class="qa-btn" onclick="runIntent('checkConnectors')"><span class="qi">🔌</span>Check Connector Readiness</button>
+        <button class="qa-btn" onclick="runIntent('openConsole')"><span class="qi">🖥</span>Open Operator Console</button>
+        <button class="qa-btn" onclick="runIntent('createBrief')"><span class="qi">📰</span>Create Founder Brief</button>
+        <button class="qa-btn" onclick="runIntent('createSprint')"><span class="qi">🚀</span>Plan Next BALA Sprint</button>
+        <button class="qa-btn" onclick="runIntent('explainReport')"><span class="qi">🩺</span>BALA Report Explainer (arch)</button>
+        <button class="qa-btn" onclick="runIntent('generateXMLPrompt')"><span class="qi">🏷</span>Generate XML Prompt</button>
+        <button class="qa-btn" onclick="runIntent('generateCOSTARPrompt')"><span class="qi">⭐</span>Generate COSTAR Prompt</button>
+        <button class="qa-btn" onclick="runIntent('generateACRPrompt')"><span class="qi">⚡</span>Generate ACR Prompt</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main area -->
+  <main class="main">
+
+    <!-- Command input area -->
+    <div class="panel-area">
+      <h2>Command Input</h2>
+      <div class="command-row">
+        <input
+          id="command-input"
+          class="command-input"
+          type="text"
+          placeholder="Type a command or click 🎤 to speak…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤 Speak to Chintu</button>
+        <button class="stop-btn" id="stop-btn" onclick="stopSpeaking()">⏹ Stop</button>
+        <button class="send-btn" onclick="sendCommand()">Send ↵</button>
+      </div>
+      <div class="voice-fallback" id="voice-fallback">
+        Voice input is not available in this browser. Type your command above instead.
+      </div>
+      <div class="voice-status-bar" id="voice-status-bar">Ready. Type a command or say something like "run validator" or "build BALA prompt".</div>
+    </div>
+
+    <!-- Response panel -->
+    <div class="panel-area">
+      <h2>Chintu Response</h2>
+      <div class="response-panel empty" id="response-panel">
+        <div class="resp-label">⚡ CHINTU</div>
+        <button class="speak-response-btn" onclick="speakCurrentResponse()" title="Read aloud">🔊 Read</button>
+        <div class="response-text" id="response-text">Waiting for your command, bro. Type, speak, or hit a quick action on the left.</div>
+      </div>
+    </div>
+
+    <!-- Action preview panel -->
+    <div class="panel-area">
+      <h2>Action Preview</h2>
+      <div class="action-preview empty" id="action-preview">
+        <div class="action-preview-header" id="action-preview-header">
+          No intent matched yet
+        </div>
+        <div class="action-preview-body" id="action-preview-body">
+          Run a command or click a quick action to see the safe next step and copy-paste commands here.
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversation history -->
+    <div class="conversation-history" id="conv-history">
+      <!-- turns appended here -->
+    </div>
+
+    <div class="footer-note">
+      ⚡ Chintu Voice Operator — Stage 21 — Local only. No network. No secrets. No real connector sends.
+      Voice uses browser Web Speech API (no audio recording or storage). All commands run locally or produce copy-paste output only.
+    </div>
+  </main>
+
+</div>
+
+<script>
+'use strict';
+
+// ─── Safety constants ───────────────────────────────────────────────────────
+const CHINTU_VERSION = 'Stage 21';
+const LOCAL_ONLY_TAG = '⚡ Local only. Nothing was sent.';
+
+// ─── Voice hardware ─────────────────────────────────────────────────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+const speechSynthesisAvailable = ('speechSynthesis' in window);
+let recognition = null;
+let isListening = false;
+
+(function detectVoiceCapability() {
+  const statusEl = document.getElementById('voice-hw-status');
+  const fallbackEl = document.getElementById('voice-fallback');
+  const voiceBtn = document.getElementById('voice-btn');
+  if (SpeechRecognition) {
+    statusEl.innerHTML = '<span class="dot dot-green"></span>Available (Web Speech API)';
+  } else {
+    statusEl.innerHTML = '<span class="dot dot-parked"></span>Not available in this browser';
+    fallbackEl.style.display = 'block';
+    voiceBtn.disabled = true;
+    voiceBtn.style.opacity = '0.4';
+    voiceBtn.title = 'Voice not available — type instead';
+  }
+})();
+
+// ─── Command-intent map (Lane B) ────────────────────────────────────────────
+const INTENT_MAP = [
+  {
+    id: 'generateBALAPrompt',
+    patterns: ['bala prompt', 'build bala', 'generate bala', 'bala codex', 'bala implementation prompt'],
+    label: 'Generate BALA Codex Prompt',
+    track: 'bala',
+    framework: 'xml',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Got you bro. I'll generate a clean XML prompt ready to paste into Codex or Claude for BALA Your Coach.\n\nThis pulls from the prompt engine with BALA safety rules baked in — no medical claims, local-first, mobile-first. Just copy and go.`,
+    nextStep: 'Run this command in PowerShell or Terminal. Then copy the output into Codex:',
+    command: `node scripts/chintu-prompt-engine.js --framework xml --track bala --task "Build next BALA feature slice"`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'runValidator',
+    patterns: ['run validator', 'validator', 'validate', 'run tests', 'validation', 'test suite'],
+    label: 'Run Validator Agent — Dry Run',
+    track: 'chintu',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Yep, running validator agent in dry-run. I'll queue the commands locally — nothing gets sent anywhere.\n\nThis checks node syntax, test suites, medical-claim scanner, no-network scanner, and release guard. If anything's red, fix it before the next commit.`,
+    nextStep: 'Run this dry-run command in PowerShell:',
+    command: `powershell -ExecutionPolicy Bypass -File scripts\\chintu-agent-runner.ps1 -Agent "validator-agent" -DryRun`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'checkTelegram',
+    patterns: ['check telegram', 'telegram status', 'telegram gate', 'telegram ready'],
+    label: 'Check Telegram Connector Status',
+    track: 'chintu',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Telegram is parked right now, bro. To activate it you need to set CHINTU_BOT_TOKEN and CHINTU_CHAT_ID as environment variables and flip CHINTU_CONNECTOR_MODE to active.\n\nUntil then: all connector paths are dry-run only. No messages go out. This is intentional — you own the send gate.`,
+    nextStep: 'Check Telegram gate status by reading this file:',
+    command: `Get-Content CHINTU_CONNECTOR_READINESS.md`,
+    tags: ['parked', 'approval-required-for-active'],
+  },
+  {
+    id: 'checkConnectors',
+    patterns: ['check connector', 'connector readiness', 'connector status', 'what connectors', 'which connectors'],
+    label: 'Check All Connector Readiness',
+    track: 'chintu',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Here's the connector read:\n\n• Telegram — parked (needs CHINTU_BOT_TOKEN + CHINTU_CHAT_ID)\n• GitHub CLI — planned (needs GH_TOKEN)\n• Local filesystem/outbox — active (CHINTU_OUTBOX/ is live)\n• Browser/open — planned, safe\n• Discord/Slack — parked until needed\n• Gmail — architecture-only\n\nDefault is dry-run for all. Outbox is the only live local write path right now.`,
+    nextStep: 'View the full connector policy:',
+    command: `Get-Content CHINTU_CONNECTOR_POLICY.md`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'openConsole',
+    patterns: ['open console', 'operator console', 'control room', 'open operator'],
+    label: 'Open Operator Console',
+    track: 'chintu',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Opening the Operator Console. This is your local HTML dashboard — no server needed. Just open the file in your browser.\n\nYou'll see: agent board, connector status, action queue, and the heartbeat summary.`,
+    nextStep: 'Open this file in your browser:',
+    command: `start CHINTU_OPERATOR_CONSOLE.html\n# Or double-click CHINTU_OPERATOR_CONSOLE.html in File Explorer`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'createBrief',
+    patterns: ['create brief', 'founder brief', 'daily brief', 'write brief', 'morning brief'],
+    label: 'Create Founder Daily Brief',
+    track: 'chintu',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Let me prep the daily brief. It covers: what's working, what needs a look, and the next best move for Chintu OS + BALA.\n\nThis pulls from the heartbeat script and formats it as a local-only founder message. Nothing leaves the machine.`,
+    nextStep: 'Run the heartbeat + founder message scripts:',
+    command: `powershell -ExecutionPolicy Bypass -File scripts\\chintu-heartbeat.ps1\npowershell -ExecutionPolicy Bypass -File scripts\\chintu-founder-message.ps1`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'createSprint',
+    patterns: ['next sprint', 'plan sprint', 'create sprint', 'bala sprint', 'sprint plan'],
+    label: 'Plan Next BALA Sprint',
+    track: 'both',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Sprint planning time. I'll generate a COSTAR prompt that you can drop into Codex or Claude to define the next BALA implementation slice.\n\nIt'll pull in the current stage context, safety rules, and output a clean plan-then-build format. You own the go/no-go.`,
+    nextStep: 'Generate a COSTAR sprint-planning prompt:',
+    command: `node scripts/chintu-prompt-engine.js --framework costar --track both --task "Plan next BALA sprint — Stage 22"`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'explainReport',
+    patterns: ['explain report', 'report safety', 'report explainer', 'bala report', 'lab report', 'health report'],
+    label: 'BALA Report Explainer (Architecture Only)',
+    track: 'bala',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `The BALA Report Explainer is architecture-planned but not yet built, bro. The safety spec is live in BALA_REPORT_EXPLAINER_ARCHITECTURE.md.\n\nWhen built: it will explain your own report values in plain language and prep doctor-ready questions — no diagnosis, no medication advice, no X-ray interpretation. Health data stays local.\n\nIf you want to start building it, I'll generate the agent packet prompt.`,
+    nextStep: 'Review the architecture plan:',
+    command: `Get-Content BALA_REPORT_EXPLAINER_ARCHITECTURE.md`,
+    tags: ['parked', 'local-only'],
+  },
+  {
+    id: 'generateXMLPrompt',
+    patterns: ['xml prompt', 'generate xml', 'xml framework', 'xml template', 'xml structure'],
+    label: 'Generate XML Prompt',
+    track: 'both',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `XML framework coming up. This is the best structure for implementation tasks — it gives Codex a clear role, context, project state, task, rules, validation commands, and output format.\n\nBala safety rules and Chintu connector rules are embedded automatically.`,
+    nextStep: 'Generate XML prompt for both tracks:',
+    command: `node scripts/chintu-prompt-engine.js --framework xml --track both --task "Describe your task here"`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'generateCOSTARPrompt',
+    patterns: ['costar prompt', 'generate costar', 'costar framework', 'costar template'],
+    label: 'Generate COSTAR Prompt',
+    track: 'both',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `COSTAR format — great for tasks where persona, audience, and style matter. Gives Claude or Codex: Context, Objective, Style, Tone, Audience, Response format.\n\nThis is the go-to when you're planning a complex multi-step slice or writing for a specific output.`,
+    nextStep: 'Generate COSTAR prompt:',
+    command: `node scripts/chintu-prompt-engine.js --framework costar --track both --task "Describe your task here"`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'generateACRPrompt',
+    patterns: ['acr prompt', 'generate acr', 'acr framework', 'acr template', 'tight prompt', 'fast prompt'],
+    label: 'Generate ACR Prompt',
+    track: 'both',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `ACR — Action, Context, Result. Clean and fast. Use this when you know exactly what you want and just need a tight implementation brief.\n\nNo fluff. Just: what to do, what context to load, and what the result should look like.`,
+    nextStep: 'Generate ACR prompt:',
+    command: `node scripts/chintu-prompt-engine.js --framework acr --track both --task "Describe your task here"`,
+    tags: ['local-only'],
+  },
+  {
+    id: 'agentStatus',
+    patterns: ['agent status', 'agent runs', 'what agents', 'agent board', 'last run', 'agent index'],
+    label: 'View Agent Runs Index',
+    track: 'chintu',
+    approvalRequired: false,
+    connectorActive: false,
+    localOnly: true,
+    response: `Here's the agent run status. The last dry-run was validator-agent. All runs are stored in CHINTU_AGENT_RUNS/ — each with a packet.md, run-report.md, and run-summary.json.\n\nNo sensitive data. No network. Just local validation snapshots you can review anytime.`,
+    nextStep: 'View the agent runs index:',
+    command: `Get-Content CHINTU_AGENT_RUNS_INDEX.md`,
+    tags: ['local-only'],
+  },
+];
+
+// ─── Intent resolver ─────────────────────────────────────────────────────────
+function resolveIntent(text) {
+  const lower = text.toLowerCase().trim();
+  for (const intent of INTENT_MAP) {
+    for (const pattern of intent.patterns) {
+      if (lower.includes(pattern)) return intent;
+    }
+  }
+  return null;
+}
+
+// ─── Default / fallback response ─────────────────────────────────────────────
+function fallbackResponse(text) {
+  return `Got it, bro. I didn't catch a specific command in "${text}", but here's what I can do right now:\n\n• Generate BALA or Chintu prompts (XML / COSTAR / ACR)\n• Run validator agent dry run\n• Check connector readiness\n• Open operator console\n• Plan next sprint\n• Explain report architecture\n\nTry a quick action on the left or be more specific — like "run validator" or "generate XML prompt".`;
+}
+
+// ─── Render response + action preview ────────────────────────────────────────
+function setResponse(text) {
+  const panel = document.getElementById('response-panel');
+  const el = document.getElementById('response-text');
+  el.textContent = text;
+  panel.classList.remove('empty');
+}
+
+function setActionPreview(intent) {
+  const preview = document.getElementById('action-preview');
+  const header = document.getElementById('action-preview-header');
+  const body = document.getElementById('action-preview-body');
+  preview.classList.remove('empty');
+
+  // Build tags
+  const tagPills = (intent.tags || []).map(t => {
+    if (t === 'local-only') return `<span class="local-pill">LOCAL ONLY</span>`;
+    if (t === 'parked') return `<span class="parked-pill">PARKED</span>`;
+    if (t === 'approval-required-for-active') return `<span class="approval-pill">APPROVAL REQUIRED FOR ACTIVE</span>`;
+    return `<span class="intent-pill">${t.toUpperCase()}</span>`;
+  }).join(' ');
+
+  header.innerHTML = `
+    <span class="intent-pill">INTENT: ${intent.label.toUpperCase()}</span>
+    ${tagPills}
+    ${intent.approvalRequired ? '<span class="approval-pill">APPROVAL REQUIRED</span>' : ''}
+  `;
+
+  const cmdId = 'cmd-' + Math.random().toString(36).slice(2);
+  body.innerHTML = `
+    <div class="action-next-step">${escHtml(intent.nextStep)}</div>
+    <div class="command-block" id="${cmdId}">${escHtml(intent.command)}<button class="copy-btn" onclick="copyCmd('${cmdId}', this)">Copy</button></div>
+    <p style="margin-top:8px;font-size:0.78rem;color:var(--muted);">
+      ${LOCAL_ONLY_TAG} · Track: ${intent.track} · Connector: ${intent.connectorActive ? '⚠ ACTIVE' : 'dry-run only'}
+    </p>
+  `;
+}
+
+function clearActionPreview() {
+  const preview = document.getElementById('action-preview');
+  const header = document.getElementById('action-preview-header');
+  const body = document.getElementById('action-preview-body');
+  preview.classList.add('empty');
+  header.textContent = 'No intent matched';
+  body.textContent = 'Run a command or click a quick action to see the safe next step here.';
+}
+
+function copyCmd(id, btn) {
+  const el = document.getElementById(id);
+  const text = el.childNodes[0].textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+  }).catch(() => {
+    // Fallback for non-HTTPS
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+  });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Append to conversation history ──────────────────────────────────────────
+function appendConv(userText, chintuText) {
+  const hist = document.getElementById('conv-history');
+  const turn = document.createElement('div');
+  turn.className = 'conv-turn';
+  turn.innerHTML = `
+    <div class="conv-user"><div class="who">YOU</div>${escHtml(userText)}</div>
+    <div class="conv-chintu"><div class="who">⚡ CHINTU</div>${escHtml(chintuText)}</div>
+  `;
+  hist.appendChild(turn);
+  turn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+// ─── Main command dispatcher ──────────────────────────────────────────────────
+function runIntent(intentId) {
+  const intent = INTENT_MAP.find(i => i.id === intentId);
+  if (!intent) return;
+  processCommand(intent.label, intent);
+}
+
+function sendCommand() {
+  const input = document.getElementById('command-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const intent = resolveIntent(text);
+  processCommand(text, intent);
+}
+
+function processCommand(text, intent) {
+  let responseText;
+  if (intent) {
+    responseText = intent.response;
+    setActionPreview(intent);
+  } else {
+    responseText = fallbackResponse(text);
+    clearActionPreview();
+  }
+  setResponse(responseText);
+  appendConv(text, responseText);
+
+  if (speechSynthesisAvailable) {
+    // Brief status update — don't auto-read full response to avoid surprise
+    setVoiceStatus('Chintu responded. Hit 🔊 Read to hear it.', '');
+  }
+}
+
+// ─── Keyboard shortcut (Enter to send) ───────────────────────────────────────
+document.getElementById('command-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendCommand();
+  }
+});
+
+// ─── Voice input (SpeechRecognition) ─────────────────────────────────────────
+function toggleVoice() {
+  if (!SpeechRecognition) return;
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+
+function startListening() {
+  if (!SpeechRecognition) return;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = false;
+
+  recognition.onstart = function() {
+    isListening = true;
+    const btn = document.getElementById('voice-btn');
+    btn.textContent = '🔴 Listening…';
+    btn.classList.add('listening');
+    setVoiceStatus('Listening… speak now', 'listening-state');
+  };
+
+  recognition.onresult = function(e) {
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    document.getElementById('command-input').value = transcript;
+    if (e.results[e.results.length - 1].isFinal) {
+      setVoiceStatus('Got it: "' + transcript + '"', '');
+    }
+  };
+
+  recognition.onerror = function(e) {
+    setVoiceStatus('Voice error: ' + e.error + '. Try typing instead.', '');
+    stopListening();
+  };
+
+  recognition.onend = function() {
+    stopListening();
+    const val = document.getElementById('command-input').value.trim();
+    if (val) sendCommand();
+  };
+
+  recognition.start();
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) { try { recognition.stop(); } catch(e) {} recognition = null; }
+  const btn = document.getElementById('voice-btn');
+  btn.textContent = '🎤 Speak to Chintu';
+  btn.classList.remove('listening');
+  setVoiceStatus('Ready.', '');
+}
+
+// ─── Speech synthesis (read aloud) ───────────────────────────────────────────
+function speakCurrentResponse() {
+  if (!speechSynthesisAvailable) {
+    setVoiceStatus('Speech synthesis not available in this browser.', '');
+    return;
+  }
+  const text = document.getElementById('response-text').textContent;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'en-IN';
+  utt.rate = 1.05;
+  utt.pitch = 1;
+  utt.onstart = () => setVoiceStatus('Reading response aloud…', 'speaking-state');
+  utt.onend   = () => setVoiceStatus('Done reading.', '');
+  utt.onerror = () => setVoiceStatus('Speech synthesis error.', '');
+  window.speechSynthesis.speak(utt);
+}
+
+function stopSpeaking() {
+  if (speechSynthesisAvailable) window.speechSynthesis.cancel();
+  stopListening();
+  setVoiceStatus('Stopped.', '');
+}
+
+function setVoiceStatus(msg, cls) {
+  const el = document.getElementById('voice-status-bar');
+  el.textContent = msg;
+  el.className = 'voice-status-bar' + (cls ? ' ' + cls : '');
+}
+
+// ─── Safety assertion (no network calls) ─────────────────────────────────────
+// This file makes zero network requests.
+// All intent processing is pure local JavaScript.
+// No secrets are read or stored. No audio is recorded.
+// Voice transcript stays in the input field only — cleared on next command.
+// Health data: not used here. No BALA data flows through this operator.
+</script>
+</body>
+</html>
