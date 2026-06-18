@@ -188,6 +188,10 @@ parked until explicitly activated.
 
 **Pre-Memory Gate V1 added before Memory-Wiki Seed Vault.** Run `scripts/chintu-pre-memory-gate.ps1` to verify repo state, app safety, privacy, snapshot consistency, protocol presence, and local OpenClaw readiness before that sprint begins.
 
+### Memory-Wiki Seed Vault V1 (2026-06-17)
+
+Memory-Wiki Seed Vault V1 added as markdown seed files in `CHINTU_MEMORY_VAULT/`. Contains: product state, medical safety rules, agent architecture, release history, next sprint queue, parked systems, founder preferences, and open questions. The memory-wiki plugin remains disabled until explicit approval.
+
 ### OpenClaw Integration Direction (2026-06-17)
 OpenClaw 2026.6.6 is installed locally (gateway loopback, Tailscale off; memory-core enabled). Staged plan
 (local-first; see `CHINTU_OPENCLAW_INTEGRATION_MAP_V1_2026-06-17.md`):
