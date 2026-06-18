@@ -56,6 +56,7 @@ explicitly approves it.
 | `node scripts\chintu-dry-run-adapter.test.js` | Dry-run adapter has no HTTP client / connector URLs; payloads marked DRY RUN ONLY. |
 | `node scripts\chintu-connector-policy.test.js` | Connector registry + policy + example config consistent, no real secrets, no `active`/`ready` status. |
 | `node scripts\chintu-outbox-shape.test.js` | Outbox folder shape correct; no real connector URLs anywhere under CHINTU_OUTBOX/. |
+| `node scripts\chintu-action-planner.test.js` | Action queue + approval center + JSON mirror carry footer, parked listing, approve-id phrase or "no approval needed" header. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |
@@ -70,6 +71,7 @@ explicitly approves it.
 | `scripts\chintu-bridge-loop-reality-check.ps1` | `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` (GREEN/YELLOW/RED bridge readiness) |
 | `scripts\chintu-founder-message.ps1` | `CHINTU_DAILY_BRIEF.md` + `CHINTU_OUTBOX/latest_founder_message.md` + appends to `founder_message_history.md` |
 | `node scripts\chintu-message-dry-run.js` | `CHINTU_OUTBOX/dry_run_payloads/{telegram,slack,discord}_preview.json` (NEVER sent) |
+| `scripts\chintu-action-planner.ps1` | `CHINTU_ACTION_QUEUE.md` + `CHINTU_APPROVAL_CENTER.md` + `CHINTU_NEXT_OPERATOR_PROMPT.md` + `CHINTU_OUTBOX/latest_action_plan.json` |
 
 ## Reporting / dashboards
 

@@ -106,6 +106,7 @@ Run-Extra "iMac Option 12 SHA"     "scripts\chintu-imac-option-12-sha-parse.test
 Run-Extra "Dry-run adapter"        "scripts\chintu-dry-run-adapter.test.js" "node"
 Run-Extra "Connector policy"       "scripts\chintu-connector-policy.test.js" "node"
 Run-Extra "Outbox shape"           "scripts\chintu-outbox-shape.test.js" "node"
+Run-Extra "Action planner"         "scripts\chintu-action-planner.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"

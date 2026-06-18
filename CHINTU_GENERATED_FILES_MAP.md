@@ -37,6 +37,10 @@ These artifacts are rebuilt on every run and never need to be staged.
 | `CHINTU_OUTBOX/dry_run_payloads/telegram_preview.json` | `scripts/chintu-message-dry-run.js` | Node |
 | `CHINTU_OUTBOX/dry_run_payloads/slack_preview.json` | `scripts/chintu-message-dry-run.js` | Node |
 | `CHINTU_OUTBOX/dry_run_payloads/discord_preview.json` | `scripts/chintu-message-dry-run.js` | Node |
+| `CHINTU_ACTION_QUEUE.md` | `scripts/chintu-action-planner.ps1` | PowerShell |
+| `CHINTU_APPROVAL_CENTER.md` | `scripts/chintu-action-planner.ps1` | PowerShell |
+| `CHINTU_NEXT_OPERATOR_PROMPT.md` | `scripts/chintu-action-planner.ps1` | PowerShell |
+| `CHINTU_OUTBOX/latest_action_plan.json` | `scripts/chintu-action-planner.ps1` | PowerShell |
 
 ---
 
