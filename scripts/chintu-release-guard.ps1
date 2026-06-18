@@ -94,6 +94,9 @@ Run-Extra "Medical claims"         "scripts\chintu-medical-claims.test.js" "node
 Run-Extra "Safety boundary"        "scripts\chintu-safety-boundary.test.js" "node"
 Run-Extra "Doc link integrity"     "scripts\chintu-doc-link-integrity.test.js" "node"
 Run-Extra "Generated files map"    "scripts\chintu-generated-files-map.test.js" "node"
+Run-Extra "BALA safe docs"         "scripts\chintu-bala-safe-docs.test.js" "node"
+Run-Extra "Parked systems"         "scripts\chintu-parked-systems.test.js" "node"
+Run-Extra "Continuation prompts"   "scripts\chintu-continuation-prompts.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"

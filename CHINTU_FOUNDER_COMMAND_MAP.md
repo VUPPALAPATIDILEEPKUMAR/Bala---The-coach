@@ -44,6 +44,9 @@ explicitly approves it.
 | `node scripts\chintu-safety-boundary.test.js` | Protected BALA file list stays canonical. |
 | `node scripts\chintu-doc-link-integrity.test.js` | Local markdown links between Chintu docs resolve. |
 | `node scripts\chintu-generated-files-map.test.js` | Generated-files map vs scripts/ + repo root integrity. |
+| `node scripts\chintu-bala-safe-docs.test.js` | BALA_*.md docs carry footer + parked/planning header. |
+| `node scripts\chintu-parked-systems.test.js` | *_PARKED.md docs stay parked and footered. |
+| `node scripts\chintu-continuation-prompts.test.js` | Review/continuation prompts forbid push + name protected files. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |
