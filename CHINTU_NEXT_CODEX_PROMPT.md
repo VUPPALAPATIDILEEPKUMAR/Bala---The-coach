@@ -59,9 +59,10 @@ the project.
 > 3. `CHINTU_APPROVAL_AUDIT.md` (tracked, append-only) — schema only;
 >    a tiny PowerShell helper that appends one row when the founder
 >    runs `approve <id>` by hand.
-> 4. Update `scripts/chintu-control-room-index.ps1` to surface the
+> 4. ~~Update `scripts/chintu-control-room-index.ps1` to surface the
 >    new planner outputs under a "Chintu Planner" section. Re-run
->    the generator.
+>    the generator.~~ **DONE in the visibility slice** — section
+>    already added; skip this item.
 > 5. Add a "Run the planner" section to `CHINTU_OPEN_FIRST.md`.
 > 6. Append a cycle-8 section to
 >    `CHINTU_CLAUDE_SURVIVAL_HANDOFF.md`.

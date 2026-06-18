@@ -105,7 +105,7 @@ See `CHINTU_STAGE_13_PROGRESS.md` for the full description. Summary:
 1. Tracked snapshot of the queue (so dashboard can link to a stable file).
 2. Categoriser unit tests (fixture-driven, guards the heuristic).
 3. Approval audit log (`CHINTU_APPROVAL_AUDIT.md`, tracked, append-only).
-4. Control-room generator update — add a "Chintu Planner" section.
+4. ~~Control-room generator update — add a "Chintu Planner" section.~~ DONE (visibility slice). Skip.
 5. `CHINTU_OPEN_FIRST.md` polish — "Run the planner" section.
 6. `CHINTU_CLAUDE_SURVIVAL_HANDOFF.md` — add cycle-8 section.
 

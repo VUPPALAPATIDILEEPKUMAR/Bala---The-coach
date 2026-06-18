@@ -1,7 +1,8 @@
 # Chintu Stage 13 Progress
 
-**Stage 13A status:** SHIPPED (this commit).
-**Stage 13B status:** NOT STARTED — Codex continuation expected.
+**Stage 13A status:** SHIPPED.
+**Stage 13B status:** PARTIAL — visibility slice landed (item 4).
+Remaining items (1, 2, 3, 5, 6) still open for Codex.
 **Date:** 2026-06-18.
 
 ---
@@ -53,10 +54,12 @@ In priority order:
    row every time the founder runs an `approve <id>` action by hand.
    Tracked, append-only, no auto-edits.
 
-4. **Control-room generator update.** Surface the action queue,
+4. ~~**Control-room generator update.** Surface the action queue,
    approval center, and next-operator prompt under a new
    "Chintu Planner" section in
-   `scripts/chintu-control-room-index.ps1`.
+   `scripts/chintu-control-room-index.ps1`.~~ **DONE 2026-06-18** —
+   "Chintu Planner" section added (action queue + approval center +
+   next operator prompt + JSON mirror + generator + test).
 
 5. **`CHINTU_OPEN_FIRST.md` polish.** Add a "Run the planner" section
    pointing at the new script.
