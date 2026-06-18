@@ -70,6 +70,15 @@ $sections = @(
         @{ Path = "CHINTU_TELEGRAM_STATUS_PLAN.md"; Label = "Telegram Status Plan (parked)" },
         @{ Path = "CHINTU_ALIVE_NEXT_LEVEL_PLAN.md"; Label = "Alive Next-Level Plan" }
     )},
+    @{ Title = "Bridge Loop (iMac Option 12)"; Files = @(
+        @{ Path = "CHINTU_BRIDGE_LOOP_REALITY_CHECK.md"; Label = "Bridge Loop Reality Check (GREEN/YELLOW/RED)" },
+        @{ Path = "CHINTU_IMAC_OPTION_12_INSTALL_NOW.md"; Label = "iMac Option 12 Install Now (founder guide)" },
+        @{ Path = "CHINTU_BRIDGE_LOOP_TEST_LOG.md"; Label = "Bridge Loop Test Log (founder fill template)" },
+        @{ Path = "CHINTU_BRIDGE_CONTRACT.md"; Label = "Bridge Contract" },
+        @{ Path = "CHINTU_BRIDGE_ROLLBACK.md"; Label = "Bridge Rollback" },
+        @{ Path = "CHINTU_IMAC_BRIDGE_TROUBLESHOOTING.md"; Label = "iMac Bridge Troubleshooting" },
+        @{ Path = "CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/README.md"; Label = "Option 12 Package README" }
+    )},
     @{ Title = "Dashboards"; Files = @(
         @{ Path = "CHINTU_AGENT_DASHBOARD.html"; Label = "Agent Control Shell Dashboard" },
         @{ Path = "CHINTU_CONTROL_ROOM_INDEX.html"; Label = "Control Room Index (this page)" }
@@ -157,6 +166,8 @@ $sections = @(
         @{ Path = "scripts/chintu-heartbeat.test.js"; Label = "Heartbeat Test" },
         @{ Path = "scripts/chintu-restart-recovery.test.js"; Label = "Restart Recovery Test" },
         @{ Path = "scripts/chintu-telegram-status-plan.test.js"; Label = "Telegram Status Plan Test" },
+        @{ Path = "scripts/chintu-bridge-loop-reality-check.ps1"; Label = "Bridge Loop Reality Check Generator" },
+        @{ Path = "scripts/chintu-bridge-loop-reality-check.test.js"; Label = "Bridge Loop Reality Check Test" },
         @{ Path = "scripts/chintu-release-guard.ps1"; Label = "Release Guard" },
         @{ Path = "scripts/chintu-bridge-command-center.ps1"; Label = "Bridge Command Center Script" },
         @{ Path = "scripts/chintu-next-action.ps1"; Label = "Next Action" },

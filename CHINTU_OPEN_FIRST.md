@@ -131,7 +131,23 @@ Then re-run the launcher. If a safety test stays red, stop and ask.
 
 ---
 
-## 11. After laptop restart or Claude drop
+## 11. Bridge to the iMac (when you want it)
+
+Before walking through Option 12:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-bridge-loop-reality-check.ps1
+```
+
+If GREEN, follow
+[CHINTU_IMAC_OPTION_12_INSTALL_NOW.md](CHINTU_IMAC_OPTION_12_INSTALL_NOW.md)
+and fill
+[CHINTU_BRIDGE_LOOP_TEST_LOG.md](CHINTU_BRIDGE_LOOP_TEST_LOG.md) as you
+go.
+
+---
+
+## 12. After laptop restart or Claude drop
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\chintu-restart-recovery.ps1

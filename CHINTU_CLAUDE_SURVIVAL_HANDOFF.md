@@ -1,8 +1,44 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (cycle 5 — Alive Runtime Reliability layer)
+**Stage:** 11 (cycle 6 — Bridge Loop Reality Test layer)
 **Date:** 2026-06-18
 **Mode:** local-first, founder-driven, push-pending-human-approval
+
+## 0a. What cycle 6 added (read first)
+
+Real bridge-loop reality test. Confirms the Windows -> shared bridge
+-> iMac Option 12 path is ready *today*. Read-only on iMac side (no
+iMac modification). No external automation activated.
+
+New script:
+
+- `scripts/chintu-bridge-loop-reality-check.ps1` ->
+  `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` (GREEN/YELLOW/RED).
+  Verifies the shared bridge folder, `CHINTU_BRIDGE_LATEST.zip`,
+  `MANIFEST.txt` (with SHA-256 hash check against the zip),
+  `LATEST_FLAT/` + 7 expected flat files, bridge command center
+  report, and the iMac Option 12 package contents.
+
+New founder-facing docs:
+
+- `CHINTU_IMAC_OPTION_12_INSTALL_NOW.md` (step-by-step install + run + rollback + Option 11 fallback)
+- `CHINTU_BRIDGE_LOOP_TEST_LOG.md` (founder-fill template covering
+  Windows export, shared folder, iMac copy, install, first pull,
+  hash check, bridge-status, notes).
+
+New integrity test (wired into release guard + command map):
+
+- `chintu-bridge-loop-reality-check.test.js` (script + docs carry
+  footer, no forbidden URLs or secret-shaped values).
+
+Bridge first command after restart:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-bridge-loop-reality-check.ps1
+```
+
+If GREEN, walk `CHINTU_IMAC_OPTION_12_INSTALL_NOW.md` and fill
+`CHINTU_BRIDGE_LOOP_TEST_LOG.md`.
 
 ## 0a. What cycle 5 added (read first)
 

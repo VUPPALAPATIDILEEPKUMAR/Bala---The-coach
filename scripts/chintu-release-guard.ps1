@@ -101,6 +101,7 @@ Run-Extra "Runtime health"         "scripts\chintu-runtime-health.test.js" "node
 Run-Extra "Heartbeat"              "scripts\chintu-heartbeat.test.js" "node"
 Run-Extra "Restart recovery"       "scripts\chintu-restart-recovery.test.js" "node"
 Run-Extra "Telegram status plan"   "scripts\chintu-telegram-status-plan.test.js" "node"
+Run-Extra "Bridge loop reality"    "scripts\chintu-bridge-loop-reality-check.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"

@@ -30,6 +30,7 @@ These artifacts are rebuilt on every run and never need to be staged.
 | `CHINTU_RUNTIME_HEALTH.md` | `scripts/chintu-runtime-health.ps1` | PowerShell |
 | `CHINTU_HEARTBEAT.md` | `scripts/chintu-heartbeat.ps1` | PowerShell |
 | `CHINTU_RESTART_RECOVERY.md` | `scripts/chintu-restart-recovery.ps1` | PowerShell |
+| `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` | `scripts/chintu-bridge-loop-reality-check.ps1` | PowerShell |
 
 ---
 
