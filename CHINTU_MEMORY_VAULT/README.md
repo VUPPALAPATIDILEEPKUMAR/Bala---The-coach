@@ -31,6 +31,9 @@ BALA + Chintu multi-brain operating system.
 | `PARKED_SYSTEMS.md` | Systems intentionally disabled or deferred |
 | `FOUNDER_PREFERENCES.md` | Collaboration style, founder constraints, father story |
 | `OPEN_QUESTIONS.md` | Decisions awaiting founder input |
+| `BLOCKERS.md` | Active blockers that gate release or sprint progress |
+| `DECISIONS.md` | Decisions taken, with date and rationale |
+| `DAILY_LOGS/` | Plain-Markdown daily log per session (YYYY-MM-DD.md) |
 
 ## How Claude should use this vault
 

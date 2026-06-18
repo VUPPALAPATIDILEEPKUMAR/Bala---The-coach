@@ -108,6 +108,15 @@ Add-Step "command map integrity test" {
     return 0
 } $true
 
+Add-Step "memory vault integrity test" {
+    if (Test-Path -LiteralPath "scripts/chintu-memory-vault.test.js") {
+        & node "scripts/chintu-memory-vault.test.js" | Out-Host
+        return $LASTEXITCODE
+    }
+    Write-Host "  (memory vault test not present, skipping)"
+    return 0
+} $true
+
 Add-Step "agent control shell test" {
     if (Test-Path -LiteralPath "scripts/chintu-agent-control-shell.test.js") {
         & node "scripts/chintu-agent-control-shell.test.js" | Out-Host
