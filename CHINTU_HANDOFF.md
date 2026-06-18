@@ -186,6 +186,8 @@ parked until explicitly activated.
 
 `CHINTU_MULTI_BRAIN_REVIEW_PROTOCOL.md` now defines the safe collaboration flow for ChatGPT strategy, Claude building, Codex review and focused patches, Chintu local validation, OpenClaw tooling, and the human founder's final push gate. It is process-only and does not change BALA app behavior.
 
+**Pre-Memory Gate V1 added before Memory-Wiki Seed Vault.** Run `scripts/chintu-pre-memory-gate.ps1` to verify repo state, app safety, privacy, snapshot consistency, protocol presence, and local OpenClaw readiness before that sprint begins.
+
 ### OpenClaw Integration Direction (2026-06-17)
 OpenClaw 2026.6.6 is installed locally (gateway loopback, Tailscale off; memory-core enabled). Staged plan
 (local-first; see `CHINTU_OPENCLAW_INTEGRATION_MAP_V1_2026-06-17.md`):
