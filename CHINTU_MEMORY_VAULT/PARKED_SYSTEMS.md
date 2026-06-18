@@ -9,6 +9,10 @@ install, or call them without explicit founder approval.
 | Discord bot | parked | No implementation. Future notification channel for non-health status only. |
 | Webhooks | parked | External send path removed from BALA runtime. Validator FAILs on outbound app-data patterns. |
 | Cloud sync automation | parked | Shared bridge can live in a cloud-synced folder only by explicit founder choice. Chintu never auto-configures or assumes cloud sync. |
+| Phone notifications | parked | Future only. Not active during Stage 9A. |
+| Voice calling | parked | Future only. Not active during Stage 9A. |
+| Chintu Agent voice/personality app | parked future | Approved style and voice direction may be documented later, but it is not active in Stage 9A. |
+| External automation | parked | Stage 9A keeps the operator layer file-based and founder approved. |
 | External health-data APIs | parked | Privacy rule: no health data leaves the device. |
 | DuckDuckGo plugin | disabled | Available in OpenClaw but disabled. If later enabled, public non-sensitive queries only. Never a health query. |
 | memory-wiki plugin | not enabled | Available in OpenClaw but requires explicit founder approval. Vault stays plain Markdown until then. |
@@ -40,3 +44,5 @@ If a parked system is to be reactivated, the path is:
 Skip any step => the system stays parked.
 
 Stage 8 note: Telegram, Discord, webhooks, memory-wiki, and cloud sync automation all remain parked. Auto Bridge Transfer V1 is live on Windows, but any cloud-backed shared folder is still founder-owned and explicit only.
+
+Stage 9A note: Alive Daily Operator Layer is now local-first and file-based in repo. `scripts/chintu-daily-operator.ps1`, `scripts/chintu-next-action.ps1`, and `scripts/chintu-endday-operator.ps1` do not activate Telegram, Discord, webhooks, memory-wiki, cloud sync, phone notifications, voice calling, backend services, or paid APIs. BALA app files remain unchanged. Chintu Agent voice/personality work stays parked as future direction only.

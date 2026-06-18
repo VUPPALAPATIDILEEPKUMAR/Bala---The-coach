@@ -92,9 +92,15 @@ professional if concerned."
 | `scripts/chintu-release-guard.ps1` | Local, read-only release guard. Runs chintu-validate.ps1, reads its block, gathers git state + recent commits + SW cache, and writes a gitignored `release-guard-report.md` (optional `-OutFile` copy) with verdict, manual-test checklist, and a push / do-not-push recommendation. Never pushes/installs/networks/reads secrets. |
 | `scripts/chintu-agent-board.ps1` | Local-only "agent board" (**v2 daily briefing + next-sprint recommender**). Runs the release guard, reads the validation block, and writes a gitignored `chintu-agent-board-report.md` (optional `-OutFile`) with: Morning Brief, BALA Level, Chintu Level, Manual Phone Test Checklist, Next Sprint Recommender (A/B/C), a paste-ready next-Claude prompt, Parked Systems, and a Go/Stop decision. Not external bots; no push/install/network/secret/health-data. |
 | `scripts/chintu-openclaw-readiness.ps1` | Local-only, read-only OpenClaw plugin readiness dashboard. Runs `openclaw plugins inspect <id> --runtime --json` for the target plugins, merges live status with a static safe/use-case/risk assessment, and writes a gitignored `chintu-openclaw-readiness-report.md` (optional `-OutFile`) with a readiness table, priority ranking, safety rules, and next sprint. Never installs/enables/pushes/networks; never reads `openclaw.json`/tokens/secrets. |
+| `scripts/chintu-daily-operator.ps1` | Stage 9A morning/startup operator layer. Runs local repo/validation/bridge checks, reads blockers + parked systems, writes `CHINTU_OPERATOR_STATUS.md`, and prints one exact next action. Local-only; no push/install/network/secrets/health-data. |
+| `scripts/chintu-next-action.ps1` | Stage 9A decision engine. Reads current repo/validation/bridge/blocker state and prints one exact next action for the founder. Console output only. Local-only. |
+| `scripts/chintu-endday-operator.ps1` | Stage 9A evening/end-day operator layer. Runs local checks, summarizes the day, writes `CHINTU_TOMORROW_START.md`, and archives `CHINTU_MEMORY_VAULT/DAILY_LOGS/YYYY-MM-DD.md`. Local-only. |
 | `vendor/fflate.min.js` | Local ZIP reader (extracts Apple Health `export.xml` in the browser). No CDN. |
 | `docs/ARCHITECTURE.md` | Design notes: what's built vs. future native bridges; AI boundary. |
 | `docs/BALA_SECURITY_RULES.md` | The full safety/privacy/conduct checklist (source of section 2 above). |
+| `CHINTU_MEMORY_VAULT/DECISIONS.md` | Durable Chintu OS decisions, including the Stage 9A choice to stay local-first, file-based, validation-first, and founder approved before any external automation. |
+| `CHINTU_MEMORY_VAULT/BLOCKERS.md` | Current Stage 9 blockers, including iMac Option 12 test status, shared bridge smooth-loop status, and BALA wait-state rules. |
+| `CHINTU_MEMORY_VAULT/DAILY_LOGS/` | Daily operator log archive written by `scripts/chintu-endday-operator.ps1`. |
 | `native/ios/` | Stub Swift HealthKit bridge for a *future* native iOS companion. Not built/wired yet. |
 | `.github/workflows/pages.yml` | Auto-deploys to GitHub Pages on push to `main`. |
 
@@ -223,6 +229,26 @@ is done.
 
 **Stage 8 bridge update (2026-06-18):** Windows export -> shared bridge mirror -> command center report is now implemented. Manual iMac option 11 remains the current fallback. The next operator step is to install iMac option 12 from `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/`. After the bridge loop is fully smooth, the next BALA sprint candidate is **BALA Voice Coach enhancement**. Stage 8 changed scripts/docs only; `app.js`, `index.html`, `styles.css`, and `sw.js` stayed unchanged.
 
+### Stage 9A Alive Daily Operator Layer (2026-06-18)
+
+Stage 9A adds the Alive Daily Operator Layer on top of the Stage 8 bridge:
+
+- `scripts/chintu-daily-operator.ps1`
+- `scripts/chintu-next-action.ps1`
+- `scripts/chintu-endday-operator.ps1`
+- `CHINTU_OPERATOR_STATUS.md`
+- `CHINTU_TOMORROW_START.md`
+- `CHINTU_MEMORY_VAULT/DAILY_LOGS/`
+- `CHINTU_MEMORY_VAULT/DECISIONS.md`
+- `CHINTU_MEMORY_VAULT/BLOCKERS.md`
+
+This keeps Chintu OS local-first, file-based, validation-first, and founder approved.
+Stage 9A does not activate Telegram, Discord, webhooks, memory-wiki, cloud sync,
+phone notifications, voice calling, backend services, or paid APIs. BALA app files
+remain unchanged. Chintu Agent voice/personality work is documented only as a parked
+future direction. After Stage 9 stability, the next BALA sprint candidate remains
+**BALA Voice Coach enhancement**.
+
 ---
 
 ## 6. The bigger vision (Chintu) — keep it cheap and local
@@ -268,6 +294,7 @@ is done.
 | 2026-06-17 | Windows Bridge Daily Export V1 (Opus 4.7) | Added `scripts/chintu-bridge-daily-export.ps1`: one-button daily rhythm that runs agent-board, validate, release-guard, OpenClaw readiness (timeout-tolerant, 60s soft cap; continues on hang), and Windows reporter; refreshes `BRIDGE_TRANSFER_README.md` in the outbox; packages the 7 bridge files into `C:\Users\Chintu\Desktop\CHINTU_BRIDGE_PACKAGE_YYYY-MM-DD_HHMM.zip`; writes a gitignored `chintu-bridge-daily-export-report.md`; prints the iMac destination. ASCII-only, no install, no plugin enable, no push, no network, no secrets, no health data. iMac Bridge Sync option 11 verified working. Next rhythm: Windows export, iMac option 11 intake. | `scripts/chintu-bridge-daily-export.ps1`, `.gitignore`, `CHINTU_HANDOFF.md` |
 | 2026-06-17 | Auto Bridge Transfer V1 (Opus 4.7) | Extended `scripts/chintu-bridge-daily-export.ps1` with optional `-SharedDir` (default `C:\Users\Chintu\Desktop\CHINTU_SHARED_BRIDGE`) and `-Keep` (default 7). When SharedDir is set and safe, the script mirrors the new ZIP into the shared folder, overwrites `CHINTU_BRIDGE_LATEST.zip`, refreshes `LATEST_FLAT/` (the 7 bridge files unzipped), writes `MANIFEST.txt` (timestamp + SHA-256 + sizes), and prunes dated ZIPs beyond `-Keep` (LATEST/MANIFEST/LATEST_FLAT never pruned). Refuses unsafe paths (inside repo / drive root / C:\\Windows / AppData / LocalAppData / user-profile root) with a clear STOP message. Defense-in-depth scan aborts the mirror if obvious secret signatures (OpenAI/GitHub/Slack/AWS/Google keys, JWT, private-key blocks, env-style assignments, Cookie headers, Slack/Discord/Telegram webhooks) or vitals-style JSON appear in the outbox. Pass `-SharedDir ""` to disable. Existing manual ZIP transfer remains supported. Next iMac enhancement: option 12 Pull from shared folder. | `scripts/chintu-bridge-daily-export.ps1`, `CHINTU_HANDOFF.md` |
 | 2026-06-18 | Stage 8 bridge command center + iMac Option 12 package (Codex) | Added `scripts/chintu-bridge-command-center.ps1` to summarize repo, validation, app safety, shared bridge, iMac readiness, parked systems, and the exact next action into `chintu-bridge-command-center-report.md`. Added a portable iMac package at `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/` with `install-option-12.sh`, `README.md`, and `IMAC_TEST_PLAN.md` for a future Omega OS option 12 pull-from-shared flow. Updated handoff + memory docs to record Stage 8, note Auto Bridge Transfer V1 is already live at `a1480d5`, keep manual iMac option 11 as the current fallback, and set iMac Option 12 install as the next operator step. Scripts/docs only; BALA app files unchanged; no SW bump. | `scripts/chintu-bridge-command-center.ps1`, `CHINTU_IMAC_PACKAGES/OPTION_12_PULL_SHARED/*`, `CHINTU_HANDOFF.md`, `CHINTU_MEMORY_VAULT/NEXT_SPRINT_QUEUE.md`, `CHINTU_MEMORY_VAULT/PARKED_SYSTEMS.md`, `.gitignore` |
+| 2026-06-18 | Stage 9A Alive Daily Operator Layer (Codex) | Added `scripts/chintu-daily-operator.ps1`, `scripts/chintu-next-action.ps1`, and `scripts/chintu-endday-operator.ps1` to turn Chintu OS into a daily operator layer. Added `CHINTU_MEMORY_VAULT/DECISIONS.md`, `CHINTU_MEMORY_VAULT/BLOCKERS.md`, and the `CHINTU_MEMORY_VAULT/DAILY_LOGS/` archive path. Generated `CHINTU_OPERATOR_STATUS.md`, `CHINTU_TOMORROW_START.md`, and the first daily log through the new scripts. Updated handoff + memory docs to record that Stage 9A is local-first, file-based, validation-first, keeps BALA app files unchanged, keeps external automation parked, and documents Chintu Agent only as a future parked direction. No app change, no SW bump. | `scripts/chintu-daily-operator.ps1`, `scripts/chintu-next-action.ps1`, `scripts/chintu-endday-operator.ps1`, `CHINTU_MEMORY_VAULT/DECISIONS.md`, `CHINTU_MEMORY_VAULT/BLOCKERS.md`, `CHINTU_MEMORY_VAULT/NEXT_SPRINT_QUEUE.md`, `CHINTU_MEMORY_VAULT/PARKED_SYSTEMS.md`, `CHINTU_HANDOFF.md`, `CHINTU_OPERATOR_STATUS.md`, `CHINTU_TOMORROW_START.md`, `CHINTU_MEMORY_VAULT/DAILY_LOGS/*` |
 
 ---
 
