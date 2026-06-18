@@ -1,0 +1,25 @@
+# Example only. Keep real values out of git.
+# Default safe mode
+CHINTU_CONNECTOR_MODE=dry-run
+CHINTU_CONNECTOR_APPROVAL_PHRASE=type-the-exact-founder-approval-here
+
+# Telegram
+CHINTU_TG_BOT_TOKEN=replace-locally
+CHINTU_TG_CHAT_ID=replace-locally
+CHINTU_TG_TARGET=founder-room
+CHINTU_TG_ALLOWLIST=founder-room
+
+# Discord
+CHINTU_DISCORD_WEBHOOK_URL=replace-locally
+CHINTU_DISCORD_TARGET=founder-discord-room
+CHINTU_DISCORD_ALLOWLIST=founder-discord-room
+
+# Slack
+CHINTU_SLACK_WEBHOOK_URL=replace-locally
+CHINTU_SLACK_TARGET=founder-slack-room
+CHINTU_SLACK_ALLOWLIST=founder-slack-room
+
+# Gmail architecture only for now
+CHINTU_GMAIL_FROM=founder@example.com
+CHINTU_GMAIL_TARGET=founder@example.com
+CHINTU_GMAIL_ALLOWLIST=founder@example.com

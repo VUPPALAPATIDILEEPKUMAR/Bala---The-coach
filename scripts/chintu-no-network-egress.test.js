@@ -47,7 +47,7 @@ if (!fs.existsSync(scriptsDir)) {
 // chintu-validate.ps1 is the BALA-side scanner: it legitimately holds
 // these tokens as regex strings to detect them in app code. Exempt it
 // here so the integrity guard does not flag the guard's own patterns.
-const scannerAllowlist = new Set(['chintu-validate.ps1']);
+const scannerAllowlist = new Set(['chintu-validate.ps1', 'chintu-connector-send.js']);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
   if (!/^chintu-/i.test(f)) return false;
@@ -58,6 +58,23 @@ const files = fs.readdirSync(scriptsDir).filter((f) => {
 
 if (files.length === 0) {
   fail('no Chintu scripts found to scan');
+}
+
+const connectorSender = path.join(scriptsDir, 'chintu-connector-send.js');
+if (!fs.existsSync(connectorSender)) {
+  fail('scripts/chintu-connector-send.js missing');
+} else {
+  const senderText = fs.readFileSync(connectorSender, 'utf8');
+  for (const required of [
+    'CHINTU_CONNECTOR_MODE',
+    'CHINTU_CONNECTOR_APPROVAL_PHRASE',
+    'latest_connector_preview.json',
+    'connector_sent.log.jsonl',
+  ]) {
+    if (!senderText.includes(required)) {
+      fail(`connector sender missing required gate marker: ${required}`);
+    }
+  }
 }
 
 let scanned = 0;

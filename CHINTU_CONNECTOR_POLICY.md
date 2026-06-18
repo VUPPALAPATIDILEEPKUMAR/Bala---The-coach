@@ -1,7 +1,7 @@
 # Chintu Connector Policy
 
-The single rulebook every connector — local or future external —
-must obey. Read this before activating anything.
+The single rulebook every connector, local or future external, must
+obey. Read this before activating anything.
 
 ---
 
@@ -25,30 +25,37 @@ decision.
    to `ready` without at least one full local dry-run pass and a
    reviewable diff of the proposed adapter script.
 3. **Approval before real action.** No connector flips from `ready`
-   to `active` without an explicit founder commit message naming the
-   connector by name.
-4. **Logs after action.** Every real send writes a line to
-   `CHINTU_OUTBOX/sent.log` with timestamp, connector, recipient
-   handle, and the message body's SHA-256. No message body in the
-   log (so the log doesn't become a leak).
+   to `active` without an explicit founder decision naming the
+   connector.
+4. **Logs after action.** Every real send writes a local audit line
+   and a local sent-log line with timestamp, connector, recipient,
+   and message SHA-256. No message body in the sent log.
 5. **Off-switch.** Every active connector reads a flag file
    (`CHINTU_OUTBOX/CONNECTOR_<name>_PAUSE` for that connector or
    `CHINTU_OUTBOX/CONNECTORS_GLOBAL_PAUSE` for everything). Presence
    of the flag means the connector no-ops.
-6. **Secret storage.** Tokens, webhook URLs, app passwords never
-   live in the repo. They live in the Windows User env vars or
-   Credential Manager. Adapter scripts read them by name only.
-7. **Allowlist.** Real sending recipients are listed by name in an
-   `allowlist:` field in `CHINTU_CONNECTORS_CONFIG.example.json`
-   (or its non-example sibling that lives outside the repo). No
-   recipient outside the allowlist is ever a valid destination.
-8. **No health data, ever.** No connector — local outbox included —
-   may carry BALA user data, mood notes, health metrics, medical
-   content, or anything matching the medical-claims test patterns.
-9. **No emergency framing.** No connector message may imply Chintu
-   is monitoring for emergencies, predicting outcomes, or replacing
-   a clinician.
-10. **No mass send.** Recipients are personal. No broadcast lists,
+6. **Secret storage.** Tokens, webhook URLs, and app passwords never
+   live in the repo. They live in Windows User env vars or another
+   local secret store. Adapter scripts read them by name only.
+7. **Env-var only activation config.** Real connector activation is
+   configured through local env vars only. No committed local config
+   file is used for activation.
+8. **Allowlist.** Real sending recipients are listed in per-connector
+   env vars such as `CHINTU_TG_ALLOWLIST`,
+   `CHINTU_DISCORD_ALLOWLIST`, `CHINTU_SLACK_ALLOWLIST`, and
+   `CHINTU_GMAIL_ALLOWLIST`. No recipient outside the allowlist is
+   ever a valid destination.
+9. **Approval phrase gate.** Real sending requires the exact founder
+   phrase stored outside the repo in
+   `CHINTU_CONNECTOR_APPROVAL_PHRASE`, and that same phrase must be
+   explicitly provided at send time.
+10. **No health data, ever.** No connector, local outbox included,
+    may carry BALA user data, mood notes, health metrics, medical
+    content, or anything matching the medical-claims test patterns.
+11. **No emergency framing.** No connector message may imply Chintu
+    is monitoring for emergencies, predicting outcomes, or replacing
+    a clinician.
+12. **No mass send.** Recipients are personal. No broadcast lists,
     no fan-out, no auto-forward chains.
 
 ---
@@ -63,7 +70,8 @@ decision.
 - One short next-action sentence.
 - Bridge / runtime status word (GREEN / YELLOW / RED).
 
-That's it. Everything else needs a per-message exception.
+That is the safe default envelope. Everything else needs a per-message
+exception.
 
 ---
 
@@ -92,14 +100,16 @@ chore: flip <connector> from dry-run to ready
 
 That commit must:
 
-- Add the adapter script under `scripts/chintu-connector-<name>.ps1` or `.js`.
-- Add a `chintu-connector-<name>.test.js` that asserts:
-  - The adapter reads its token via env var, not from disk in the repo.
+- Add the adapter script under `scripts/chintu-connector-<name>.ps1`
+  or `.js`, or expand `scripts/chintu-connector-send.js` with the
+  reviewed connector adapter.
+- Add a connector test that asserts:
+  - The adapter reads secrets via env var, not from disk in the repo.
+  - The adapter requires `CHINTU_CONNECTOR_MODE=active` plus the
+    exact founder approval phrase before a real send is possible.
   - The adapter respects the off-switch flag file.
   - The adapter refuses to run if the dry-run preview is missing.
-- Amend `chintu-no-network-egress.test.js`'s allowlist to permit the
-  one outbound URL pattern the adapter needs.
-- Leave the connector at `ready` status, not `active`.
+- Keep the connector at `ready` status, not `active`.
 
 ---
 
@@ -114,15 +124,14 @@ chore: activate <connector> for Chintu OS heartbeats
 
 That commit must:
 
-- Document the allowlist of recipients in
-  `CHINTU_CONNECTORS_CONFIG.example.json`.
+- Document the env vars and allowlist entries used locally.
 - Confirm the off-switch flag file is documented in
   `CHINTU_OUTBOX/README.md`.
-- Confirm the secret lives outside the repo and the adapter reads
-  it correctly.
+- Confirm the secret lives outside the repo and the adapter reads it
+  correctly.
 
-Until those commits exist, every connector stays at `dry-run` at
-best.
+Until those conditions exist, every connector stays at `dry-run` or
+`ready` at best.
 
 ---
 

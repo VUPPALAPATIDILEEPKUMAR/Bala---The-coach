@@ -17,6 +17,7 @@
       - CHINTU_OUTBOX/latest_founder_message.md
       - CHINTU_OUTBOX/latest_action_plan.json
       - CHINTU_OUTBOX/latest_heartbeat.json
+      - CHINTU_OUTBOX/latest_connector_readiness.json
       - CHINTU_OUTBOX/dry_run_payloads/*.json
 
     Outputs:
@@ -198,6 +199,7 @@ $nextPromptText = Read-Text "CHINTU_NEXT_OPERATOR_PROMPT.md"
 $founderMessageText = Read-Text "CHINTU_OUTBOX/latest_founder_message.md"
 $actionPlan = Read-JsonFile "CHINTU_OUTBOX/latest_action_plan.json"
 $heartbeatJson = Read-JsonFile "CHINTU_OUTBOX/latest_heartbeat.json"
+$connectorReadiness = Read-JsonFile "CHINTU_OUTBOX/latest_connector_readiness.json"
 
 $previewFiles = @(
     "CHINTU_OUTBOX/dry_run_payloads/telegram_preview.json",
@@ -281,6 +283,15 @@ $approvalSummaryText = if ($approvalCardCount -eq 0) {
 
 $dryRunStatus = "{0} of {1} preview files present. DRY RUN ONLY." -f $previewPresent.Count, $previewFiles.Count
 $dryRunList = $previewPresent | ForEach-Object { $_ -replace '^CHINTU_OUTBOX/dry_run_payloads/', '' }
+$connectorSummary = "Readiness snapshot missing. Run node scripts\\chintu-connector-send.js --check."
+$connectorItems = @()
+if ($connectorReadiness -and $connectorReadiness.connectors) {
+    $readyStates = @($connectorReadiness.connectors | ForEach-Object {
+        "{0}: can_send_now={1}; missing_env={2}" -f $_.connector, $_.can_send_now, (@($_.missing_env_vars).Count)
+    })
+    $connectorItems = $readyStates
+    $connectorSummary = "Mode $($connectorReadiness.connector_mode). Approval phrase, allowlist, preview, and active mode are all required before any real send."
+}
 
 $html = @"
 <!doctype html>
@@ -498,6 +509,13 @@ $(To-ListItems -Items $dryRunList)
       </ul>
     </section>
     <section class="card">
+      <h2>Connector readiness</h2>
+      <p>$(Esc $connectorSummary)</p>
+      <ul>
+$(To-ListItems -Items $connectorItems)
+      </ul>
+    </section>
+    <section class="card">
       <h2>Top 5 action queue</h2>
       <ul>
 $(To-ListItems -Items $topActionItems)
@@ -571,7 +589,8 @@ $consoleJson = [ordered]@{
         "CHINTU_NEXT_OPERATOR_PROMPT.md",
         "CHINTU_OUTBOX/latest_founder_message.md",
         "CHINTU_OUTBOX/latest_action_plan.json",
-        "CHINTU_OUTBOX/latest_heartbeat.json"
+        "CHINTU_OUTBOX/latest_heartbeat.json",
+        "CHINTU_OUTBOX/latest_connector_readiness.json"
     )
     outputs = @(
         "CHINTU_OPERATOR_CONSOLE.html",

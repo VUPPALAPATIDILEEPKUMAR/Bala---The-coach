@@ -29,3 +29,7 @@ CHINTU_NEXT_OPERATOR_PROMPT.md
 CHINTU_OUTBOX/latest_action_plan.json
 CHINTU_OUTBOX/latest_heartbeat.json
 CHINTU_OUTBOX/latest_operator_console.json
+CHINTU_OUTBOX/latest_connector_readiness.json
+CHINTU_OUTBOX/latest_connector_preview.json
+CHINTU_OUTBOX/connector_audit.log.jsonl
+CHINTU_OUTBOX/connector_sent.log.jsonl

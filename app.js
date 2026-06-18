@@ -454,9 +454,18 @@ function updatePersonalization() {
   document.querySelector("#guide-label").textContent = name ? `Today's Guide for ${name}` : "Today's Guide";
   document.querySelector("#coach-title").textContent = name ? `${name}'s BALA Coach` : "Ask BALA";
   document.querySelector("#coach-welcome").textContent = name
-    ? `Hi ${name}. I can help you understand your saved sleep, recovery, heart, activity, and symptom signals.`
-    : "I can help you understand patterns across sleep, recovery, activity, and your wearable data.";
+    ? `Hi ${name}. I can help you understand the saved signals available in this app right now, including sleep, recovery, heart, activity, and symptom check-ins.`
+    : "I can help you understand the signals available in this app right now, including sleep, recovery, activity, and your saved check-ins.";
+  let grounding = document.querySelector("#coach-grounding");
+  if (!grounding) {
+    grounding = document.createElement("small");
+    grounding.id = "coach-grounding";
+    const welcome = document.querySelector("#coach-welcome");
+    welcome?.insertAdjacentElement("afterend", grounding);
+  }
+  grounding.textContent = "If this is demo data or limited check-ins, treat this as a gentle guide, not medical advice.";
   coachInput.placeholder = name ? `What would you like to understand, ${name}?` : "What changed this week?";
+  coachModeLabel.textContent = "Private coach · using only this app's available signals";
   const metrics = getLocalMetrics();
   if (metrics) updateDashboard(metrics);
 }
@@ -2595,12 +2604,14 @@ document.querySelector("#coach-form").addEventListener("submit", (event) => {
   coachMessages.scrollTop = coachMessages.scrollHeight;
   const note = document.createElement("small");
   note.className = "ai-source";
-  note.textContent = "BALA private local guidance";
+  note.textContent = "BALA local guidance from this app's available signals";
   response.append(note);
   conversation.push({ role: "user", content: question });
   voiceStatus.textContent = "BALA used your available local signals and check-ins.";
+  coachModeLabel.textContent = "Private coach - using this app's available signals";
   coachModeLabel.textContent = "Private coach · local guidance active";
   conversation.push({ role: "assistant", content: answerText.textContent });
+  coachModeLabel.textContent = "Private coach - using this app's available signals";
   if (conversation.length > 12) conversation.splice(0, conversation.length - 12);
   speakCoachAnswer(answerText.textContent);
 });
