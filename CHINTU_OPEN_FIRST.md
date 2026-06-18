@@ -52,6 +52,22 @@ powershell -ExecutionPolicy Bypass -File scripts\chintu-approval-audit.ps1 -Appr
 
 ---
 
+## 2b. Run Chintu Heartbeat
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-heartbeat.ps1
+```
+
+This is the one-command local founder loop. It refreshes the founder
+message, planner outputs, dry-run connector previews, control-room
+index, and writes [CHINTU_HEARTBEAT.md](CHINTU_HEARTBEAT.md) plus
+`CHINTU_OUTBOX/latest_heartbeat.json`.
+
+Open `CHINTU_HEARTBEAT.md` first if you want the shortest "what just
+happened / what should I do next" read.
+
+---
+
 ## 3. The first file to open after the launcher
 
 [CHINTU_TOMORROW_MORNING_BRIEF.md](CHINTU_TOMORROW_MORNING_BRIEF.md) —

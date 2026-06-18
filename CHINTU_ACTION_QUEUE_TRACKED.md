@@ -4,10 +4,10 @@ Tracked reference snapshot for the planner workflow. This file is safe to commit
 
 ## Latest known planner queue shape
 
-- Top 5 ids: `A1-refresh-founder-message, A2-render-dry-run-payloads, A3-bridge-reality-check, A5-bala-tier1-audit, A4-push-pending-commits`
+- Top 5 ids: `A1-refresh-founder-message, A2-render-dry-run-payloads, A3-bridge-reality-check, A5-bala-tier1-audit, A6-flip-telegram-dry-run`
 - Categories in the top 5: `safe-now, safe-now, safe-now, safe-now, needs-approval`
 - Highest-ranked safe-now action: `A1-refresh-founder-message`
-- Approval cards generated for top-5 actions: `A4-push-pending-commits`
+- Approval cards generated for top-5 actions: `A6-flip-telegram-dry-run`
 
 ## Current top 5 snapshot
 
@@ -17,17 +17,16 @@ Tracked reference snapshot for the planner workflow. This file is safe to commit
 | 2 | `A2-render-dry-run-payloads` | safe-now | no | Make the Telegram/Slack/Discord shape visible without sending. Useful evidence for any future flip-to-ready decision. |
 | 3 | `A3-bridge-reality-check` | safe-now | no | Confirms Windows -> shared bridge -> iMac Option 12 is still GREEN before any iMac pull. |
 | 4 | `A5-bala-tier1-audit` | safe-now | no | Catch any drift toward predictive/clinical phrasing before the next BALA commit. Zero risk - reading only. |
-| 5 | `A4-push-pending-commits` | needs-approval | yes | Ship the work that has already passed every safety test. |
+| 5 | `A6-flip-telegram-dry-run` | needs-approval | yes | Would let the dry-run adapter mark Telegram as exercised. Still NO real send. See CHINTU_TELEGRAM_STATUS_PLAN.md. |
 
 ## Top action categories
 
 - `safe-now`: 4 action(s). Examples: A1-refresh-founder-message, A2-render-dry-run-payloads, A3-bridge-reality-check
-- `needs-approval`: 2 action(s). Examples: A4-push-pending-commits, A6-flip-telegram-dry-run
+- `needs-approval`: 1 action(s). Examples: A6-flip-telegram-dry-run
 - `research`: 1 action(s). Examples: A7-voice-coach-spec-reread
 
 ## Approval-needed examples
 
-- `A4-push-pending-commits` (medium) -> phrase: `approve A4-push-pending-commits`
 - `A6-flip-telegram-dry-run` (medium) -> phrase: `approve A6-flip-telegram-dry-run`
 
 ## Parked and research examples

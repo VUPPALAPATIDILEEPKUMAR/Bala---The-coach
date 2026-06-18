@@ -1,5 +1,29 @@
 # Chintu Claude Survival Handoff
 
+## 0a-7. Cycle 10 - Stage 14 heartbeat loop
+
+Stage 14 starts the local founder heartbeat loop. The old heartbeat
+proof file has been upgraded into a one-command refresh of the core
+Chintu operator cycle.
+
+Heartbeat loop:
+
+- `scripts/chintu-heartbeat.ps1` now runs, in order:
+  founder message -> action planner -> dry-run connector previews ->
+  control-room index -> heartbeat report.
+- Outputs:
+  - `CHINTU_HEARTBEAT.md`
+  - `CHINTU_OUTBOX/latest_heartbeat.json`
+- The heartbeat report includes git status, artifact refresh status,
+  next best action, parked reminder, and the exact next human command.
+
+Safety invariants stayed unchanged:
+
+- No network egress.
+- No real Telegram / Slack / Discord / Gmail send.
+- No BALA app edits.
+- All connector-shaped artifacts remain DRY RUN ONLY.
+
 ## 0a-6. Cycle 9 - Stage 13B planner stability completed
 
 Stage 13B is now complete. The planner has both live gitignored outputs

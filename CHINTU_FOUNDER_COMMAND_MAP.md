@@ -68,7 +68,7 @@ explicitly approves it.
 | Command | Output |
 |---|---|
 | `scripts\chintu-runtime-health.ps1` | `CHINTU_RUNTIME_HEALTH.md` (GREEN/YELLOW/RED) |
-| `scripts\chintu-heartbeat.ps1` | `CHINTU_HEARTBEAT.md` (local proof Chintu ran) |
+| `scripts\chintu-heartbeat.ps1` | Founder message + planner + dry-run previews + control room refresh -> `CHINTU_HEARTBEAT.md` + `CHINTU_OUTBOX/latest_heartbeat.json` |
 | `scripts\chintu-restart-recovery.ps1` | `CHINTU_RESTART_RECOVERY.md` + console resume action |
 | `scripts\chintu-bridge-loop-reality-check.ps1` | `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` (GREEN/YELLOW/RED bridge readiness) |
 | `scripts\chintu-founder-message.ps1` | `CHINTU_DAILY_BRIEF.md` + `CHINTU_OUTBOX/latest_founder_message.md` + appends to `founder_message_history.md` |

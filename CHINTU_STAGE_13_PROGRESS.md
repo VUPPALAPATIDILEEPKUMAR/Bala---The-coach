@@ -4,10 +4,12 @@ Update 2026-06-18: items 1, 2, 3, 5, and 6 are now done. Stage 13B is
 now shipped.
 
 **Stage 13A status:** SHIPPED.
+**Canonical Stage 13B status:** SHIPPED - visibility, approval
+workflow, tracked snapshot, and fixture tests landed.
 **Stage 13B completion note:** shipped 2026-06-18 with tracked
 snapshot and fixture-driven ranking tests.
 **Stage 13B status:** PARTIAL — visibility slice landed (item 4).
-Remaining items: none in Stage 13B.
+Remaining items: none in Stage 13B. Stage 14 heartbeat loop begins next.
 **Date:** 2026-06-18.
 
 ---

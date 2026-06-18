@@ -65,6 +65,7 @@ $sections = @(
     @{ Title = "Runtime + Restart Recovery"; Files = @(
         @{ Path = "CHINTU_RUNTIME_HEALTH.md"; Label = "Runtime Health (GREEN/YELLOW/RED)" },
         @{ Path = "CHINTU_HEARTBEAT.md"; Label = "Heartbeat (local proof Chintu ran)" },
+        @{ Path = "CHINTU_OUTBOX/latest_heartbeat.json"; Label = "Latest heartbeat JSON mirror (DRY RUN ONLY)" },
         @{ Path = "CHINTU_RESTART_RECOVERY.md"; Label = "Restart Recovery summary" },
         @{ Path = "CHINTU_RUNTIME_PLAYBOOK.md"; Label = "Runtime Playbook" },
         @{ Path = "CHINTU_TELEGRAM_STATUS_PLAN.md"; Label = "Telegram Status Plan (parked)" },
