@@ -1,15 +1,78 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (overnight builder cycle 3 — autonomous, self-expanding backlog)
+**Stage:** 11 (overnight builder cycle 4 — autonomous, self-expanding backlog)
 **Date:** 2026-06-18
 **Mode:** local-first, founder-driven, push-pending-human-approval
 
-## 0. What cycle 3 added (read first)
+## 0. What cycle 4 added (read first)
 
-Two self-generated safe backlogs were planned, built, validated, and
+Six self-generated safe backlogs were planned, built, validated, and
 committed in this run. No push. No protected BALA file edits.
+No service-worker bump. No network egress. All safety tests green.
 
-Cycle 3 commits (newest first):
+Cycle 4 commits (newest first):
+
+```
+9210ddf chore: add Chintu BALA-safe-docs, parked-systems, continuation-prompts integrity tests
+00a8fd5 docs: add Chintu codex review, claude continuation, next-thread, push checklist
+0496544 docs: park future agent architecture and local LLM/voice/phone research notes
+4426990 docs: add BALA safe planning specs (voice, tester feedback, privacy, doctor summary, local AI)
+7e62ce5 chore: add Chintu generated-files map, hygiene report, control-room troubleshooting
+```
+
+Cycle 4 also added `CHINTU_SAFETY_INVARIANTS.md` (canonical safety list)
+and `CHINTU_OPERATOR_FAQ.md` as a follow-up consolidation slice.
+
+New tests (all wired into release guard + command map):
+
+- `scripts/chintu-generated-files-map.test.js`
+- `scripts/chintu-bala-safe-docs.test.js`
+- `scripts/chintu-parked-systems.test.js`
+- `scripts/chintu-continuation-prompts.test.js`
+
+New control-room / operator docs:
+
+- `CHINTU_GENERATED_FILES_MAP.md`
+- `CHINTU_REPO_HYGIENE_REPORT.md`
+- `CHINTU_CONTROL_ROOM_TROUBLESHOOTING.md`
+- `CHINTU_SAFETY_INVARIANTS.md`
+- `CHINTU_OPERATOR_FAQ.md`
+
+New BALA safe planning specs (all parked, founder-approval gated):
+
+- `BALA_VOICE_COACH_SAFE_SPEC.md`
+- `BALA_TESTER_FEEDBACK_PLAN.md`
+- `BALA_PRIVACY_TRUST_POLISH_PLAN.md`
+- `BALA_DOCTOR_SUMMARY_POLISH_SPEC.md`
+- `BALA_LOCAL_FIRST_AI_COACH_SPEC.md`
+
+New parked architecture research:
+
+- `CHINTU_FUTURE_AGENT_ARCHITECTURE.md`
+- `CHINTU_LOCAL_LLM_RESEARCH_PARKED.md`
+- `CHINTU_VOICE_LAYER_RESEARCH_PARKED.md`
+- `CHINTU_PHONE_LAYER_RESEARCH_PARKED.md`
+
+New review/continuation layer:
+
+- `CHINTU_CODEX_REVIEW_PROMPT.md`
+- `CHINTU_CLAUDE_CONTINUATION_PROMPT.md`
+- `CHINTU_NEXT_THREAD_STARTER_DETAILED.md`
+- `CHINTU_PUSH_REVIEW_CHECKLIST.md`
+
+Validation at end of cycle 4: all 12 Chintu integrity tests PASS
+individually. Master launcher halts at step 15/16 on the OS health
+check with "RED — 1 critical issue: unpushed commits" — that is the
+**expected** founder-push-reminder signal, not a safety failure. The
+preceding 14 steps (syntax, snapshot, command map, memory vault,
+agent control shell, no-network-egress, medical-claims, safety
+boundary, doc-link, validate, release-guard with all 12 tests) are
+green.
+
+Founder action when ready: review the unpushed range (likely 14+
+commits) using `CHINTU_PUSH_REVIEW_CHECKLIST.md`, then push by hand.
+
+Cycle 3 commits (kept for reference):
 
 ```
 29445a2 chore: add Chintu doc-link integrity test and handoff/bridge docs
