@@ -131,7 +131,24 @@ Then re-run the launcher. If a safety test stays red, stop and ask.
 
 ---
 
-## 11. Bridge to the iMac (when you want it)
+## 11. Chintu's daily message to you
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-founder-message.ps1
+node scripts/chintu-message-dry-run.js
+```
+
+The first writes [CHINTU_DAILY_BRIEF.md](CHINTU_DAILY_BRIEF.md) and
+`CHINTU_OUTBOX/latest_founder_message.md` (a natural-language read of
+the system). The second renders dry-run previews of what Telegram /
+Slack / Discord *would* look like — without sending. See
+[CHINTU_CONNECTORS.md](CHINTU_CONNECTORS.md) and
+[CHINTU_CONNECTOR_POLICY.md](CHINTU_CONNECTOR_POLICY.md) for the
+ladder from parked → dry-run → ready → active.
+
+---
+
+## 12. Bridge to the iMac (when you want it)
 
 Before walking through Option 12:
 
@@ -147,7 +164,7 @@ go.
 
 ---
 
-## 12. After laptop restart or Claude drop
+## 13. After laptop restart or Claude drop
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\chintu-restart-recovery.ps1

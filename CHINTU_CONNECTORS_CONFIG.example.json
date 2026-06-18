@@ -1,0 +1,84 @@
+{
+  "_comment": "EXAMPLE ONLY. Real secrets and recipients live OUTSIDE this repo. Do not commit a non-example sibling of this file. See CHINTU_CONNECTOR_POLICY.md.",
+  "version": 1,
+  "globalPauseFile": "CHINTU_OUTBOX/CONNECTORS_GLOBAL_PAUSE",
+  "outboxRoot": "CHINTU_OUTBOX",
+  "dryRunPayloadsDir": "CHINTU_OUTBOX/dry_run_payloads",
+  "sentLog": "CHINTU_OUTBOX/sent.log",
+  "connectors": {
+    "local_outbox": {
+      "status": "dry-run",
+      "tokenEnvVar": null,
+      "allowlist": [],
+      "maxBodyChars": 4000,
+      "pauseFile": null,
+      "notes": "Always-on local file channel. Writes founder messages to CHINTU_OUTBOX/."
+    },
+    "telegram": {
+      "status": "parked",
+      "tokenEnvVar": "CHINTU_TG_TOKEN_PLACEHOLDER_NEVER_COMMITTED",
+      "chatIdEnvVar": "CHINTU_TG_CHAT_ID_PLACEHOLDER_NEVER_COMMITTED",
+      "allowlist": [
+        "PLACEHOLDER_FOUNDER_PRIVATE_CHANNEL"
+      ],
+      "maxBodyChars": 1000,
+      "pauseFile": "CHINTU_OUTBOX/CONNECTOR_telegram_PAUSE",
+      "notes": "Sees CHINTU_TELEGRAM_STATUS_PLAN.md. No real send until founder flips status. Must never carry health data."
+    },
+    "slack": {
+      "status": "parked",
+      "webhookUrlEnvVar": "CHINTU_SLACK_WEBHOOK_PLACEHOLDER_NEVER_COMMITTED",
+      "allowlist": [
+        "PLACEHOLDER_FOUNDER_WORKSPACE_CHANNEL"
+      ],
+      "maxBodyChars": 2000,
+      "pauseFile": "CHINTU_OUTBOX/CONNECTOR_slack_PAUSE",
+      "notes": "Incoming-webhook style. URL lives in env var, not in repo."
+    },
+    "discord": {
+      "status": "parked",
+      "webhookUrlEnvVar": "CHINTU_DISCORD_WEBHOOK_PLACEHOLDER_NEVER_COMMITTED",
+      "allowlist": [
+        "PLACEHOLDER_FOUNDER_PRIVATE_SERVER"
+      ],
+      "maxBodyChars": 2000,
+      "noMentions": true,
+      "pauseFile": "CHINTU_OUTBOX/CONNECTOR_discord_PAUSE",
+      "notes": "Dedicated personal server only. No @mentions. No embeds beyond plain text."
+    },
+    "gmail": {
+      "status": "parked",
+      "smtpHostEnvVar": "CHINTU_GMAIL_SMTP_PLACEHOLDER_NEVER_COMMITTED",
+      "smtpUserEnvVar": "CHINTU_GMAIL_USER_PLACEHOLDER_NEVER_COMMITTED",
+      "smtpPassEnvVar": "CHINTU_GMAIL_APP_PASSWORD_PLACEHOLDER_NEVER_COMMITTED",
+      "allowlist": [
+        "PLACEHOLDER_FOUNDER_EMAIL"
+      ],
+      "maxBodyChars": 4000,
+      "noAttachments": true,
+      "pauseFile": "CHINTU_OUTBOX/CONNECTOR_gmail_PAUSE",
+      "notes": "App-password lives in OS credential store, never in repo."
+    },
+    "github_gh": {
+      "status": "parked",
+      "tokenSource": "founder's local gh CLI (already authenticated)",
+      "allowlist": [
+        "PLACEHOLDER_OWN_REPO_ONLY"
+      ],
+      "maxBodyChars": 4000,
+      "pauseFile": "CHINTU_OUTBOX/CONNECTOR_github_PAUSE",
+      "notes": "Dry-run only prints the gh command it would have run. No actual gh invocation in dry-run."
+    }
+  },
+  "_prohibited_message_contents": [
+    "health metrics",
+    "BALA user data",
+    "medical content",
+    "secrets/tokens",
+    "vault paths",
+    "full commit message body",
+    "@mentions",
+    "photos / files / attachments"
+  ],
+  "_bala_safety_footer": "BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring."
+}

@@ -35,6 +35,9 @@ const unsafe = [
 const allowFiles = new Set([
   'chintu_os_master_autonomous_builder_prompt.md',
   'chintu-medical-claims.test.js',
+  // BALA_SAFE_COPY_REVIEW.md's job is to enumerate risky phrases in a
+  // "risky -> safer" replacement table. Mentioning them is the point.
+  'bala_safe_copy_review.md',
 ]);
 
 let fails = 0;

@@ -31,6 +31,12 @@ These artifacts are rebuilt on every run and never need to be staged.
 | `CHINTU_HEARTBEAT.md` | `scripts/chintu-heartbeat.ps1` | PowerShell |
 | `CHINTU_RESTART_RECOVERY.md` | `scripts/chintu-restart-recovery.ps1` | PowerShell |
 | `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` | `scripts/chintu-bridge-loop-reality-check.ps1` | PowerShell |
+| `CHINTU_DAILY_BRIEF.md` | `scripts/chintu-founder-message.ps1` | PowerShell |
+| `CHINTU_OUTBOX/latest_founder_message.md` | `scripts/chintu-founder-message.ps1` | PowerShell |
+| `CHINTU_OUTBOX/founder_message_history.md` | `scripts/chintu-founder-message.ps1` | PowerShell |
+| `CHINTU_OUTBOX/dry_run_payloads/telegram_preview.json` | `scripts/chintu-message-dry-run.js` | Node |
+| `CHINTU_OUTBOX/dry_run_payloads/slack_preview.json` | `scripts/chintu-message-dry-run.js` | Node |
+| `CHINTU_OUTBOX/dry_run_payloads/discord_preview.json` | `scripts/chintu-message-dry-run.js` | Node |
 
 ---
 

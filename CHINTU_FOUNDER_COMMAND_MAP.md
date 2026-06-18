@@ -53,6 +53,9 @@ explicitly approves it.
 | `node scripts\chintu-telegram-status-plan.test.js` | Telegram status plan stays parked and no script targets api.telegram.org. |
 | `node scripts\chintu-bridge-loop-reality-check.test.js` | Bridge reality-check script + docs carry footer, no forbidden URLs or secrets. |
 | `node scripts\chintu-imac-option-12-sha-parse.test.js` | iMac Option 12 install script uses robust SHA-256 parsing + lowercase compare. |
+| `node scripts\chintu-dry-run-adapter.test.js` | Dry-run adapter has no HTTP client / connector URLs; payloads marked DRY RUN ONLY. |
+| `node scripts\chintu-connector-policy.test.js` | Connector registry + policy + example config consistent, no real secrets, no `active`/`ready` status. |
+| `node scripts\chintu-outbox-shape.test.js` | Outbox folder shape correct; no real connector URLs anywhere under CHINTU_OUTBOX/. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |
@@ -65,6 +68,8 @@ explicitly approves it.
 | `scripts\chintu-heartbeat.ps1` | `CHINTU_HEARTBEAT.md` (local proof Chintu ran) |
 | `scripts\chintu-restart-recovery.ps1` | `CHINTU_RESTART_RECOVERY.md` + console resume action |
 | `scripts\chintu-bridge-loop-reality-check.ps1` | `CHINTU_BRIDGE_LOOP_REALITY_CHECK.md` (GREEN/YELLOW/RED bridge readiness) |
+| `scripts\chintu-founder-message.ps1` | `CHINTU_DAILY_BRIEF.md` + `CHINTU_OUTBOX/latest_founder_message.md` + appends to `founder_message_history.md` |
+| `node scripts\chintu-message-dry-run.js` | `CHINTU_OUTBOX/dry_run_payloads/{telegram,slack,discord}_preview.json` (NEVER sent) |
 
 ## Reporting / dashboards
 

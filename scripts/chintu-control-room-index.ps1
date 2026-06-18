@@ -70,6 +70,20 @@ $sections = @(
         @{ Path = "CHINTU_TELEGRAM_STATUS_PLAN.md"; Label = "Telegram Status Plan (parked)" },
         @{ Path = "CHINTU_ALIVE_NEXT_LEVEL_PLAN.md"; Label = "Alive Next-Level Plan" }
     )},
+    @{ Title = "Chintu Alive Outbox + Connectors"; Files = @(
+        @{ Path = "CHINTU_DAILY_BRIEF.md"; Label = "Daily Brief (generated)" },
+        @{ Path = "CHINTU_OUTBOX/README.md"; Label = "Outbox README" },
+        @{ Path = "CHINTU_OUTBOX/latest_founder_message.md"; Label = "Latest founder message (generated, never sent)" },
+        @{ Path = "CHINTU_OUTBOX/founder_message_history.md"; Label = "Founder message history (append-only)" },
+        @{ Path = "CHINTU_OUTBOX/dry_run_payloads/README.md"; Label = "Dry-run payloads README" },
+        @{ Path = "CHINTU_CONNECTORS.md"; Label = "Connector Registry" },
+        @{ Path = "CHINTU_CONNECTOR_POLICY.md"; Label = "Connector Policy" },
+        @{ Path = "CHINTU_CONNECTORS_CONFIG.example.json"; Label = "Connectors Config (example, no secrets)" }
+    )},
+    @{ Title = "BALA Product Intelligence"; Files = @(
+        @{ Path = "BALA_PRODUCT_POLISH_QUEUE.md"; Label = "BALA Product Polish Queue" },
+        @{ Path = "BALA_SAFE_COPY_REVIEW.md"; Label = "BALA Safe Copy Review" }
+    )},
     @{ Title = "Bridge Loop (iMac Option 12)"; Files = @(
         @{ Path = "CHINTU_BRIDGE_LOOP_REALITY_CHECK.md"; Label = "Bridge Loop Reality Check (GREEN/YELLOW/RED)" },
         @{ Path = "CHINTU_IMAC_OPTION_12_INSTALL_NOW.md"; Label = "iMac Option 12 Install Now (founder guide)" },
@@ -168,6 +182,12 @@ $sections = @(
         @{ Path = "scripts/chintu-telegram-status-plan.test.js"; Label = "Telegram Status Plan Test" },
         @{ Path = "scripts/chintu-bridge-loop-reality-check.ps1"; Label = "Bridge Loop Reality Check Generator" },
         @{ Path = "scripts/chintu-bridge-loop-reality-check.test.js"; Label = "Bridge Loop Reality Check Test" },
+        @{ Path = "scripts/chintu-imac-option-12-sha-parse.test.js"; Label = "iMac Option 12 SHA-parse Test" },
+        @{ Path = "scripts/chintu-founder-message.ps1"; Label = "Founder Message Generator (alive brain reader)" },
+        @{ Path = "scripts/chintu-message-dry-run.js"; Label = "Dry-Run Message Adapter" },
+        @{ Path = "scripts/chintu-dry-run-adapter.test.js"; Label = "Dry-Run Adapter Test" },
+        @{ Path = "scripts/chintu-connector-policy.test.js"; Label = "Connector Policy Test" },
+        @{ Path = "scripts/chintu-outbox-shape.test.js"; Label = "Outbox Shape Test" },
         @{ Path = "scripts/chintu-release-guard.ps1"; Label = "Release Guard" },
         @{ Path = "scripts/chintu-bridge-command-center.ps1"; Label = "Bridge Command Center Script" },
         @{ Path = "scripts/chintu-next-action.ps1"; Label = "Next Action" },

@@ -1,8 +1,64 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (cycle 6c — iMac Option 12 verified clean from GitHub ZIP)
+**Stage:** 12 (cycle 7 — Alive Core + Connector-Ready Operator Layer + BALA Intelligence)
 **Date:** 2026-06-18
-**Mode:** local-first, founder-driven, push-pending-human-approval
+**Mode:** local-first + dry-run, founder-driven, push-pending-human-approval
+
+## 0a-4. Cycle 7 — Stage 12 Alive Core
+
+The big shift: Chintu is no longer just files and tests. It now reads
+the local truth and writes a natural founder message every time you
+invoke it, and it has a registry of connectors plus dry-run adapters
+so you can preview what a future external send *would* look like —
+without ever sending.
+
+New scripts (local, no network):
+
+- `scripts/chintu-founder-message.ps1` -> `CHINTU_DAILY_BRIEF.md` +
+  `CHINTU_OUTBOX/latest_founder_message.md` (overwritten each run) +
+  `CHINTU_OUTBOX/founder_message_history.md` (append-only).
+- `scripts/chintu-message-dry-run.js` -> three JSON previews under
+  `CHINTU_OUTBOX/dry_run_payloads/` for Telegram / Slack / Discord
+  shape. Each payload includes `_dry_run: true` and `_label: "DRY RUN ONLY"`.
+  No HTTP client. No connector URL. The script refuses to run if the
+  latest founder message contains any forbidden affirmative term.
+
+New planning docs (operator-side):
+
+- `CHINTU_CONNECTORS.md` (registry with status legend
+  parked / dry-run / ready / active)
+- `CHINTU_CONNECTOR_POLICY.md` (preview-before-send, dry-run-before-
+  activation, approval-before-real-action, logs-after-action,
+  off-switch flag files, secret storage in OS env only, allowlist)
+- `CHINTU_CONNECTORS_CONFIG.example.json` (placeholder names only)
+- `CHINTU_OUTBOX/README.md` (folder sentinel; the only tracked file
+  in the outbox)
+
+New planning docs (BALA-side):
+
+- `BALA_PRODUCT_POLISH_QUEUE.md` (4 tiers, smallest first; all
+  founder-only to implement)
+- `BALA_SAFE_COPY_REVIEW.md` (replacement table, hero hook, coach
+  prefix, tone goals)
+
+New integrity tests (all wired into release guard + command map):
+
+- `chintu-dry-run-adapter.test.js` (no HTTP client, no real URL,
+  payloads marked DRY RUN ONLY)
+- `chintu-connector-policy.test.js` (no `active` / `ready` in example
+  config, no real-looking secrets, footer present)
+- `chintu-outbox-shape.test.js` (outbox README references the right
+  files; no real connector URL anywhere under `CHINTU_OUTBOX/`)
+
+No BALA app file was edited. The "optional small BALA polish" lane in
+the Stage 12 prompt was deliberately *not* taken: every BALA app file
+is on the protected list, and operator-mode builder sessions never
+edit those. Founder-only.
+
+Status of every external connector: still `parked`. Telegram, Slack,
+Discord, Gmail, GitHub gh are documented and dry-runnable, never
+real-send. Flip-to-ready requires an explicit founder commit per
+`CHINTU_CONNECTOR_POLICY.md` §5.
 
 ## 0a-3. Cycle 6c — clean GitHub-ZIP reinstall verified
 
