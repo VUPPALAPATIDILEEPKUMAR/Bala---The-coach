@@ -13,6 +13,12 @@
     Exact founder approval phrase, for example:
     approve A6-flip-telegram-dry-run
 
+.PARAMETER ActionId
+    Optional explicit action id to match against the approval phrase.
+
+.PARAMETER DryRun
+    Validate inputs and print the row without writing the audit file.
+
 .PARAMETER Notes
     Optional short note stored in the final column.
 
@@ -26,6 +32,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$ApprovalPhrase,
+    [string]$ActionId = "",
+    [switch]$DryRun,
     [string]$Notes = "",
     [string]$RepoRoot = ""
 )
@@ -53,7 +61,12 @@ if ($normalizedPhrase -notmatch '^approve\s+([A-Za-z0-9][A-Za-z0-9-]*)$') {
     Write-Host "FAIL: approval phrase must match: approve <id>"
     exit 2
 }
-$actionId = $Matches[1]
+$parsedActionId = $Matches[1]
+if ($ActionId -and ($ActionId.Trim() -ne $parsedActionId)) {
+    Write-Host "FAIL: ActionId does not match approval phrase id"
+    exit 2
+}
+$actionId = if ($ActionId) { $ActionId.Trim() } else { $parsedActionId }
 
 function To-TableCell {
     param([AllowNull()][string]$Value)
@@ -69,6 +82,12 @@ $head = (& git rev-parse --short HEAD 2>$null)
 if (-not $head) { $head = "(unknown)" }
 
 $row = "| $stamp | ``$actionId`` | ``$normalizedPhrase`` | ``$(To-TableCell $branch)`` | ``$(To-TableCell $head)`` | $(To-TableCell $Notes) |"
+
+if ($DryRun) {
+    Write-Host "Approval audit dry-run row:"
+    Write-Host $row
+    exit 0
+}
 
 $text = Get-Content -LiteralPath $auditPath -Raw
 $marker = "## BALA safety footer"

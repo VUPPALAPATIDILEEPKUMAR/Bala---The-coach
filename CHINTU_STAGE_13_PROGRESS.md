@@ -1,11 +1,13 @@
 # Chintu Stage 13 Progress
 
-Update 2026-06-18: items 3, 5, and 6 are now done. Stage 13B remains
-open only for items 1 and 2.
+Update 2026-06-18: items 1, 2, 3, 5, and 6 are now done. Stage 13B is
+now shipped.
 
 **Stage 13A status:** SHIPPED.
+**Stage 13B completion note:** shipped 2026-06-18 with tracked
+snapshot and fixture-driven ranking tests.
 **Stage 13B status:** PARTIAL — visibility slice landed (item 4).
-Remaining items (1, 2, 3, 5, 6) still open for Codex.
+Remaining items: none in Stage 13B.
 **Date:** 2026-06-18.
 
 ---
@@ -42,16 +44,22 @@ and `.gitignore` (all four outputs are gitignored).
 
 In priority order:
 
-1. **Tracked snapshot of the queue.** A small generator that writes a
+1. ~~**Tracked snapshot of the queue.** A small generator that writes a
    stable, tracked Markdown summary of the latest action queue
    (timestamp removed) so the control-room HTML index can link to a
    stable file. Without this, the dashboard can only link to the
-   gitignored generated artifact.
+   gitignored generated artifact.~~ **DONE 2026-06-18** - planner now
+   writes tracked `CHINTU_ACTION_QUEUE_TRACKED.md` with stable queue
+   shape, category summary, approval examples, parked/research examples,
+   and regenerate/live-file guidance.
 
-2. **Categoriser unit tests.** A separate test file that takes a
+2. ~~**Categoriser unit tests.** A separate test file that takes a
    small fixture set of `(git state, runtime status, bridge status)`
    inputs and asserts which action `id`s end up in the top 5. This
-   guards the heuristic in `scripts/chintu-action-planner.ps1`.
+   guards the heuristic in `scripts/chintu-action-planner.ps1`.~~
+   **DONE 2026-06-18** - `scripts/chintu-action-planner-fixtures.test.js`
+   plus safe JSON fixtures now verify ranking/category behavior and
+   push-action gating without external services.
 
 3. ~~**Approval audit log.** Append a tracked
    `CHINTU_APPROVAL_AUDIT.md` row every time the founder runs an

@@ -5,7 +5,8 @@
 //   1. The helper exists and contains no network/send patterns.
 //   2. The tracked audit doc exists with schema + entries headings.
 //   3. The helper validates an `approve <id>` phrase shape.
-//   4. The audit doc carries the BALA safety footer.
+//   4. The helper supports the validation dry-run flow.
+//   5. The audit doc carries the BALA safety footer.
 //
 // Read-only. No network. No edits.
 
@@ -43,6 +44,12 @@ if (!fs.existsSync(script)) {
   }
   if (!text.includes('^approve\\s+([A-Za-z0-9][A-Za-z0-9-]*)$')) {
     fail('approval-audit helper does not validate the expected approve <id> phrase');
+  }
+  if (!text.includes('[switch]$DryRun')) {
+    fail('approval-audit helper missing DryRun support');
+  }
+  if (!text.includes('[string]$ActionId')) {
+    fail('approval-audit helper missing ActionId support');
   }
   if (!text.includes('CHINTU_APPROVAL_AUDIT.md')) {
     fail('approval-audit helper does not target CHINTU_APPROVAL_AUDIT.md');

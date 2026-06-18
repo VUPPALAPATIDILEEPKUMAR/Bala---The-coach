@@ -1,5 +1,35 @@
 # Chintu Claude Survival Handoff
 
+## 0a-6. Cycle 9 - Stage 13B planner stability completed
+
+Stage 13B is now complete. The planner has both live gitignored outputs
+and a stable tracked reference snapshot, plus fixture-driven ranking
+tests that guard the safe-now / needs-approval / research contract.
+
+New stability layer:
+
+- `CHINTU_ACTION_QUEUE_TRACKED.md` - tracked planner reference snapshot.
+  It explains the latest known queue shape, top action categories,
+  approval-needed examples, parked/research examples, how to regenerate
+  the live planner, and where live generated files live.
+- `scripts/chintu-action-planner-fixtures.test.js` - fixture-driven
+  ranking contract test.
+- `scripts/fixtures/chintu-action-planner/*.json` - safe local fixtures
+  for baseline and unpushed planner states.
+
+Validation lane change:
+
+- `scripts/chintu-release-guard.ps1` now runs the planner fixtures test.
+- `scripts/chintu-approval-audit.ps1` now supports `-ActionId` and
+  `-DryRun` so the approval workflow can be validated without appending
+  to the tracked audit log.
+
+What remains after Stage 13B:
+
+- No further planner-stability work is required in this stage.
+- External connectors remain parked.
+- Protected BALA app files remain founder-only.
+
 ## 0a-5. Cycle 8 - Stage 13B planner approval workflow
 
 Stage 13B moved from planner visibility into planner workflow polish.

@@ -1,0 +1,22 @@
+{
+  "name": "baseline-clean",
+  "input": {
+    "dirty_count": 0,
+    "unpushed": 0,
+    "runtime_status": "YELLOW",
+    "bridge_status": "GREEN"
+  },
+  "expect": {
+    "top5_ids": [
+      "A1-refresh-founder-message",
+      "A2-render-dry-run-payloads",
+      "A3-bridge-reality-check",
+      "A5-bala-tier1-audit",
+      "A6-flip-telegram-dry-run"
+    ],
+    "approval_card_ids": [
+      "A6-flip-telegram-dry-run"
+    ],
+    "push_action_present": false
+  }
+}

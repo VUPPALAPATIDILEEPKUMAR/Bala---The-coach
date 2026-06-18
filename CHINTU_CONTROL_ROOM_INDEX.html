@@ -36,7 +36,7 @@
     <p class="eyebrow">CHINTU OS / LOCAL CONTROL ROOM</p>
     <h1>Control Room Index</h1>
     <p>Every Chintu OS report, dashboard, doc, and script in one place. Open locally. Nothing phones home.</p>
-    <p class="meta">Generated 2026-06-18 12:21 -04:00 | Branch: main | Latest: ab602ef chore: surface Chintu action planner in control room</p>
+    <p class="meta">Generated 2026-06-18 12:29 -04:00 | Branch: main | Latest: db61ca1 chore: finish Chintu planner approval workflow</p>
     <p class="meta"><strong>Static snapshot.</strong> Re-run <code>scripts/chintu-control-room-index.ps1</code> to refresh.</p>
   </header>
   <main>
@@ -77,12 +77,14 @@
       <h2>Chintu Planner</h2>
       <ul>
         <li class="present"><span class="file-status">present</span> Action Queue (top 5 next actions) <code>CHINTU_ACTION_QUEUE.md</code></li>
+        <li class="missing"><span class="file-status">not yet created</span> Tracked Action Queue Snapshot (stable reference) <code>CHINTU_ACTION_QUEUE_TRACKED.md</code></li>
         <li class="present"><span class="file-status">present</span> Approval Center (one card per needs-approval action) <code>CHINTU_APPROVAL_CENTER.md</code></li>
         <li class="present"><span class="file-status">present</span> Approval Audit (tracked founder approval log) <code>CHINTU_APPROVAL_AUDIT.md</code></li>
         <li class="present"><span class="file-status">present</span> Next Operator Prompt (copy-paste-ready) <code>CHINTU_NEXT_OPERATOR_PROMPT.md</code></li>
         <li class="present"><span class="file-status">present</span> Latest Action Plan JSON mirror (DRY RUN ONLY) <code>CHINTU_OUTBOX/latest_action_plan.json</code></li>
         <li class="present"><span class="file-status">present</span> Action Planner Generator <code>scripts/chintu-action-planner.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Action Planner Test <code>scripts/chintu-action-planner.test.js</code></li>
+        <li class="present"><span class="file-status">present</span> Action Planner Fixtures Test <code>scripts/chintu-action-planner-fixtures.test.js</code></li>
         <li class="present"><span class="file-status">present</span> Approval Audit Helper <code>scripts/chintu-approval-audit.ps1</code></li>
         <li class="present"><span class="file-status">present</span> Approval Audit Test <code>scripts/chintu-approval-audit.test.js</code></li>
       </ul>

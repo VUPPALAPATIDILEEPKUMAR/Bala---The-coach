@@ -9,6 +9,10 @@
       - CHINTU_ACTION_QUEUE.md       Top 5 next actions with risk, approval
                                      flag, files touched, validation, and
                                      a suggested commit subject.
+      - CHINTU_ACTION_QUEUE_TRACKED.md
+                                     Stable tracked reference snapshot of
+                                     the planner shape (no volatile
+                                     timestamp).
       - CHINTU_APPROVAL_CENTER.md    One approval card per action that
                                      needs founder approval, with exact
                                      approval phrase + rollback plan.
@@ -317,7 +321,94 @@ $null = $ac.Add("")
 $null = $ac.Add("BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.")
 $approvalText = $ac -join "`r`n"
 
-# --- 6. write CHINTU_NEXT_OPERATOR_PROMPT.md --------------------------------
+# --- 6. write CHINTU_ACTION_QUEUE_TRACKED.md --------------------------------
+$categoryBuckets = @{}
+foreach ($a in $actions) {
+    if (-not $categoryBuckets.ContainsKey($a.category)) {
+        $categoryBuckets[$a.category] = New-Object System.Collections.ArrayList
+    }
+    $null = $categoryBuckets[$a.category].Add($a)
+}
+
+$tracked = New-Object System.Collections.ArrayList
+$null = $tracked.Add("# Chintu Action Queue Tracked Snapshot")
+$null = $tracked.Add("")
+$null = $tracked.Add("Tracked reference snapshot for the planner workflow. This file is safe to commit and review in git. It is **not** the live queue.")
+$null = $tracked.Add("")
+$null = $tracked.Add("## Latest known planner queue shape")
+$null = $tracked.Add("")
+$null = $tracked.Add("- Top 5 ids: ``$((@($top5 | ForEach-Object { $_.id })) -join ', ')``")
+$null = $tracked.Add("- Categories in the top 5: ``$((@($top5 | ForEach-Object { $_.category })) -join ', ')``")
+$null = $tracked.Add("- Highest-ranked safe-now action: ``$(if ($nextSafe) { $nextSafe.id } else { '(none)' })``")
+$null = $tracked.Add("- Approval cards generated for top-5 actions: ``$((@($top5 | Where-Object { $_.approvalNeeded } | ForEach-Object { $_.id })) -join ', ')``")
+$null = $tracked.Add("")
+$null = $tracked.Add("## Current top 5 snapshot")
+$null = $tracked.Add("")
+$null = $tracked.Add("| # | Action id | Category | Approval needed | Why |")
+$null = $tracked.Add("|---|---|---|---|---|")
+$trackedIndex = 0
+foreach ($a in $top5) {
+    $trackedIndex++
+    $null = $tracked.Add("| $trackedIndex | ``$($a.id)`` | $($a.category) | $(if ($a.approvalNeeded) { 'yes' } else { 'no' }) | $($a.why) |")
+}
+$null = $tracked.Add("")
+$null = $tracked.Add("## Top action categories")
+$null = $tracked.Add("")
+foreach ($categoryName in @("safe-now","needs-approval","research")) {
+    $items = if ($categoryBuckets.ContainsKey($categoryName)) { @($categoryBuckets[$categoryName] | ForEach-Object { $_ }) } else { @() }
+    $itemCount = ($items | Measure-Object).Count
+    $examples = if ($items.Count -gt 0) { (@($items | Select-Object -First 3 | ForEach-Object { $_.id })) -join ', ' } else { "(none)" }
+    $null = $tracked.Add("- ``$categoryName``: $itemCount action(s). Examples: $examples")
+}
+$null = $tracked.Add("")
+$null = $tracked.Add("## Approval-needed examples")
+$null = $tracked.Add("")
+$approvalExamples = @($actions | Where-Object { $_.approvalNeeded })
+if ($approvalExamples.Count -eq 0) {
+    $null = $tracked.Add("- None in the current planner inputs.")
+} else {
+    foreach ($a in $approvalExamples) {
+        $null = $tracked.Add("- ``$($a.id)`` ($($a.risk)) -> phrase: ``approve $($a.id)``")
+    }
+}
+$null = $tracked.Add("")
+$null = $tracked.Add("## Parked and research examples")
+$null = $tracked.Add("")
+$parkedExamples = @($actions | Where-Object { $_.connectorActivation })
+foreach ($a in $parkedExamples) {
+    $null = $tracked.Add("- Parked connector example: ``$($a.id)`` remains approval-gated and does not send anything.")
+}
+$researchExamples = @($actions | Where-Object { $_.category -eq "research" })
+foreach ($a in $researchExamples) {
+    $null = $tracked.Add("- Research example: ``$($a.id)`` stays awareness-only and does not touch runtime state.")
+}
+$null = $tracked.Add("")
+$null = $tracked.Add("## Regenerate live planner output")
+$null = $tracked.Add("")
+$null = $tracked.Add('```powershell')
+$null = $tracked.Add("powershell -ExecutionPolicy Bypass -File scripts\chintu-action-planner.ps1")
+$null = $tracked.Add('```')
+$null = $tracked.Add("")
+$null = $tracked.Add("## Where live generated files live")
+$null = $tracked.Add("")
+$null = $tracked.Add("- ``CHINTU_ACTION_QUEUE.md`` -> live top-5 queue (gitignored)")
+$null = $tracked.Add("- ``CHINTU_APPROVAL_CENTER.md`` -> live approval cards (gitignored)")
+$null = $tracked.Add("- ``CHINTU_NEXT_OPERATOR_PROMPT.md`` -> live next safe action prompt (gitignored)")
+$null = $tracked.Add("- ``CHINTU_OUTBOX/latest_action_plan.json`` -> machine-readable mirror (gitignored)")
+$null = $tracked.Add("- ``CHINTU_APPROVAL_AUDIT.md`` -> tracked append-only founder approval log")
+$null = $tracked.Add("")
+$null = $tracked.Add("## What this file is and is not")
+$null = $tracked.Add("")
+$null = $tracked.Add("- This file is a tracked reference for control-room linking and code review.")
+$null = $tracked.Add("- This file is not the live queue; always open ``CHINTU_ACTION_QUEUE.md`` for current runtime state.")
+$null = $tracked.Add("- This file never means anything was sent or activated.")
+$null = $tracked.Add("")
+$null = $tracked.Add("## BALA safety footer")
+$null = $tracked.Add("")
+$null = $tracked.Add("BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.")
+$trackedText = $tracked -join "`r`n"
+
+# --- 7. write CHINTU_NEXT_OPERATOR_PROMPT.md --------------------------------
 $promptLines = New-Object System.Collections.ArrayList
 $null = $promptLines.Add("# Chintu Next Operator Prompt")
 $null = $promptLines.Add("")
@@ -359,7 +450,7 @@ $null = $promptLines.Add("")
 $null = $promptLines.Add("BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.")
 $promptText = $promptLines -join "`r`n"
 
-# --- 7. write JSON mirror under outbox --------------------------------------
+# --- 8. write JSON mirror under outbox --------------------------------------
 $outboxDir = Join-Path $RepoRoot "CHINTU_OUTBOX"
 if (-not (Test-Path -LiteralPath $outboxDir)) { New-Item -ItemType Directory -Path $outboxDir | Out-Null }
 
@@ -380,19 +471,22 @@ $jsonObj = [ordered]@{
 }
 $jsonText = $jsonObj | ConvertTo-Json -Depth 6
 
-# --- 8. write all four files ------------------------------------------------
+# --- 9. write all five files ------------------------------------------------
 $queuePath  = Join-Path $RepoRoot "CHINTU_ACTION_QUEUE.md"
+$trackedPath = Join-Path $RepoRoot "CHINTU_ACTION_QUEUE_TRACKED.md"
 $apprvPath  = Join-Path $RepoRoot "CHINTU_APPROVAL_CENTER.md"
 $promptPath = Join-Path $RepoRoot "CHINTU_NEXT_OPERATOR_PROMPT.md"
 $jsonPath   = Join-Path $outboxDir "latest_action_plan.json"
 
 [System.IO.File]::WriteAllText($queuePath,  $queueText,    [System.Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($trackedPath,$trackedText,  [System.Text.Encoding]::UTF8)
 [System.IO.File]::WriteAllText($apprvPath,  $approvalText, [System.Text.Encoding]::UTF8)
 [System.IO.File]::WriteAllText($promptPath, $promptText,   [System.Text.Encoding]::UTF8)
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($jsonPath,   $jsonText,     $utf8NoBom)
 
 Write-Host "Action queue written:      $queuePath"
+Write-Host "Tracked snapshot written:  $trackedPath"
 Write-Host "Approval center written:   $apprvPath"
 Write-Host "Next operator prompt:      $promptPath"
 Write-Host "JSON mirror:               $jsonPath"

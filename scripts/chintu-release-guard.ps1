@@ -107,6 +107,7 @@ Run-Extra "Dry-run adapter"        "scripts\chintu-dry-run-adapter.test.js" "nod
 Run-Extra "Connector policy"       "scripts\chintu-connector-policy.test.js" "node"
 Run-Extra "Outbox shape"           "scripts\chintu-outbox-shape.test.js" "node"
 Run-Extra "Action planner"         "scripts\chintu-action-planner.test.js" "node"
+Run-Extra "Planner fixtures"       "scripts\chintu-action-planner-fixtures.test.js" "node"
 Run-Extra "Approval audit"         "scripts\chintu-approval-audit.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------

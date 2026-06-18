@@ -22,6 +22,7 @@ const path = require('path');
 const repoRoot = path.resolve(__dirname, '..');
 const script = path.join(repoRoot, 'scripts', 'chintu-action-planner.ps1');
 const queue  = path.join(repoRoot, 'CHINTU_ACTION_QUEUE.md');
+const tracked = path.join(repoRoot, 'CHINTU_ACTION_QUEUE_TRACKED.md');
 const center = path.join(repoRoot, 'CHINTU_APPROVAL_CENTER.md');
 const prompt = path.join(repoRoot, 'CHINTU_NEXT_OPERATOR_PROMPT.md');
 const jsonP  = path.join(repoRoot, 'CHINTU_OUTBOX', 'latest_action_plan.json');
@@ -58,6 +59,7 @@ for (const p of FORBIDDEN_IN_SCRIPT) {
 // have been run yet in this checkout).
 const checks = [
   { path: queue,  label: 'CHINTU_ACTION_QUEUE.md' },
+  { path: tracked, label: 'CHINTU_ACTION_QUEUE_TRACKED.md' },
   { path: center, label: 'CHINTU_APPROVAL_CENTER.md' },
   { path: prompt, label: 'CHINTU_NEXT_OPERATOR_PROMPT.md' },
 ];
@@ -73,6 +75,13 @@ for (const c of checks) {
 if (fs.existsSync(queue)) {
   const t = fs.readFileSync(queue, 'utf8');
   if (!/Parked/i.test(t)) fail('CHINTU_ACTION_QUEUE.md missing parked listing');
+}
+
+if (fs.existsSync(tracked)) {
+  const t = fs.readFileSync(tracked, 'utf8');
+  if (!/tracked reference/i.test(t)) fail('CHINTU_ACTION_QUEUE_TRACKED.md missing tracked-reference language');
+  if (!t.includes('CHINTU_ACTION_QUEUE.md')) fail('CHINTU_ACTION_QUEUE_TRACKED.md missing live queue reference');
+  if (!t.includes('scripts\\chintu-action-planner.ps1')) fail('CHINTU_ACTION_QUEUE_TRACKED.md missing regenerate command');
 }
 
 if (fs.existsSync(center)) {
