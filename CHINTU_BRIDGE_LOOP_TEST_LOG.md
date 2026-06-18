@@ -38,6 +38,39 @@ correct from the start. Reinstall on the iMac with
 
 ---
 
+## Clean GitHub-ZIP reinstall — 2026-06-18 (post-9392346)
+
+**Outcome:** PASS on first try. No manual patching needed.
+
+After commit `9392346` (the SHA-parse fix) was pushed to `origin/main`,
+the founder downloaded a fresh GitHub ZIP of the repo on the iMac,
+copied the `OPTION_12_PULL_SHARED` folder out of it, and ran the
+installer cleanly.
+
+Inspected the installed live script on the iMac
+(`~/Documents/CHINTU_CONTROL_ROOM/scripts/bridge-pull-shared.sh`) and
+confirmed:
+
+- `EXPECTED_SHA` uses `sed -n 's/^ZIP_SHA256:[[:space:]]*//p'` with
+  the whitespace strip and `tr '[:upper:]' '[:lower:]'` normalization.
+- `ACTUAL_SHA` pipes `compute_sha256` through
+  `tr '[:upper:]' '[:lower:]'`.
+- No `awk -F': '` regression.
+
+Final pull from the fresh package reported:
+
+- Verified SHA-256 and refreshed `FROM_WINDOWS/` from
+  `CHINTU_BRIDGE_LATEST.zip`.
+- Bridge Sync complete.
+- Processed: 7 / 7.
+- `BRIDGE_STATUS.html` opened.
+- Shared bridge pull complete.
+
+The end-to-end Windows -> shared bridge -> iMac Option 12 loop is
+verified clean from a fresh GitHub install on this date.
+
+---
+
 ---
 
 ## Run metadata

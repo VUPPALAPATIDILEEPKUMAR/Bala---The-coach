@@ -15,6 +15,16 @@ case-normalized. The package in this repo now uses
 `sed -n 's/^ZIP_SHA256:[[:space:]]*//p'` and lowercases both sides.
 A fresh `bash install-option-12.sh` on the iMac picks up the fix.
 
+**Re-verified clean from a fresh GitHub ZIP on 2026-06-18** (after
+commit `9392346` landed on `origin/main`): downloaded the repo ZIP on
+the iMac, copied `OPTION_12_PULL_SHARED/` out of it, ran
+`bash install-option-12.sh`, and the installed live script
+(`~/Documents/CHINTU_CONTROL_ROOM/scripts/bridge-pull-shared.sh`)
+showed the robust `sed`-based parse + lowercase-on-both-sides compare.
+First pull succeeded on first try: SHA-256 verified, `FROM_WINDOWS/`
+refreshed, bridge sync processed 7 / 7, `BRIDGE_STATUS.html` opened,
+"Shared bridge pull complete."
+
 ---
 
 ## 1. Where the package lives on Windows

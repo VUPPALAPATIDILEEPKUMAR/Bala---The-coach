@@ -1,8 +1,30 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (cycle 6b — iMac Option 12 SHA-parse fix landed)
+**Stage:** 11 (cycle 6c — iMac Option 12 verified clean from GitHub ZIP)
 **Date:** 2026-06-18
 **Mode:** local-first, founder-driven, push-pending-human-approval
+
+## 0a-3. Cycle 6c — clean GitHub-ZIP reinstall verified
+
+After commit `9392346` was pushed to `origin/main`, the founder
+downloaded a fresh GitHub ZIP on the iMac, copied
+`OPTION_12_PULL_SHARED/` out of it, and ran
+`bash install-option-12.sh`. The installed live script
+(`~/Documents/CHINTU_CONTROL_ROOM/scripts/bridge-pull-shared.sh`)
+showed:
+
+- `EXPECTED_SHA` parsed via `sed -n 's/^ZIP_SHA256:[[:space:]]*//p'`
+  with whitespace strip and lowercase normalization.
+- `ACTUAL_SHA` piped through `tr '[:upper:]' '[:lower:]'`.
+- No `awk -F': '` regression.
+
+First pull on the fresh install succeeded on first try: SHA-256
+verified, `FROM_WINDOWS/` refreshed, bridge sync processed 7/7,
+`BRIDGE_STATUS.html` opened, "Shared bridge pull complete."
+
+End-to-end Windows -> shared bridge -> iMac Option 12 is now verified
+clean from a fresh GitHub install. The SHA-parse regression test
+(`chintu-imac-option-12-sha-parse.test.js`) keeps the fix nailed down.
 
 ## 0a-2. What cycle 6b added (real-bug fix)
 
