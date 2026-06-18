@@ -1,0 +1,130 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Chintu Control Room Index</title>
+  <style>
+    :root { color-scheme: dark; --bg:#08111f; --panel:#101d30; --line:#263b55; --text:#edf4ff; --muted:#9eb1c9; --safe:#56d69b; --park:#f1bf65; --accent:#79a9ff; --red:#f47171; }
+    * { box-sizing: border-box; margin: 0; }
+    body { font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; background:radial-gradient(circle at top right,#18335c 0,#08111f 38rem); color:var(--text); line-height:1.55; }
+    header, main, footer { width:min(1100px,calc(100% - 2rem)); margin-inline:auto; }
+    header { padding:3rem 0 1.5rem; }
+    h1 { font-size:clamp(2rem,5vw,3.5rem); letter-spacing:-.04em; }
+    .eyebrow { color:var(--muted); margin-bottom:.5rem; font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; }
+    .meta { color:var(--muted); margin-top:.5rem; }
+    main { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1rem; padding-bottom:2rem; }
+    .card { background:rgba(16,29,48,.94); border:1px solid var(--line); border-radius:18px; padding:1.2rem; }
+    .card h2 { font-size:1rem; margin-bottom:.8rem; color:var(--accent); }
+    ul { list-style:none; padding:0; }
+    li { padding:.35rem 0; border-bottom:1px solid rgba(38,59,85,.4); font-size:.9rem; }
+    li:last-child { border-bottom:none; }
+    code { color:var(--muted); font-size:.78rem; display:block; margin-top:.15rem; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .file-status { display:inline-block; font-size:.72rem; font-weight:700; padding:.1rem .4rem; border-radius:999px; margin-right:.3rem; }
+    .present .file-status { background:rgba(86,214,155,.15); color:var(--safe); }
+    .missing .file-status { background:rgba(244,113,113,.15); color:var(--red); }
+    footer { padding:0 0 3rem; color:var(--muted); font-size:.85rem; }
+    @media (max-width:700px) { main { grid-template-columns:1fr; } }
+    @media print { body { background:#fff; color:#111; } .card { box-shadow:none; background:#fff; border-color:#bbb; } }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">CHINTU OS / LOCAL CONTROL ROOM</p>
+    <h1>Control Room Index</h1>
+    <p>Every Chintu OS report, dashboard, doc, and script in one place. Open locally. Nothing phones home.</p>
+    <p class="meta">Generated 2026-06-18 02:38 -04:00 | Branch: main | Latest: f0adfdb chore: add Chintu agent control shell and BALA touchpoints</p>
+    <p class="meta"><strong>Static snapshot.</strong> Re-run <code>scripts/chintu-control-room-index.ps1</code> to refresh.</p>
+  </header>
+  <main>
+    <section class="card">
+      <h2>Dashboards</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> <a href="CHINTU_AGENT_DASHBOARD.html">Agent Control Shell Dashboard</a> <code>CHINTU_AGENT_DASHBOARD.html</code></li>
+        <li class="missing"><span class="file-status">not yet created</span> Control Room Index (this page) <code>CHINTU_CONTROL_ROOM_INDEX.html</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Operator Reports</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Operator Status <code>CHINTU_OPERATOR_STATUS.md</code></li>
+        <li class="present"><span class="file-status">present</span> Alive Briefing <code>CHINTU_ALIVE_BRIEFING.md</code></li>
+        <li class="present"><span class="file-status">present</span> OS Health Check <code>CHINTU_OS_HEALTH_CHECK.md</code></li>
+        <li class="present"><span class="file-status">present</span> Tomorrow Start <code>CHINTU_TOMORROW_START.md</code></li>
+        <li class="present"><span class="file-status">present</span> Handoff <code>CHINTU_HANDOFF.md</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Architecture Docs</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Agent Control Shell <code>CHINTU_AGENT_CONTROL_SHELL.md</code></li>
+        <li class="present"><span class="file-status">present</span> Stage 11 Queue <code>CHINTU_STAGE_11_QUEUE.md</code></li>
+        <li class="present"><span class="file-status">present</span> Free Power Lanes <code>CHINTU_FREE_POWER_LANES.md</code></li>
+        <li class="present"><span class="file-status">present</span> Free Power Lanes Expanded <code>CHINTU_FREE_POWER_LANES_EXPANDED.md</code></li>
+        <li class="present"><span class="file-status">present</span> Intelligence Layers <code>CHINTU_INTELLIGENCE_LAYERS.md</code></li>
+        <li class="present"><span class="file-status">present</span> Bridge Contract <code>CHINTU_BRIDGE_CONTRACT.md</code></li>
+        <li class="present"><span class="file-status">present</span> Multi-Brain Review Protocol <code>CHINTU_MULTI_BRAIN_REVIEW_PROTOCOL.md</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>BALA Planning</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> BALA Safe Touchpoints <code>BALA_SAFE_TOUCHPOINTS.md</code></li>
+        <li class="present"><span class="file-status">present</span> BALA Next Safe Sprint Plan <code>BALA_NEXT_SAFE_SPRINT_PLAN.md</code></li>
+        <li class="present"><span class="file-status">present</span> BALA Product Research <code>docs/BALA_PRODUCT_RESEARCH.md</code></li>
+        <li class="present"><span class="file-status">present</span> BALA Security Rules <code>docs/BALA_SECURITY_RULES.md</code></li>
+        <li class="present"><span class="file-status">present</span> BALA Medical Safety Rules <code>CHINTU_MEMORY_VAULT/BALA_MEDICAL_SAFETY_RULES.md</code></li>
+        <li class="present"><span class="file-status">present</span> BALA Product State <code>CHINTU_MEMORY_VAULT/BALA_PRODUCT_STATE.md</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Claude / Codex Builder Lanes</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Claude Overnight Prompt <code>CHINTU_CLAUDE_OVERNIGHT_PROMPT.md</code></li>
+        <li class="missing"><span class="file-status">not yet created</span> Claude Builder Report <code>CHINTU_CLAUDE_BUILDER_REPORT.md</code></li>
+        <li class="missing"><span class="file-status">not yet created</span> Claude Survival Handoff <code>CHINTU_CLAUDE_SURVIVAL_HANDOFF.md</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Bridge Reports</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Bridge Command Center <code>chintu-bridge-command-center-report.md</code></li>
+        <li class="present"><span class="file-status">present</span> Bridge Daily Export <code>chintu-bridge-daily-export-report.md</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Memory Vault</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Blockers <code>CHINTU_MEMORY_VAULT/BLOCKERS.md</code></li>
+        <li class="present"><span class="file-status">present</span> Decisions <code>CHINTU_MEMORY_VAULT/DECISIONS.md</code></li>
+        <li class="present"><span class="file-status">present</span> Parked Systems <code>CHINTU_MEMORY_VAULT/PARKED_SYSTEMS.md</code></li>
+        <li class="present"><span class="file-status">present</span> Next Sprint Queue <code>CHINTU_MEMORY_VAULT/NEXT_SPRINT_QUEUE.md</code></li>
+        <li class="present"><span class="file-status">present</span> Agent Architecture <code>CHINTU_MEMORY_VAULT/CHINTU_AGENT_ARCHITECTURE.md</code></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Validation Scripts</h2>
+      <ul>
+        <li class="present"><span class="file-status">present</span> Validator <code>scripts/chintu-validate.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Release Guard <code>scripts/chintu-release-guard.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Bridge Command Center Script <code>scripts/chintu-bridge-command-center.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Next Action <code>scripts/chintu-next-action.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Daily Operator <code>scripts/chintu-daily-operator.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> End-Day Operator <code>scripts/chintu-endday-operator.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Agent Dashboard Generator <code>scripts/chintu-agent-dashboard.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Claude Overnight Package <code>scripts/chintu-claude-overnight-package.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Alive Briefing Generator <code>scripts/chintu-alive-briefing.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> OS Health Check <code>scripts/chintu-os-health-check.ps1</code></li>
+        <li class="present"><span class="file-status">present</span> Control Room Index Generator <code>scripts/chintu-control-room-index.ps1</code></li>
+      </ul>
+    </section>
+  </main>
+  <footer>
+    <p><strong>Local-only.</strong> This page is a generated snapshot. It does not read files live, send data, call a backend, track activity, or activate automation.</p>
+    <p>BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.</p>
+  </footer>
+</body>
+</html>
