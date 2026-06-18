@@ -1,8 +1,48 @@
 # Chintu Claude Survival Handoff
 
-**Stage:** 11 (overnight builder cycle 2)
+**Stage:** 11 (overnight builder cycle 3 — autonomous, self-expanding backlog)
 **Date:** 2026-06-18
 **Mode:** local-first, founder-driven, push-pending-human-approval
+
+## 0. What cycle 3 added (read first)
+
+Two self-generated safe backlogs were planned, built, validated, and
+committed in this run. No push. No protected BALA file edits.
+
+Cycle 3 commits (newest first):
+
+```
+29445a2 chore: add Chintu doc-link integrity test and handoff/bridge docs
+ef0fa22 docs: add Chintu start-here, when-stuck, artifact-policy
+bd34e4d chore: add Chintu safety integrity tests (egress, claims, boundary)
+```
+
+New scripts (all read-only, all wired into release guard + launcher):
+
+- `scripts/chintu-no-network-egress.test.js`
+- `scripts/chintu-medical-claims.test.js`
+- `scripts/chintu-safety-boundary.test.js`
+- `scripts/chintu-doc-link-integrity.test.js`
+
+New operator docs:
+
+- `CHINTU_START_HERE.md` — single founder entry point
+- `CHINTU_WHEN_STUCK.md` — troubleshooting playbook
+- `CHINTU_ARTIFACT_POLICY.md` — generated vs. source map
+- `CHINTU_NEXT_THREAD_STARTER.md` — cold-start prompt for a fresh thread
+- `CHINTU_IMAC_BRIDGE_TROUBLESHOOTING.md` — Option 11/12 failure modes
+- `CHINTU_BRIDGE_ROLLBACK.md` — clean revert for both sides of the bridge
+
+`CHINTU_FOUNDER_COMMAND_MAP.md` was updated to list every new test.
+
+Validation: each new test was run individually and PASSED. The full
+master-launcher sweep was not re-run after the final commit — the next
+thread should run it as the first thing it does (see §3).
+
+If the next thread wants to keep going, the angles in the master prompt
+that have NOT been heavily used yet are: Control Room UX (Angle C),
+Future architecture parked (Angle H), BALA safe planning (Angle F),
+Repo hygiene generated-files-map (Angle G).
 
 This document is the cold-start brief for any future Claude/Codex session
 that picks up Chintu OS work. Read it end-to-end before any tool call.
