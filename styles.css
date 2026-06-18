@@ -620,6 +620,17 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .behavior-grid label { padding: 11px; border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 8px; align-items: center; font-size: 11px; }
 .symptom-note { margin-top: 14px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
 .symptom-note textarea { min-height: 80px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; resize: vertical; font: inherit; }
+/* Alcohol standard drink calculator */
+.alcohol-calc-panel { margin-top: 10px; padding: 14px; border: 1px dashed #c8d9cc; border-radius: 14px; background: #f7faf7; display: grid; gap: 10px; }
+.alcohol-calc-title { margin: 0; font-size: 10px; font-weight: 750; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.alcohol-calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.alcohol-label { display: grid; gap: 4px; font-size: 10px; color: var(--muted); }
+.alcohol-label select, .alcohol-label input[type="number"] { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 11px; background: var(--white); }
+.alcohol-calc-btn { align-self: start; padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); font-size: 10px; font-weight: 700; cursor: pointer; }
+.alcohol-result { padding: 10px 12px; border-radius: 10px; background: #eef4ef; display: grid; gap: 4px; }
+.alcohol-estimate { margin: 0; font-size: 12px; font-weight: 700; color: var(--ink); }
+.alcohol-note { margin: 0; font-size: 10px; color: var(--muted); }
+.alcohol-disclaimer { margin: 0; font-size: 9px; color: var(--muted); font-style: italic; }
 .shortcut-template { margin-top: 15px; display: grid; gap: 7px; color: var(--muted); font-size: 10px; }
 .shortcut-template textarea { min-height: 92px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; resize: none; font: 10px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }
 .platform-summary { margin-bottom: 18px; }

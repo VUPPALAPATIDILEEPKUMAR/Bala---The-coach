@@ -2505,17 +2505,120 @@ symptomForm.addEventListener("submit", (event) => {
     : `<div class="source-list"><p>Your symptom check-in was saved only on this device and will be included in your report.</p></div>`;
   dialog.showModal();
 });
+
+// ---------------------------------------------------------------------------
+// Alcohol Standard Drink Calculator — Stage 20
+// Local only. No network. No shame. Reflection only; not medical advice.
+// pureAlcoholGrams = volumeMl * (abv/100) * 0.789
+// standardDrinksUS = pureAlcoholGrams / 14
+// ---------------------------------------------------------------------------
+(function() {
+  const alcoholCheckbox = document.querySelector("#alcohol-checkbox");
+  const alcoholPanel = document.querySelector("#alcohol-calc-panel");
+  const alcoholCalcBtn = document.querySelector("#alcohol-calc-btn");
+  const alcoholResult = document.querySelector("#alcohol-result");
+  const alcoholEstimate = document.querySelector("#alcohol-estimate");
+  const alcoholType = document.querySelector("#alcohol-type");
+  const alcoholAmount = document.querySelector("#alcohol-amount");
+  const alcoholUnit = document.querySelector("#alcohol-unit");
+  const alcoholAbv = document.querySelector("#alcohol-abv");
+
+  if (!alcoholCheckbox || !alcoholPanel) return;
+
+  // Default ABV by drink type
+  const defaultAbv = { beer: 5, wine: 13, spirits: 40, cocktail: 15, custom: 5 };
+  // Default volume in ml by drink type + unit combination
+  const defaultVolume = {
+    beer:    { ml: 330, oz: 12, shot: 330, can: 330 },
+    wine:    { ml: 150, oz: 5,  shot: 150, can: 750 },
+    spirits: { ml: 44,  oz: 1.5, shot: 44, can: 700 },
+    cocktail:{ ml: 200, oz: 6.7, shot: 200, can: 355 },
+    custom:  { ml: 100, oz: 3.4, shot: 44, can: 330 },
+  };
+  const mlPerUnit = { ml: 1, oz: 29.5735, shot: 44, can: null };
+
+  function toMl(amount, unit, drinkType) {
+    if (unit === "can") {
+      return (defaultVolume[drinkType] || defaultVolume.custom).can;
+    }
+    return amount * (mlPerUnit[unit] || 1);
+  }
+
+  // Show/hide panel when Alcohol checkbox changes
+  alcoholCheckbox.addEventListener("change", function() {
+    alcoholPanel.hidden = !this.checked;
+    if (!this.checked) {
+      alcoholResult.hidden = true;
+    }
+  });
+
+  // Set sensible defaults when drink type changes
+  alcoholType.addEventListener("change", function() {
+    const type = this.value;
+    alcoholAbv.value = defaultAbv[type] || 5;
+    const unit = alcoholUnit.value || "ml";
+    const vol = (defaultVolume[type] || defaultVolume.custom)[unit] || 100;
+    alcoholAmount.value = vol;
+    alcoholResult.hidden = true;
+  });
+
+  alcoholUnit.addEventListener("change", function() {
+    const type = alcoholType.value;
+    const unit = this.value;
+    const vol = (defaultVolume[type] || defaultVolume.custom)[unit] || 100;
+    alcoholAmount.value = vol;
+    alcoholResult.hidden = true;
+  });
+
+  alcoholCalcBtn.addEventListener("click", function() {
+    const type = alcoholType.value;
+    const rawAmount = parseFloat(alcoholAmount.value);
+    const unit = alcoholUnit.value;
+    const abv = parseFloat(alcoholAbv.value);
+
+    if (!rawAmount || rawAmount <= 0 || !abv || abv <= 0 || abv > 100) {
+      alcoholEstimate.textContent = "Enter a valid amount and ABV to estimate.";
+      alcoholResult.hidden = false;
+      return;
+    }
+
+    const volumeMl = toMl(rawAmount, unit, type);
+    const pureGrams = volumeMl * (abv / 100) * 0.789;
+    const standardDrinks = pureGrams / 14;
+
+    alcoholEstimate.textContent =
+      "Estimated: about " + pureGrams.toFixed(1) + " g pure alcohol" +
+      " • " + standardDrinks.toFixed(1) + " standard drink" +
+      (standardDrinks === 1 ? "" : "s") + " (US).";
+
+    alcoholResult.hidden = false;
+
+    // Store estimate in a data attribute so the form submit can read it
+    alcoholPanel.dataset.alcoholGrams = pureGrams.toFixed(1);
+    alcoholPanel.dataset.alcoholStd = standardDrinks.toFixed(1);
+    alcoholPanel.dataset.alcoholType = type;
+  });
+})();
+
 behaviorForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const formData = new FormData(behaviorForm);
   const factors = formData.getAll("factor").filter((item) => typeof item === "string" && behaviorFactorLabels[item]);
   const note = String(formData.get("note") || "").trim();
-  const entry = { date: new Date().toISOString(), factors, note };
+  const alcoholPanel = document.querySelector("#alcohol-calc-panel");
+  const alcoholData = (alcoholPanel && !alcoholPanel.hidden && alcoholPanel.dataset.alcoholGrams)
+    ? { grams: alcoholPanel.dataset.alcoholGrams, standardDrinks: alcoholPanel.dataset.alcoholStd, type: alcoholPanel.dataset.alcoholType }
+    : null;
+  const entry = { date: new Date().toISOString(), factors, note, alcohol: alcoholData };
   const history = JSON.parse(localStorage.getItem(BEHAVIOR_KEY) || "[]");
   localStorage.setItem(BEHAVIOR_KEY, JSON.stringify([...history, entry].slice(-60)));
   updateDashboard(getLocalMetrics() || DEMO_METRICS);
   behaviorDialog.close();
   behaviorForm.reset();
+  const alcPanel = document.querySelector("#alcohol-calc-panel");
+  if (alcPanel) { alcPanel.hidden = true; alcPanel.dataset.alcoholGrams = ""; }
+  const alcResult = document.querySelector("#alcohol-result");
+  if (alcResult) alcResult.hidden = true;
   dialogLabel.textContent = "Daily factors saved";
   dialogTitle.textContent = "BALA will use this for reflection";
   dialogContentNode.innerHTML = `<div class="source-list"><p>Your Daily Factors entry stays on this device and may help you notice patterns that relate to your body signals. Not medical advice.</p></div>`;

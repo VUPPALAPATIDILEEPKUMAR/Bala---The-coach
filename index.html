@@ -824,7 +824,7 @@
         <h2>Daily Factors</h2>
         <p class="form-intro">Save a few everyday factors that may relate to your body signals. Use this to notice patterns and reflect. Not medical advice.</p>
         <div class="behavior-grid">
-          <label><input type="checkbox" name="factor" value="alcohol" /> Alcohol</label>
+          <label id="alcohol-factor-label"><input type="checkbox" name="factor" value="alcohol" id="alcohol-checkbox" /> Alcohol</label>
           <label><input type="checkbox" name="factor" value="caffeine" /> Caffeine</label>
           <label><input type="checkbox" name="factor" value="lateMeal" /> Late meal</label>
           <label><input type="checkbox" name="factor" value="stress" /> Stress</label>
@@ -833,6 +833,40 @@
           <label><input type="checkbox" name="factor" value="lowMovement" /> Low movement / long sitting</label>
           <label><input type="checkbox" name="factor" value="exercise" /> Exercise</label>
           <label><input type="checkbox" name="factor" value="hydration" /> Hydration</label>
+        </div>
+        <div class="alcohol-calc-panel" id="alcohol-calc-panel" hidden>
+          <p class="alcohol-calc-title">Alcohol reflection (optional)</p>
+          <div class="alcohol-calc-grid">
+            <label class="alcohol-label">Drink type
+              <select name="alcohol_type" id="alcohol-type">
+                <option value="beer">Beer</option>
+                <option value="wine">Wine</option>
+                <option value="spirits">Spirits / Whiskey / Vodka</option>
+                <option value="cocktail">Cocktail / Mixed drink</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label class="alcohol-label">Amount
+              <input type="number" name="alcohol_amount" id="alcohol-amount" min="0" max="2000" step="0.5" placeholder="e.g. 330" />
+            </label>
+            <label class="alcohol-label">Unit
+              <select name="alcohol_unit" id="alcohol-unit">
+                <option value="ml">ml</option>
+                <option value="oz">fl oz</option>
+                <option value="shot">shot(s)</option>
+                <option value="can">can / bottle</option>
+              </select>
+            </label>
+            <label class="alcohol-label">ABV %
+              <input type="number" name="alcohol_abv" id="alcohol-abv" min="0" max="100" step="0.1" placeholder="e.g. 5" />
+            </label>
+          </div>
+          <div class="alcohol-result" id="alcohol-result" hidden>
+            <p class="alcohol-estimate" id="alcohol-estimate"></p>
+            <p class="alcohol-note">Alcohol may affect sleep, recovery, hydration, and resting heart rate for some people.</p>
+            <p class="alcohol-disclaimer">Use this as reflection, not medical advice.</p>
+          </div>
+          <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks</button>
         </div>
         <label class="symptom-note">Optional reflection note<textarea name="note" maxlength="240" placeholder="For example: long travel day, extra coffee, hydrated well, or a pattern you want to reflect on"></textarea></label>
         <button class="dialog-primary" type="submit">Save daily factors</button>
