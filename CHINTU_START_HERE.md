@@ -1,6 +1,7 @@
 # Chintu — Start Here
 
-If you only read one file in this repo, read this one.
+**Sharper version:** open [CHINTU_OPEN_FIRST.md](CHINTU_OPEN_FIRST.md).
+It is the single-page orientation. This file is the longer reference.
 
 Chintu OS is the **local-first operator layer** around your product work.
 BALA Your Coach is a **separate** mobile-first health-awareness app.
@@ -8,9 +9,22 @@ They share a repo but are kept apart by design.
 
 ---
 
-## The four-command morning loop
+## The one-command path (recommended)
 
-Run these in order. Each one is read-only and safe.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\chintu-master-launcher.ps1
+```
+
+Runs every safety test, the validator, the release guard, regenerates
+the dashboards. Stops on the first FAIL. Use this unless you have a
+specific reason to step through manually.
+
+---
+
+## The four-command morning loop (fallback)
+
+If you want to step through manually, run these in order. Each is
+read-only and safe.
 
 | # | Command | Why |
 |---|---|---|
@@ -18,15 +32,6 @@ Run these in order. Each one is read-only and safe.
 | 2 | `powershell -ExecutionPolicy Bypass -File scripts\chintu-validate.ps1` | PASS / WARN / FAIL gate. |
 | 3 | `powershell -ExecutionPolicy Bypass -File scripts\chintu-alive-briefing.ps1` | Plain-English snapshot of today. |
 | 4 | `powershell -ExecutionPolicy Bypass -File scripts\chintu-next-action.ps1` | The next exact action to take. |
-
-If you want the full sweep in one keystroke:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\chintu-master-launcher.ps1
-```
-
-This runs the validator, all integrity tests, the release guard, and
-regenerates the dashboards. Stops on the first FAIL.
 
 ---
 

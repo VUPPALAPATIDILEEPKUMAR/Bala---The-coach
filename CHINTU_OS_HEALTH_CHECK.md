@@ -1,25 +1,25 @@
 # Chintu OS Health Check
 
-**Generated:** 2026-06-18 03:31
+**Generated:** 2026-06-18 03:44
 **Repo:** C:\Users\Chintu\Desktop\test
 **Branch:** main
-**Latest commit:** `c4ea653 docs: add Chintu safety invariants + operator FAQ, update cycle-4 survival handoff`
+**Latest commit:** `e870608 chore: refresh Chintu control room snapshots after cycle-4 backlog work`
 
-## Overall status: **RED**
+## Overall status: **YELLOW**
 
-STOP. 1 critical issue(s) found. Review before continuing.
+Needs review. 1 item(s) need attention.
 
-- GREEN checks: 36
+- GREEN checks: 37
 - YELLOW checks: 1
-- RED checks: 1
+- RED checks: 0
 
 ## Detailed checks
 
 | Category | Check | Status | Detail |
 |---|---|---|---|
-| Repo | Working tree | **YELLOW** | 4 changes |
-| Repo | Latest commit | **GREEN** | `c4ea653 docs: add Chintu safety invariants + operator FAQ, update cycle-4 survival handoff` |
-| Repo | Unpushed commits | **RED** | 15 - review and push |
+| Repo | Working tree | **YELLOW** | 8 changes |
+| Repo | Latest commit | **GREEN** | `e870608 chore: refresh Chintu control room snapshots after cycle-4 backlog work` |
+| Repo | Unpushed commits | **GREEN** | 0 |
 | Validation | chintu-validate | **GREEN** | Present |
 | Validation | chintu-release-guard | **GREEN** | Present |
 | Validation | chintu-bridge-command-center | **GREEN** | Present |

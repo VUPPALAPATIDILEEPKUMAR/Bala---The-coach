@@ -1,6 +1,6 @@
 # Chintu Alive Briefing
 
-**Generated:** 2026-06-18 03:31
+**Generated:** 2026-06-18 03:44
 **Branch:** main
 
 ---
@@ -8,14 +8,13 @@
 ## Bro, here is what changed
 
 Latest commits:
+- `e870608 chore: refresh Chintu control room snapshots after cycle-4 backlog work`
 - `c4ea653 docs: add Chintu safety invariants + operator FAQ, update cycle-4 survival handoff`
 - `9210ddf chore: add Chintu BALA-safe-docs, parked-systems, continuation-prompts integrity tests`
 - `00a8fd5 docs: add Chintu codex review, claude continuation, next-thread, push checklist`
 - `0496544 docs: park future agent architecture and local LLM/voice/phone research notes`
-- `4426990 docs: add BALA safe planning specs (voice, tester feedback, privacy, doctor summary, local AI)`
 
-Working tree has 4 uncommitted change(s). Review before continuing.
-15 commit(s) not yet pushed. Founder owns every push.
+Working tree has 7 uncommitted change(s). Review before continuing.
 
 ## What is safe
 

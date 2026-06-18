@@ -46,6 +46,22 @@ if (-not $latestCommit) { $latestCommit = "(unknown)" }
 
 # Define all known control room files
 $sections = @(
+    @{ Title = "Open First Hub"; Files = @(
+        @{ Path = "CHINTU_OPEN_FIRST.md"; Label = "Open First (single-page orientation)" },
+        @{ Path = "CHINTU_TOMORROW_MORNING_BRIEF.md"; Label = "Tomorrow Morning Brief" },
+        @{ Path = "CHINTU_START_HERE.md"; Label = "Start Here (longer reference)" },
+        @{ Path = "CHINTU_WHEN_STUCK.md"; Label = "When Stuck (troubleshooting)" },
+        @{ Path = "CHINTU_PUSH_REVIEW_CHECKLIST.md"; Label = "Push Review Checklist (founder pre-push)" }
+    )},
+    @{ Title = "Safety + Hygiene"; Files = @(
+        @{ Path = "CHINTU_SAFETY_INVARIANTS.md"; Label = "Safety Invariants (canonical)" },
+        @{ Path = "CHINTU_OPERATOR_FAQ.md"; Label = "Operator FAQ" },
+        @{ Path = "CHINTU_ARTIFACT_POLICY.md"; Label = "Artifact Policy" },
+        @{ Path = "CHINTU_GENERATED_FILES_MAP.md"; Label = "Generated Files Map" },
+        @{ Path = "CHINTU_REPO_HYGIENE_REPORT.md"; Label = "Repo Hygiene Report" },
+        @{ Path = "CHINTU_REPO_AUDIT_REPORT.md"; Label = "Repo Audit Report (polish pass)" },
+        @{ Path = "CHINTU_CONTROL_ROOM_TROUBLESHOOTING.md"; Label = "Control Room Troubleshooting" }
+    )},
     @{ Title = "Dashboards"; Files = @(
         @{ Path = "CHINTU_AGENT_DASHBOARD.html"; Label = "Agent Control Shell Dashboard" },
         @{ Path = "CHINTU_CONTROL_ROOM_INDEX.html"; Label = "Control Room Index (this page)" }
@@ -78,10 +94,27 @@ $sections = @(
         @{ Path = "CHINTU_MEMORY_VAULT/BALA_MEDICAL_SAFETY_RULES.md"; Label = "BALA Medical Safety Rules" },
         @{ Path = "CHINTU_MEMORY_VAULT/BALA_PRODUCT_STATE.md"; Label = "BALA Product State" }
     )},
+    @{ Title = "BALA Planning Specs (parked, founder-gated)"; Files = @(
+        @{ Path = "BALA_VOICE_COACH_SAFE_SPEC.md"; Label = "BALA Voice Coach Safe Spec" },
+        @{ Path = "BALA_TESTER_FEEDBACK_PLAN.md"; Label = "BALA Tester Feedback Plan" },
+        @{ Path = "BALA_PRIVACY_TRUST_POLISH_PLAN.md"; Label = "BALA Privacy + Trust Polish Plan" },
+        @{ Path = "BALA_DOCTOR_SUMMARY_POLISH_SPEC.md"; Label = "BALA Doctor Summary Polish Spec" },
+        @{ Path = "BALA_LOCAL_FIRST_AI_COACH_SPEC.md"; Label = "BALA Local-First AI Coach Spec" }
+    )},
+    @{ Title = "Parked Research"; Files = @(
+        @{ Path = "CHINTU_FUTURE_AGENT_ARCHITECTURE.md"; Label = "Future Agent Architecture" },
+        @{ Path = "CHINTU_LOCAL_LLM_RESEARCH_PARKED.md"; Label = "Local LLM Research (parked)" },
+        @{ Path = "CHINTU_VOICE_LAYER_RESEARCH_PARKED.md"; Label = "Voice Layer Research (parked)" },
+        @{ Path = "CHINTU_PHONE_LAYER_RESEARCH_PARKED.md"; Label = "Phone Layer Research (parked)" }
+    )},
     @{ Title = "Claude / Codex Builder Lanes"; Files = @(
         @{ Path = "CHINTU_CLAUDE_OVERNIGHT_PROMPT.md"; Label = "Claude Overnight Prompt" },
         @{ Path = "CHINTU_CLAUDE_BUILDER_REPORT.md"; Label = "Claude Builder Report" },
-        @{ Path = "CHINTU_CLAUDE_SURVIVAL_HANDOFF.md"; Label = "Claude Survival Handoff" }
+        @{ Path = "CHINTU_CLAUDE_SURVIVAL_HANDOFF.md"; Label = "Claude Survival Handoff" },
+        @{ Path = "CHINTU_CLAUDE_CONTINUATION_PROMPT.md"; Label = "Claude Continuation Prompt" },
+        @{ Path = "CHINTU_CODEX_REVIEW_PROMPT.md"; Label = "Codex Review Prompt (read-only)" },
+        @{ Path = "CHINTU_NEXT_THREAD_STARTER.md"; Label = "Next Thread Starter (short)" },
+        @{ Path = "CHINTU_NEXT_THREAD_STARTER_DETAILED.md"; Label = "Next Thread Starter (detailed)" }
     )},
     @{ Title = "Bridge Reports"; Files = @(
         @{ Path = "chintu-bridge-command-center-report.md"; Label = "Bridge Command Center" },
@@ -101,6 +134,14 @@ $sections = @(
         @{ Path = "scripts/chintu-memory-vault.test.js"; Label = "Memory Vault Integrity Test" },
         @{ Path = "scripts/chintu-snapshot-consistency.test.js"; Label = "Snapshot Consistency Test" },
         @{ Path = "scripts/chintu-agent-control-shell.test.js"; Label = "Agent Control Shell Test" },
+        @{ Path = "scripts/chintu-no-network-egress.test.js"; Label = "No Network Egress Test" },
+        @{ Path = "scripts/chintu-medical-claims.test.js"; Label = "Medical Claims Test" },
+        @{ Path = "scripts/chintu-safety-boundary.test.js"; Label = "Safety Boundary Test" },
+        @{ Path = "scripts/chintu-doc-link-integrity.test.js"; Label = "Doc Link Integrity Test" },
+        @{ Path = "scripts/chintu-generated-files-map.test.js"; Label = "Generated Files Map Test" },
+        @{ Path = "scripts/chintu-bala-safe-docs.test.js"; Label = "BALA Safe Docs Test" },
+        @{ Path = "scripts/chintu-parked-systems.test.js"; Label = "Parked Systems Test" },
+        @{ Path = "scripts/chintu-continuation-prompts.test.js"; Label = "Continuation Prompts Test" },
         @{ Path = "scripts/chintu-release-guard.ps1"; Label = "Release Guard" },
         @{ Path = "scripts/chintu-bridge-command-center.ps1"; Label = "Bridge Command Center Script" },
         @{ Path = "scripts/chintu-next-action.ps1"; Label = "Next Action" },
