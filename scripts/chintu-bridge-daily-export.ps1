@@ -35,15 +35,40 @@
 .PARAMETER OpenclawTimeoutSeconds
     Soft timeout for OpenClaw readiness. Default 60.
 
+.PARAMETER SharedDir
+    Optional shared-folder mirror. When set (default:
+    "$env:USERPROFILE\Desktop\CHINTU_SHARED_BRIDGE"), the script copies the
+    new ZIP, an overwriting CHINTU_BRIDGE_LATEST.zip, a LATEST_FLAT/ folder
+    with the 7 unzipped bridge files, and a MANIFEST.txt (SHA-256 + sizes)
+    into the folder. Older dated ZIPs beyond -Keep are pruned. Pass an
+    empty string ("") to disable the mirror entirely.
+
+    Refuses unsafe paths: inside the repo, drive roots, C:\Windows,
+    AppData, LocalAppData, or the user-profile root. Aborts the mirror
+    (not the export) if the outbox fails a defense-in-depth secret /
+    health-data scan.
+
+.PARAMETER Keep
+    How many dated ZIPs to retain in the shared folder. Default 7.
+    CHINTU_BRIDGE_LATEST.zip, MANIFEST.txt, and LATEST_FLAT are never pruned.
+
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File scripts\chintu-bridge-daily-export.ps1
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File scripts\chintu-bridge-daily-export.ps1 -SharedDir ""
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File scripts\chintu-bridge-daily-export.ps1 -SharedDir "C:\Users\Chintu\Desktop\CHINTU_SHARED_BRIDGE" -Keep 14
 #>
 [CmdletBinding()]
 param(
     [string]$RepoRoot = "C:\Users\Chintu\Desktop\test",
     [string]$OutDir = "C:\Users\Chintu\Desktop\CHINTU_BRIDGE_OUTBOX",
     [string]$DesktopDir = "C:\Users\Chintu\Desktop",
-    [int]$OpenclawTimeoutSeconds = 60
+    [int]$OpenclawTimeoutSeconds = 60,
+    [string]$SharedDir = "$env:USERPROFILE\Desktop\CHINTU_SHARED_BRIDGE",
+    [int]$Keep = 7
 )
 
 $ErrorActionPreference = "Continue"
@@ -117,6 +142,89 @@ function Run-WithTimeout {
     if ($exit -ne 0) { $status = "FAIL" }
     $outStr = @($raw | ForEach-Object { [string]$_ })
     return [pscustomobject]@{ Label = $Label; Status = $status; Exit = $exit; Output = $outStr }
+}
+
+function Test-SafeSharedDir {
+    param([string]$Path, [string]$RepoRoot)
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return @{ Safe = $false; Reason = "SharedDir is empty (mirror disabled)." }
+    }
+    $resolved = $Path
+    try { $resolved = [System.IO.Path]::GetFullPath($Path) } catch {
+        return @{ Safe = $false; Reason = "SharedDir cannot be resolved: $Path" }
+    }
+    if ($resolved -match '^[A-Za-z]:\\?$') {
+        return @{ Safe = $false; Reason = "SharedDir is a drive root: $resolved" }
+    }
+    $repoResolved = $RepoRoot
+    try { $repoResolved = [System.IO.Path]::GetFullPath($RepoRoot) } catch {}
+    $resolvedTrim = $resolved.TrimEnd('\')
+    $repoTrim = $repoResolved.TrimEnd('\')
+    if (($resolvedTrim -ieq $repoTrim) -or $resolvedTrim.StartsWith($repoTrim + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+        return @{ Safe = $false; Reason = "SharedDir is inside the repo root: $resolved" }
+    }
+    if ($resolved -match '^[A-Za-z]:\\Windows($|\\)') {
+        return @{ Safe = $false; Reason = "SharedDir is inside C:\Windows: $resolved" }
+    }
+    if ($env:APPDATA -and $resolved.StartsWith($env:APPDATA, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return @{ Safe = $false; Reason = "SharedDir is inside AppData: $resolved" }
+    }
+    if ($env:LOCALAPPDATA -and $resolved.StartsWith($env:LOCALAPPDATA, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return @{ Safe = $false; Reason = "SharedDir is inside LocalAppData: $resolved" }
+    }
+    if ($env:USERPROFILE) {
+        $up = $env:USERPROFILE.TrimEnd('\')
+        if ($resolvedTrim -ieq $up) {
+            return @{ Safe = $false; Reason = "SharedDir is the user profile root: $resolved" }
+        }
+    }
+    return @{ Safe = $true; Reason = "OK"; Resolved = $resolved }
+}
+
+function Scan-OutboxForSensitive {
+    param([string]$OutboxDir, [string[]]$FileNames)
+    $hits = @()
+    $secretPatterns = @(
+        @{ Name = "OpenAI-style key";  Pattern = "sk-[A-Za-z0-9]{20,}" },
+        @{ Name = "GitHub PAT";        Pattern = "ghp_[A-Za-z0-9]{20,}" },
+        @{ Name = "Slack token";       Pattern = "xox[bpoars]-[A-Za-z0-9-]{20,}" },
+        @{ Name = "AWS access key";    Pattern = "AKIA[0-9A-Z]{16}" },
+        @{ Name = "Google API key";    Pattern = "AIza[A-Za-z0-9_\-]{35}" },
+        @{ Name = "Private key block"; Pattern = "-----BEGIN [A-Z ]*PRIVATE KEY-----" },
+        @{ Name = "JWT-like";          Pattern = "eyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}" },
+        @{ Name = "Slack webhook";     Pattern = "hooks\.slack\.com/services/" },
+        @{ Name = "Discord webhook";   Pattern = "discord\.com/api/webhooks/" },
+        @{ Name = "Telegram bot URL";  Pattern = "api\.telegram\.org/bot[0-9]+:[A-Za-z0-9_\-]+" },
+        @{ Name = "env-style secret";  Pattern = "(?m)^[A-Z][A-Z0-9_]+_(KEY|TOKEN|SECRET|PASSWORD)\s*=\s*\S+" },
+        @{ Name = "Cookie header";     Pattern = "(?im)^(set-)?cookie:\s+\S+" }
+    )
+    $vitalsFieldPattern = '"(hrv|rhr|resting_heart_rate|sleep_hours|spo2)"\s*:\s*[0-9]+(\.[0-9]+)?'
+    foreach ($name in $FileNames) {
+        $p = Join-Path $OutboxDir $name
+        if (-not (Test-Path -LiteralPath $p)) { continue }
+        $content = ""
+        try { $content = Get-Content -LiteralPath $p -Raw -ErrorAction Stop } catch { continue }
+        if (-not $content) { continue }
+        foreach ($s in $secretPatterns) {
+            if ($content -match $s.Pattern) {
+                $hits += @{ File = $name; Hit = $s.Name }
+            }
+        }
+        $vitalsMatches = [regex]::Matches($content, $vitalsFieldPattern, 'IgnoreCase')
+        if ($vitalsMatches.Count -ge 3) {
+            $hits += @{ File = $name; Hit = "vitals-like JSON export ($($vitalsMatches.Count) matches)" }
+        }
+    }
+    return $hits
+}
+
+function Get-Sha256Hex {
+    param([string]$Path)
+    try {
+        return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    } catch {
+        return ""
+    }
 }
 
 Say "Chintu Bridge Daily Export V1 - $stamp"
@@ -216,6 +324,22 @@ $readme += "- No secrets, tokens, .env, openclaw.json, cookies, sessions, or pai
 $readme += "- No BALA health data."
 $readme += "- No Telegram / Discord / webhook payloads."
 $readme += ""
+$readme += "## Shared-folder mirror"
+$readme += ""
+$readme += "When the daily export is run with ``-SharedDir`` set (default:"
+$readme += "``$env:USERPROFILE\Desktop\CHINTU_SHARED_BRIDGE``), Windows also writes the"
+$readme += "latest package to that folder. Layout:"
+$readme += ""
+$readme += '- `CHINTU_BRIDGE_PACKAGE_YYYY-MM-DD_HHMM.zip` -- the dated copy'
+$readme += '- `CHINTU_BRIDGE_LATEST.zip` -- always the most recent package'
+$readme += '- `LATEST_FLAT/` -- the 7 unzipped bridge files for direct intake'
+$readme += '- `MANIFEST.txt` -- timestamp + SHA-256 + sizes'
+$readme += ""
+$readme += "The iMac can pull from either ``CHINTU_BRIDGE_LATEST.zip`` or"
+$readme += "``LATEST_FLAT/``. Do not share this folder publicly. Cloud sync"
+$readme += "(iCloud Drive / OneDrive / Google Drive) is optional and"
+$readme += "founder-owned; the script never picks a cloud path on its own."
+$readme += ""
 $readme += "## Roles after transfer"
 $readme += ""
 $readme += "- Windows remains the brain (repo, build, validation, commits)."
@@ -261,6 +385,122 @@ if ($zipOk) {
     Say "ZIP entries: $($zipEntries -join ', ')"
 } else {
     Say "ZIP: NOT created (precondition failed)"
+}
+
+# --- Shared folder mirror (optional, opt-in via -SharedDir) ----------------
+$sharedDone = $false
+$sharedSkipReason = ""
+$sharedResolved = ""
+$sharedManifestSha = ""
+$sharedZipBytes = 0
+$sharedFlatFiles = @()
+$prunedZips = @()
+$scanHits = @()
+
+if ([string]::IsNullOrWhiteSpace($SharedDir)) {
+    $sharedSkipReason = "SharedDir was empty; shared mirror disabled."
+    Say ""
+    Say "Shared mirror: SKIPPED (SharedDir empty)"
+} elseif (-not $zipOk) {
+    $sharedSkipReason = "ZIP precondition failed; shared mirror skipped."
+    Say ""
+    Say "Shared mirror: SKIPPED (ZIP not built)"
+} else {
+    $check = Test-SafeSharedDir -Path $SharedDir -RepoRoot $RepoRoot
+    if (-not $check.Safe) {
+        $sharedSkipReason = $check.Reason
+        Say ""
+        Say "STOP (shared mirror): $($check.Reason)"
+    } else {
+        $sharedResolved = $check.Resolved
+        $scanFiles = @()
+        foreach ($n in $bridgeFileNames) { $scanFiles += $n }
+        $scanFiles += "BRIDGE_TRANSFER_README.md"
+        $scanHits = Scan-OutboxForSensitive -OutboxDir $OutDir -FileNames $scanFiles
+        if ($scanHits.Count -gt 0) {
+            $sharedSkipReason = "Sensitive-content scan flagged outbox; shared mirror aborted."
+            Say ""
+            Say "STOP (shared mirror): outbox failed defense-in-depth scan."
+            foreach ($h in $scanHits) {
+                Say ("  - {0} :: {1}" -f $h.File, $h.Hit)
+            }
+        } else {
+            try {
+                if (-not (Test-Path -LiteralPath $sharedResolved)) {
+                    New-Item -ItemType Directory -Path $sharedResolved -Force | Out-Null
+                }
+                $flatDir = Join-Path $sharedResolved "LATEST_FLAT"
+                if (-not (Test-Path -LiteralPath $flatDir)) {
+                    New-Item -ItemType Directory -Path $flatDir -Force | Out-Null
+                }
+
+                Copy-Item -LiteralPath $zipPath -Destination $sharedResolved -Force
+                $latestZipPath = Join-Path $sharedResolved "CHINTU_BRIDGE_LATEST.zip"
+                Copy-Item -LiteralPath $zipPath -Destination $latestZipPath -Force
+
+                $sharedFlatFiles = @()
+                foreach ($n in $scanFiles) {
+                    $src = Join-Path $OutDir $n
+                    if (Test-Path -LiteralPath $src) {
+                        Copy-Item -LiteralPath $src -Destination $flatDir -Force
+                        $size = (Get-Item -LiteralPath $src).Length
+                        $sharedFlatFiles += @{ Name = $n; Size = $size }
+                    }
+                }
+
+                $copiedZip = Join-Path $sharedResolved (Split-Path $zipPath -Leaf)
+                $sharedManifestSha = Get-Sha256Hex -Path $copiedZip
+                $sharedZipBytes = (Get-Item -LiteralPath $copiedZip).Length
+
+                $manifest = @()
+                $manifest += "Chintu Bridge Manifest"
+                $manifest += "Generated:  $stamp"
+                $manifest += "ZIP:        $zipName"
+                $manifest += "ZIP_SHA256: $sharedManifestSha"
+                $manifest += ("ZIP_BYTES:  {0}" -f $sharedZipBytes)
+                $manifest += ""
+                $manifest += "LATEST_FLAT files:"
+                foreach ($f in $sharedFlatFiles) {
+                    $manifest += ("  {0,-32} {1,8} bytes" -f $f.Name, $f.Size)
+                }
+                $manifest += ""
+                $manifest += "No health data, no secrets, no network egress. Local-only mirror."
+                $manifestPath = Join-Path $sharedResolved "MANIFEST.txt"
+                $manifest | Set-Content -LiteralPath $manifestPath -Encoding ASCII
+
+                $protectedNames = @("CHINTU_BRIDGE_LATEST.zip", "MANIFEST.txt")
+                $datedZips = Get-ChildItem -LiteralPath $sharedResolved -Filter "CHINTU_BRIDGE_PACKAGE_*.zip" -File -ErrorAction SilentlyContinue
+                $datedZips = @($datedZips | Where-Object { $protectedNames -notcontains $_.Name })
+                $sortedZips = @($datedZips | Sort-Object LastWriteTime -Descending)
+                if ($sortedZips.Count -gt $Keep) {
+                    $toPrune = $sortedZips[$Keep..($sortedZips.Count - 1)]
+                    foreach ($p in $toPrune) {
+                        try {
+                            Remove-Item -LiteralPath $p.FullName -Force
+                            $prunedZips += $p.Name
+                        } catch {}
+                    }
+                }
+
+                $sharedDone = $true
+                Say ""
+                Say "Shared mirror: $sharedResolved"
+                Say "  Copied:        $zipName"
+                Say "  Latest copy:   CHINTU_BRIDGE_LATEST.zip"
+                Say "  LATEST_FLAT:   $($sharedFlatFiles.Count) files"
+                Say "  MANIFEST.txt:  SHA-256 $sharedManifestSha"
+                if ($prunedZips.Count -gt 0) {
+                    Say ("  Pruned ZIPs:   {0}" -f ($prunedZips -join ', '))
+                } else {
+                    Say "  Pruned ZIPs:   (none)"
+                }
+            } catch {
+                $sharedSkipReason = "Shared mirror error: $($_.Exception.Message)"
+                Say ""
+                Say "STOP (shared mirror): $sharedSkipReason"
+            }
+        }
+    }
 }
 
 # --- Local report -----------------------------------------------------------
@@ -327,6 +567,34 @@ $report += "- No secrets, tokens, or paired-device files were read."
 $report += "- No network egress."
 $report += "- No plugin install or enable."
 $report += "- No git push."
+$report += ""
+$report += "## Shared folder mirror"
+$report += ""
+if ($sharedDone) {
+    $report += "- Status: DONE"
+    $report += ("- Resolved path: ``{0}``" -f $sharedResolved)
+    $report += ("- Copied ZIP: ``{0}``" -f $zipName)
+    $report += "- Latest copy: ``CHINTU_BRIDGE_LATEST.zip``"
+    $report += ("- LATEST_FLAT files: {0}" -f $sharedFlatFiles.Count)
+    $report += ("- MANIFEST.txt SHA-256: ``{0}``" -f $sharedManifestSha)
+    $report += ("- ZIP bytes: {0}" -f $sharedZipBytes)
+    $report += ("- Keep policy: {0} dated ZIPs" -f $Keep)
+    if ($prunedZips.Count -gt 0) {
+        $report += ("- Pruned: " + ($prunedZips -join ", "))
+    } else {
+        $report += "- Pruned: (none)"
+    }
+} else {
+    $report += "- Status: SKIPPED"
+    $report += ("- Reason: {0}" -f $sharedSkipReason)
+    if ($scanHits.Count -gt 0) {
+        $report += ""
+        $report += "Sensitive-content scan hits:"
+        foreach ($h in $scanHits) {
+            $report += ("- ``{0}`` :: {1}" -f $h.File, $h.Hit)
+        }
+    }
+}
 $report += ""
 $report += "## iMac destination"
 $report += ""
