@@ -285,13 +285,46 @@ $dryRunStatus = "{0} of {1} preview files present. DRY RUN ONLY." -f $previewPre
 $dryRunList = $previewPresent | ForEach-Object { $_ -replace '^CHINTU_OUTBOX/dry_run_payloads/', '' }
 $connectorSummary = "Readiness snapshot missing. Run node scripts\\chintu-connector-send.js --check."
 $connectorItems = @()
+$telegramReadinessLine = ""
+$telegramNextAction = ""
 if ($connectorReadiness -and $connectorReadiness.connectors) {
     $readyStates = @($connectorReadiness.connectors | ForEach-Object {
-        "{0}: can_send_now={1}; missing_env={2}" -f $_.connector, $_.can_send_now, (@($_.missing_env_vars).Count)
+        $symbol = if ($_.can_send_now) { "[ACTIVE]" } elseif ($_.missing_env_vars.Count -eq 0) { "[READY]" } else { "[---]" }
+        "$symbol $($_.connector): can_send_now=$($_.can_send_now); missing_env=$(@($_.missing_env_vars).Count); paused=$($_.paused)"
     })
     $connectorItems = $readyStates
-    $connectorSummary = "Mode $($connectorReadiness.connector_mode). Approval phrase, allowlist, preview, and active mode are all required before any real send."
+    $tgEntry = $connectorReadiness.connectors | Where-Object { $_.connector -eq "telegram" } | Select-Object -First 1
+    if ($tgEntry) {
+        if ($tgEntry.can_send_now) {
+            $telegramReadinessLine = "Ready for first Telegram test. Run --preview then --send with your approval phrase."
+            $telegramNextAction = "node scripts/chintu-connector-send.js --preview --connector telegram --body `"Your message`""
+        } else {
+            $missingCount = @($tgEntry.missing_env_vars).Count
+            $tgMode = $connectorReadiness.connector_mode
+            if ($tgMode -ne "active") {
+                $telegramNextAction = "Set CHINTU_CONNECTOR_MODE=active in your shell (PowerShell: `$env:CHINTU_CONNECTOR_MODE='active')"
+                $telegramReadinessLine = "Telegram blocked — mode is '$tgMode'. Active mode required for real sends."
+            } elseif ($missingCount -gt 0) {
+                $telegramNextAction = "Set missing env vars: $($tgEntry.missing_env_vars -join ', '). Do not commit values."
+                $telegramReadinessLine = "Telegram blocked — $missingCount env var(s) missing. No secrets committed."
+            } elseif (-not $tgEntry.recipient_allowlisted) {
+                $telegramNextAction = "Set CHINTU_TG_ALLOWLIST and ensure CHINTU_TG_TARGET is in it."
+                $telegramReadinessLine = "Telegram blocked — recipient not in allowlist."
+            } elseif ($tgEntry.paused) {
+                $telegramNextAction = "Remove the Telegram pause file: CHINTU_OUTBOX/CONNECTOR_telegram_PAUSE"
+                $telegramReadinessLine = "Telegram blocked — connector is paused."
+            } else {
+                $telegramNextAction = "Set CHINTU_CONNECTOR_APPROVAL_PHRASE in your shell."
+                $telegramReadinessLine = "Telegram blocked — approval phrase not configured."
+            }
+        }
+    }
+    $connectorSummary = "Mode: $($connectorReadiness.connector_mode). All gates required before real send: active mode + env vars + allowlist + approval phrase + preview."
 }
+
+# Full gate-by-gate readiness (no network, no secret values printed)
+$telegramGateOutput = & node scripts/chintu-connector-send.js --readiness 2>&1
+$telegramGateText = ($telegramGateOutput -join "`n")
 
 $html = @"
 <!doctype html>
@@ -514,6 +547,14 @@ $(To-ListItems -Items $dryRunList)
       <ul>
 $(To-ListItems -Items $connectorItems)
       </ul>
+      <h3 style="margin-top:1rem">Telegram activation gates</h3>
+      <p>$(Esc $telegramReadinessLine)</p>
+$(if ($telegramNextAction) { "      <p><strong>Next human action:</strong> <code>$(Esc $telegramNextAction)</code></p>" })
+      <details>
+        <summary style="cursor:pointer;font-size:.85rem;color:#5a686f">Full gate checklist (node --readiness, no network)</summary>
+        <pre style="font-size:.75rem;white-space:pre-wrap;margin-top:.5rem">$(Esc $telegramGateText)</pre>
+      </details>
+      <p class="mini">Run <code>node scripts/chintu-connector-send.js --readiness</code> at any time to refresh this view.</p>
     </section>
     <section class="card">
       <h2>Top 5 action queue</h2>

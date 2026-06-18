@@ -548,9 +548,111 @@ function validateEnvReport() {
   return { text: lines.join('\n'), allValid };
 }
 
+// ---------------------------------------------------------------------------
+// buildTelegramReadinessGates — human-readable gate-by-gate Telegram readiness
+// Shows exactly which gates are open/blocked and what the next human action is.
+// Never prints secret values. No network calls.
+// ---------------------------------------------------------------------------
+function buildTelegramReadinessGates() {
+  const name = 'telegram';
+  const connector = CONNECTORS[name];
+  const mode = getMode();
+  const approvalPhrase = getApprovalPhrase();
+  const globalPauseExists = fs.existsSync(globalPausePath);
+  const connectorPauseExists = fs.existsSync(connector.pauseFile);
+
+  const envStatus = {};
+  for (const key of connector.requiredEnv) {
+    envStatus[key] = readEnv(key).length > 0;
+  }
+  const allEnvSet = Object.values(envStatus).every(Boolean);
+  const allowlist = csvEnv(connector.allowlistEnv);
+  const recipient = readEnv(connector.recipientEnv);
+  const recipientAllowlisted = recipient.length > 0 && allowlist.includes(recipient);
+
+  const gates = [
+    {
+      gate: 'Mode is active',
+      pass: mode === 'active',
+      detail: mode === 'active'
+        ? 'CHINTU_CONNECTOR_MODE=active is set.'
+        : `Current mode: ${mode}. Set CHINTU_CONNECTOR_MODE=active to enable real sends.`,
+    },
+    {
+      gate: 'Env vars configured (no values shown)',
+      pass: allEnvSet,
+      detail: allEnvSet
+        ? 'All 4 required env vars are present.'
+        : `Missing: ${connector.requiredEnv.filter((k) => !envStatus[k]).join(', ')}. Set these in your shell environment. Do not commit values.`,
+    },
+    {
+      gate: 'Allowlist configured',
+      pass: allowlist.length > 0,
+      detail: allowlist.length > 0
+        ? `CHINTU_TG_ALLOWLIST has ${allowlist.length} entry/entries.`
+        : 'CHINTU_TG_ALLOWLIST is empty. Set it to your Telegram chat ID or handle.',
+    },
+    {
+      gate: 'Recipient is allowlisted',
+      pass: recipientAllowlisted,
+      detail: recipientAllowlisted
+        ? 'CHINTU_TG_TARGET is in the allowlist.'
+        : 'CHINTU_TG_TARGET is missing or not in CHINTU_TG_ALLOWLIST.',
+    },
+    {
+      gate: 'Approval phrase configured',
+      pass: Boolean(approvalPhrase),
+      detail: Boolean(approvalPhrase)
+        ? 'CHINTU_CONNECTOR_APPROVAL_PHRASE is set.'
+        : 'CHINTU_CONNECTOR_APPROVAL_PHRASE is not set. Choose a phrase only you know and set it in your environment.',
+    },
+    {
+      gate: 'Global pause is OFF',
+      pass: !globalPauseExists,
+        detail: globalPauseExists
+        ? `Global pause file exists: ${path.relative(repoRoot, globalPausePath).replace(/\\/g, '/')}. Remove it to unpause all connectors.`
+        : 'No global pause file.',
+    },
+    {
+      gate: 'Connector-level pause is OFF',
+      pass: !connectorPauseExists,
+      detail: connectorPauseExists
+        ? `Telegram pause file exists: ${path.relative(repoRoot, connector.pauseFile).replace(/\\/g, '/')}. Remove it to unpause Telegram.`
+        : 'No Telegram-level pause file.',
+    },
+  ];
+
+  const allPass = gates.every((g) => g.pass);
+  const firstBlocked = gates.find((g) => !g.pass);
+
+  const lines = ['Chintu Telegram Readiness Gates', ''];
+  lines.push(`  Mode        : ${mode}`);
+  lines.push(`  Adapter     : ${connector.mode}`);
+  lines.push(`  Default     : DRY RUN ONLY — real send requires all gates open`);
+  lines.push('');
+  gates.forEach((g) => {
+    const icon = g.pass ? '  [PASS]' : '  [BLOCK]';
+    lines.push(`${icon} ${g.gate}`);
+    lines.push(`         ${g.detail}`);
+  });
+  lines.push('');
+  if (allPass) {
+    lines.push('  STATUS: Ready for first Telegram test.');
+    lines.push('  NEXT  : node scripts/chintu-connector-send.js --preview --connector telegram --body "Your message"');
+    lines.push('          Review the preview file, then run --send with your approval phrase.');
+  } else {
+    lines.push('  STATUS: Blocked — not ready for live send.');
+    lines.push(`  NEXT HUMAN ACTION: ${firstBlocked.detail}`);
+  }
+  lines.push('');
+  lines.push('  No network call made. No secret values printed.');
+  return lines.join('\n');
+}
+
 function printUsage() {
   console.log('Usage:');
   console.log('  node scripts/chintu-connector-send.js --check');
+  console.log('  node scripts/chintu-connector-send.js --readiness');
   console.log('  node scripts/chintu-connector-send.js --discover');
   console.log('  node scripts/chintu-connector-send.js --status');
   console.log('  node scripts/chintu-connector-send.js --validate-env');
@@ -565,6 +667,10 @@ async function main() {
     writeJson(readinessPath, report);
     console.log(`Connector readiness written: ${path.relative(repoRoot, readinessPath).replace(/\\/g, '/')}`);
     console.log('Mode: DRY RUN ONLY. No network call made.');
+    return;
+  }
+  if (args.readiness) {
+    console.log(buildTelegramReadinessGates());
     return;
   }
   if (args.discover) {
@@ -620,6 +726,7 @@ module.exports = {
   CONNECTORS,
   buildPreview,
   buildReadinessReport,
+  buildTelegramReadinessGates,
   buildDiscoveryTable,
   buildStatusTable,
   validateEnvReport,

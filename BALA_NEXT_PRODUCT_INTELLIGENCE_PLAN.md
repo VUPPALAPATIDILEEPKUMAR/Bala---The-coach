@@ -1,7 +1,7 @@
 # BALA Next Product Intelligence Plan
 
 **Date:** 2026-06-18  
-**Status:** Architecture — handoff to Codex  
+**Status:** planning — architecture reference, handoff to Codex  
 **Base:** BALA is a local-first health-awareness PWA. All data stays on device.
 
 ---

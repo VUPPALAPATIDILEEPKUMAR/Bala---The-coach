@@ -486,6 +486,101 @@ function renderBehaviorJournal() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Weekly Reflection — local Daily Factors summary, safe language only.
+// No medical claims. No wearable detection. No network. Local storage only.
+// ---------------------------------------------------------------------------
+function computeWeeklyFactorReflection() {
+  const history = getBehaviorHistory();
+  if (!history.length) return null;
+
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recent = history.filter((entry) => {
+    try { return new Date(entry.date).getTime() >= cutoff; } catch { return false; }
+  });
+
+  if (!recent.length) return null;
+
+  const counts = {};
+  let totalEntries = 0;
+  for (const entry of recent) {
+    if (!(entry.factors || []).length) continue;
+    totalEntries++;
+    for (const f of entry.factors) {
+      counts[f] = (counts[f] || 0) + 1;
+    }
+  }
+
+  if (!totalEntries) return null;
+
+  const sorted = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, count]) => ({
+      key,
+      label: behaviorFactorLabels[key] || key,
+      count,
+      days: totalEntries,
+    }));
+
+  const patternNotes = [];
+  for (const item of sorted.slice(0, 3)) {
+    if (item.count >= 5) {
+      patternNotes.push(item.label + " appeared most days this week (" + item.count + " of " + item.days + " logged days).");
+    } else if (item.count >= 3) {
+      patternNotes.push(item.label + " was logged " + item.count + " times this week.");
+    } else {
+      patternNotes.push(item.label + " was noted " + item.count + (item.count > 1 ? " times" : " time") + " this week.");
+    }
+  }
+
+  return {
+    entriesThisWeek: totalEntries,
+    factorsSorted: sorted,
+    patternNotes,
+    disclaimer: "These notes may help you notice patterns over time. This is reflection, not medical advice. Patterns are not proof of cause.",
+  };
+}
+
+function renderWeeklyReflection() {
+  const card = document.querySelector("#weekly-reflection-card");
+  if (!card) return;
+
+  const result = computeWeeklyFactorReflection();
+  const countNode = document.querySelector("#weekly-reflection-count");
+  const notesNode = document.querySelector("#weekly-reflection-notes");
+  const pillsNode = document.querySelector("#weekly-reflection-pills");
+  const disclaimerNode = document.querySelector("#weekly-reflection-disclaimer");
+
+  if (!result) {
+    if (countNode) countNode.textContent = "Log a few daily factors to see your weekly reflection.";
+    if (notesNode) notesNode.textContent = "";
+    if (pillsNode) pillsNode.replaceChildren();
+    if (disclaimerNode) disclaimerNode.textContent = "";
+    return;
+  }
+
+  if (countNode) {
+    countNode.textContent = result.entriesThisWeek + " day" + (result.entriesThisWeek === 1 ? "" : "s") + " logged in the past 7 days.";
+  }
+  if (notesNode) {
+    notesNode.textContent = result.patternNotes.length
+      ? result.patternNotes.join(" ")
+      : "No strong patterns yet — keep logging daily factors to build a picture.";
+  }
+  if (pillsNode) {
+    pillsNode.replaceChildren();
+    result.factorsSorted.slice(0, 5).forEach(function(item) {
+      const pill = document.createElement("span");
+      pill.className = "wr-pill";
+      pill.textContent = item.label + " x" + item.count;
+      pillsNode.append(pill);
+    });
+  }
+  if (disclaimerNode) {
+    disclaimerNode.textContent = result.disclaimer;
+  }
+}
+
 function inferDataSource(metrics = getLocalMetrics()) {
   const saved = localStorage.getItem(DATA_SOURCE_KEY);
   if (saved && dataSourceLabels[saved]) return saved;
@@ -1685,6 +1780,7 @@ function updateDashboard(metrics) {
     renderBaselineAndTimeline(null);
     renderWeeklyPatterns(null);
     renderBehaviorJournal();
+    renderWeeklyReflection();
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -1762,6 +1858,7 @@ function updateDashboard(metrics) {
   renderBaselineAndTimeline(metrics);
   renderWeeklyPatterns(metrics);
   renderBehaviorJournal();
+  renderWeeklyReflection();
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);
