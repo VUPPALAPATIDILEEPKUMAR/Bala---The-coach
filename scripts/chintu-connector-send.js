@@ -487,9 +487,73 @@ async function attemptSend({ connector, previewFile, approval }) {
   return { status: 'sent', httpStatus: response.statusCode };
 }
 
+function buildDiscoveryTable() {
+  const lines = ['Chintu Connector Discovery', ''];
+  const names = Object.keys(CONNECTORS).sort((a, b) => CONNECTORS[a].priority - CONNECTORS[b].priority);
+  for (const name of names) {
+    const entry = buildReadinessEntry(name);
+    const envStatus = entry.missing_env_vars.length
+      ? `missing: ${entry.missing_env_vars.join(', ')}`
+      : 'all set';
+    const stage = entry.can_send_now
+      ? 'READY (active)'
+      : entry.missing_env_vars.length === 0
+        ? 'configured (dry-run)'
+        : 'discovered';
+    lines.push(`  ${name}`);
+    lines.push(`    adapter: ${entry.adapter_mode}  |  stage: ${stage}  |  mode: ${entry.current_mode}`);
+    lines.push(`    env: ${envStatus}`);
+    lines.push(`    paused: ${entry.paused}  |  recipient allowlisted: ${entry.recipient_allowlisted}`);
+    lines.push('');
+  }
+  lines.push('No network call made. No secrets printed.');
+  return lines.join('\n');
+}
+
+function buildStatusTable() {
+  const lines = ['Chintu Connector Status', ''];
+  const mode = getMode();
+  lines.push(`Global mode: ${mode}`);
+  lines.push(`Approval phrase configured: ${Boolean(getApprovalPhrase())}`);
+  lines.push(`Global pause: ${fs.existsSync(globalPausePath)}`);
+  lines.push('');
+  const names = Object.keys(CONNECTORS).sort((a, b) => CONNECTORS[a].priority - CONNECTORS[b].priority);
+  for (const name of names) {
+    const entry = buildReadinessEntry(name);
+    const symbol = entry.can_send_now ? '[ACTIVE]' : entry.missing_env_vars.length === 0 ? '[READY]' : '[---]';
+    lines.push(`  ${symbol} ${name}  (${entry.adapter_mode})  can_send_now: ${entry.can_send_now}`);
+  }
+  lines.push('');
+  lines.push('No network call made. No secrets printed.');
+  return lines.join('\n');
+}
+
+function validateEnvReport() {
+  const lines = ['Chintu Connector Env Validation', ''];
+  const names = Object.keys(CONNECTORS).sort((a, b) => CONNECTORS[a].priority - CONNECTORS[b].priority);
+  let allValid = true;
+  for (const name of names) {
+    const connector = CONNECTORS[name];
+    lines.push(`  ${name}:`);
+    for (const key of connector.requiredEnv) {
+      const val = readEnv(key);
+      const ok = val.length > 0;
+      if (!ok) allValid = false;
+      lines.push(`    ${ok ? 'OK' : 'MISSING'} ${key}`);
+    }
+    lines.push('');
+  }
+  lines.push(allValid ? 'All required env vars are set.' : 'Some env vars are missing. See above.');
+  lines.push('No secrets printed. Values are not shown.');
+  return { text: lines.join('\n'), allValid };
+}
+
 function printUsage() {
   console.log('Usage:');
   console.log('  node scripts/chintu-connector-send.js --check');
+  console.log('  node scripts/chintu-connector-send.js --discover');
+  console.log('  node scripts/chintu-connector-send.js --status');
+  console.log('  node scripts/chintu-connector-send.js --validate-env');
   console.log('  node scripts/chintu-connector-send.js --preview --connector telegram --body "..."');
   console.log('  node scripts/chintu-connector-send.js --send --connector telegram --preview-file CHINTU_OUTBOX/latest_connector_preview.json --approval "..."');
 }
@@ -501,6 +565,20 @@ async function main() {
     writeJson(readinessPath, report);
     console.log(`Connector readiness written: ${path.relative(repoRoot, readinessPath).replace(/\\/g, '/')}`);
     console.log('Mode: DRY RUN ONLY. No network call made.');
+    return;
+  }
+  if (args.discover) {
+    console.log(buildDiscoveryTable());
+    return;
+  }
+  if (args.status) {
+    console.log(buildStatusTable());
+    return;
+  }
+  if (args['validate-env']) {
+    const report = validateEnvReport();
+    console.log(report.text);
+    if (!report.allValid) process.exitCode = 1;
     return;
   }
   if (args.preview) {
@@ -542,6 +620,9 @@ module.exports = {
   CONNECTORS,
   buildPreview,
   buildReadinessReport,
+  buildDiscoveryTable,
+  buildStatusTable,
+  validateEnvReport,
   attemptSend,
   validateMessageBody,
   paths: {

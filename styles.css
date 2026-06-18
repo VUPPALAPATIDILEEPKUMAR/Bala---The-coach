@@ -329,6 +329,14 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .behavior-factor-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .behavior-factor-pill { padding: 9px 11px; border: 1px solid #dbe5df; border-radius: 999px; color: #46504b; background: #f3f7f4; font-size: 9px; font-weight: 760; }
 .behavior-factor-pill.empty { border-style: dashed; color: var(--muted); font-weight: 700; }
+.behavior-reflection { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; font-style: italic; }
+.behavior-history { display: grid; gap: 10px; }
+.behavior-history:empty { display: none; }
+.behavior-history-entry { padding: 10px 13px; border: 1px solid #e8ede9; border-radius: 14px; background: #f8faf8; }
+.behavior-history-entry .bh-date { font-size: 9px; font-weight: 700; color: var(--muted); margin: 0 0 5px; }
+.behavior-history-entry .bh-factors { display: flex; flex-wrap: wrap; gap: 5px; }
+.behavior-history-entry .bh-pill { padding: 4px 8px; border-radius: 999px; background: #edf2ee; color: #5a665e; font-size: 8px; font-weight: 700; }
+.behavior-history-entry .bh-note { margin: 6px 0 0; font-size: 9px; color: var(--muted); line-height: 1.4; }
 
 .source-rail {
   margin-top: 18px;

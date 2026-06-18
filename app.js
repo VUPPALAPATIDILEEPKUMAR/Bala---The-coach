@@ -424,10 +424,16 @@ function getRecentBehaviorEntry() {
 function renderBehaviorJournal() {
   const summaryNode = document.querySelector("#behavior-journal-summary");
   const listNode = document.querySelector("#behavior-factor-list");
+  const reflectionNode = document.querySelector("#behavior-reflection");
+  const historyNode = document.querySelector("#behavior-history");
   if (!summaryNode || !listNode) return;
 
   const latest = getRecentBehaviorEntry();
+  const allEntries = getBehaviorHistory();
   listNode.replaceChildren();
+  if (reflectionNode) reflectionNode.textContent = "";
+  if (historyNode) historyNode.replaceChildren();
+
   if (!latest || !(latest.factors || []).length) {
     summaryNode.textContent = "Log a few daily factors so you can reflect on what may relate to your body signals. Not medical advice.";
     const empty = document.createElement("span");
@@ -445,6 +451,39 @@ function renderBehaviorJournal() {
     pill.textContent = behaviorFactorLabels[factor] || factor;
     listNode.append(pill);
   });
+
+  if (reflectionNode) {
+    reflectionNode.textContent = "These factors may help you notice patterns over time. They are personal notes, not medical data.";
+  }
+
+  if (historyNode && allEntries.length > 1) {
+    const older = allEntries.slice(-4, -1).reverse();
+    older.forEach((entry) => {
+      if (!(entry.factors || []).length) return;
+      const card = document.createElement("div");
+      card.className = "behavior-history-entry";
+      const d = document.createElement("p");
+      d.className = "bh-date";
+      d.textContent = new Date(entry.date).toLocaleDateString([], { month: "short", day: "numeric" });
+      card.append(d);
+      const fWrap = document.createElement("div");
+      fWrap.className = "bh-factors";
+      entry.factors.forEach((f) => {
+        const p = document.createElement("span");
+        p.className = "bh-pill";
+        p.textContent = behaviorFactorLabels[f] || f;
+        fWrap.append(p);
+      });
+      card.append(fWrap);
+      if (entry.note) {
+        const n = document.createElement("p");
+        n.className = "bh-note";
+        n.textContent = entry.note;
+        card.append(n);
+      }
+      historyNode.append(card);
+    });
+  }
 }
 
 function inferDataSource(metrics = getLocalMetrics()) {
@@ -582,9 +621,11 @@ function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory(), behavi
       : ["- None recorded"]),
     "",
     "RECENT DAILY FACTORS",
-    latestBehavior && (latestBehavior.factors || []).length
-      ? `- ${new Date(latestBehavior.date).toLocaleDateString()}: ${summarizeBehaviorFactors(latestBehavior)}${latestBehavior.note ? ` - ${latestBehavior.note}` : ""}`
-      : "- None recorded",
+    ...(() => {
+      const recent = behaviors.slice(-5).filter((e) => (e.factors || []).length);
+      if (!recent.length) return ["- None recorded"];
+      return recent.map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${summarizeBehaviorFactors(entry)}${entry.note ? ` · ${entry.note}` : ""}`);
+    })(),
     "",
     "This report is health-awareness context from supported body signals. Discuss persistent concerns with a qualified clinician.",
   ].join("\n");

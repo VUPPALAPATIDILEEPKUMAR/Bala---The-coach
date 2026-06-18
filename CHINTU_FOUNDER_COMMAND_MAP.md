@@ -26,6 +26,7 @@ explicitly approves it.
 |---|---|
 | Morning | `scripts\chintu-daily-operator.ps1` |
 | Midday | `scripts\chintu-agent-board.ps1` |
+| Agent run | `scripts\chintu-agent-runner.ps1 -Agent "validator-agent"` |
 | Bridge sync | `scripts\chintu-bridge-command-center.ps1` |
 | End of day | `scripts\chintu-endday-operator.ps1` |
 

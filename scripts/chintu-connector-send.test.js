@@ -95,5 +95,30 @@ result = run(['--preview', '--connector', 'telegram', '--body', 'heart rate 61 b
 assert.notStrictEqual(result.status, 0, 'health data preview should fail');
 assert.match(result.stderr, /health-data guard/i);
 
+// --discover outputs connector info without network calls
+result = run(['--discover'], {});
+assert.strictEqual(result.status, 0, `discover failed: ${result.stderr}`);
+assert.match(result.stdout, /telegram/i, 'discover should list telegram');
+assert.match(result.stdout, /discord/i, 'discover should list discord');
+assert.match(result.stdout, /slack/i, 'discover should list slack');
+assert.match(result.stdout, /No network call made/i, 'discover should confirm no network');
+
+// --status outputs connector status without network calls
+result = run(['--status'], {});
+assert.strictEqual(result.status, 0, `status failed: ${result.stderr}`);
+assert.match(result.stdout, /Global mode/i, 'status should show global mode');
+assert.match(result.stdout, /telegram/i, 'status should list telegram');
+assert.match(result.stdout, /No network call made/i, 'status should confirm no network');
+
+// --validate-env reports missing env vars
+result = run(['--validate-env'], {
+  CHINTU_TG_BOT_TOKEN: '',
+  CHINTU_TG_CHAT_ID: '',
+  CHINTU_TG_TARGET: '',
+  CHINTU_TG_ALLOWLIST: '',
+});
+assert.match(result.stdout, /MISSING/i, 'validate-env should show MISSING for unset vars');
+assert.match(result.stdout, /No secrets printed/i, 'validate-env should not print secrets');
+
 cleanup();
 console.log('PASS chintu-connector-send.test.js');
