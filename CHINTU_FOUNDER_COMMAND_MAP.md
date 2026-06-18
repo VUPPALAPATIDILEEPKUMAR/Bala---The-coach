@@ -42,6 +42,7 @@ explicitly approves it.
 | `node scripts\chintu-no-network-egress.test.js` | Chintu scripts contain no egress patterns. |
 | `node scripts\chintu-medical-claims.test.js` | Chintu/BALA docs contain no unsafe claims. |
 | `node scripts\chintu-safety-boundary.test.js` | Protected BALA file list stays canonical. |
+| `node scripts\chintu-doc-link-integrity.test.js` | Local markdown links between Chintu docs resolve. |
 | `scripts\chintu-validate.ps1` | Full validation gate. |
 | `scripts\chintu-release-guard.ps1` | Pre-push guard. |
 | `scripts\chintu-pre-memory-gate.ps1` | Memory vault gate. |

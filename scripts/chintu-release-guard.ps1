@@ -92,6 +92,7 @@ Run-Extra "Agent control shell"    "scripts\chintu-agent-control-shell.test.js" 
 Run-Extra "No network egress"      "scripts\chintu-no-network-egress.test.js" "node"
 Run-Extra "Medical claims"         "scripts\chintu-medical-claims.test.js" "node"
 Run-Extra "Safety boundary"        "scripts\chintu-safety-boundary.test.js" "node"
+Run-Extra "Doc link integrity"     "scripts\chintu-doc-link-integrity.test.js" "node"
 
 # --- 4. Capture git state (read-only) ----------------------------------------
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"

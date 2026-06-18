@@ -153,6 +153,15 @@ Add-Step "safety boundary test" {
     return 0
 } $true
 
+Add-Step "doc link integrity test" {
+    if (Test-Path -LiteralPath "scripts/chintu-doc-link-integrity.test.js") {
+        & node "scripts/chintu-doc-link-integrity.test.js" | Out-Host
+        return $LASTEXITCODE
+    }
+    Write-Host "  (doc-link-integrity test not present, skipping)"
+    return 0
+} $true
+
 Add-Step "chintu-validate" {
     & powershell -ExecutionPolicy Bypass -File "scripts/chintu-validate.ps1" -NoFile | Out-Host
     return $LASTEXITCODE
