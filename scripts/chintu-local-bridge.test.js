@@ -77,6 +77,22 @@ function request(port, method, path, bodyObj, headers) {
   ok(bridge.originAllowed('http://127.0.0.1:18791'), 'localhost origin allowed');
   ok(!bridge.originAllowed('https://evil.example.com'), 'cross-site origin rejected');
 
+  // --- Route parser hardening ----------------------------------------------
+  console.log('\nRoute parser hardening:');
+  const routeCases = [
+    { input: undefined, expected: '/', label: 'undefined URL falls back to root' },
+    { input: '', expected: '/', label: 'empty URL falls back to root' },
+    { input: '/api/health?ts=1', expected: '/api/health', label: 'query string is stripped from known route' },
+    { input: '//api/health', expected: '/health', label: 'double-slash route does not alias to /api/health' },
+    { input: '/api/%63hat', expected: '/api/%63hat', label: 'encoded path stays distinct from /api/chat' },
+    { input: '/api/%zz', expected: '/api/%zz', label: 'invalid percent encoding stays controlled' },
+    { input: '/%%%/???', expected: '/%%%/', label: 'overly weird route resolves deterministically' },
+  ];
+  for (const c of routeCases) {
+    ok(bridge.getRequestRoute({ url: c.input }) === c.expected, c.label);
+  }
+  assert.strictEqual(bridge.getRequestRoute({ url: '/api/chat?mode=test' }), '/api/chat');
+
   // --- Live server checks --------------------------------------------------
   console.log('\nLive server:');
   const server = http.createServer(bridge.handler);
@@ -85,11 +101,35 @@ function request(port, method, path, bodyObj, headers) {
   ok(server.address().address === '127.0.0.1', 'server bound to 127.0.0.1 only');
 
   try {
+    const emptyPath = await request(port, 'GET', '');
+    ok(emptyPath.status === 404 && emptyPath.json && emptyPath.json.ok === false, 'empty path returns controlled 404');
+
+    const rootPath = await request(port, 'GET', '/');
+    ok(rootPath.status === 404 && rootPath.json && rootPath.json.ok === false, 'root path returns controlled 404');
+
+    const doubleSlash = await request(port, 'GET', '//api/health');
+    ok(doubleSlash.status === 404 && doubleSlash.json && doubleSlash.json.ok === false, 'double-slash health path is not treated as /api/health');
+
     const health = await request(port, 'GET', '/api/health');
     ok(health.status === 200 && health.json && health.json.ok === true, 'health endpoint returns ok');
 
+    const healthWithQuery = await request(port, 'GET', '/api/health?ts=1');
+    ok(healthWithQuery.status === 200 && healthWithQuery.json && healthWithQuery.json.ok === true, 'health endpoint still works with a query string');
+
     const status = await request(port, 'GET', '/api/status');
     ok(status.status === 200 && Array.isArray(status.json.actions) && status.json.actions.length === names.length, 'status endpoint lists actions');
+
+    const unknownRoute = await request(port, 'GET', '/api/not-real');
+    ok(unknownRoute.status === 404 && unknownRoute.json && unknownRoute.json.ok === false, 'unknown route returns controlled 404');
+
+    const encodedChat = await request(port, 'POST', '/api/%63hat', { message: 'hi' });
+    ok(encodedChat.status === 404 && encodedChat.json && encodedChat.json.ok === false, 'encoded chat route does not alias to /api/chat');
+
+    const invalidPercent = await request(port, 'POST', '/api/%zz', { message: 'hi' });
+    ok(invalidPercent.status === 404 && invalidPercent.json && invalidPercent.json.ok === false, 'invalid percent route returns controlled 404');
+
+    const weirdRoute = await request(port, 'POST', '/%%%/???', { message: 'hi' });
+    ok(weirdRoute.status === 404 && weirdRoute.json && weirdRoute.json.ok === false, 'overly weird route returns controlled 404');
 
     const unknown = await request(port, 'POST', '/api/action', { action: 'definitely_not_real' });
     ok(unknown.status === 400 && unknown.json.ok === false, 'unknown action is rejected (400)');
@@ -122,6 +162,9 @@ function request(port, method, path, bodyObj, headers) {
     ok(chatHi.status === 200 && /chintu is live/i.test(chatHi.json.reply), 'chat "hi" returns the live greeting');
     ok(chatHi.json.intent === 'greeting' && chatHi.json.ranLive === false, 'chat "hi" runs no live actions');
 
+    const chatWithQuery = await request(port, 'POST', '/api/chat?trace=1', { message: 'hi' });
+    ok(chatWithQuery.status === 200 && chatWithQuery.json.intent === 'greeting', 'chat route still works with a query string');
+
     // --- Stage 24: chat with a real read action ----------------------------
     const chatGit = await request(port, 'POST', '/api/chat', { message: 'check git' });
     ok(chatGit.status === 200 && Array.isArray(chatGit.json.results) && chatGit.json.results.length >= 1,
@@ -131,6 +174,10 @@ function request(port, method, path, bodyObj, headers) {
     ok(seqGood.status === 200 && seqGood.json.sequence === 'chintu_health_check' &&
       Array.isArray(seqGood.json.results) && seqGood.json.results.length === bridge.SEQUENCES.chintu_health_check.steps.length,
       'named sequence runs and returns one result per allowlisted step');
+
+    const seqWithQuery = await request(port, 'POST', '/api/sequence?trace=1', { sequence: 'chintu_health_check' });
+    ok(seqWithQuery.status === 200 && seqWithQuery.json.sequence === 'chintu_health_check',
+      'sequence route still works with a query string');
 
     // --- Stage 24: emergency override never runs actions -------------------
     const chatEmg = await request(port, 'POST', '/api/chat', { message: 'I have chest pain' });
