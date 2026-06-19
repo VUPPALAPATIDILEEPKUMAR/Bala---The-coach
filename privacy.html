@@ -16,14 +16,14 @@
       <p>BALA's browser mode stores manual entries, Daily Factors behavior journal entries, and imported Apple Health summaries in local browser storage. The imported file is processed locally and is not uploaded.</p>
       <h2>Embedded coach</h2>
       <p>BALA’s embedded coach uses local rules and a small built-in wellness knowledge base. Questions, metric summaries, Apple Health exports, record history, names, emails, and device identifiers are not sent to an AI provider.</p>
-      <p>If a user explicitly enables conversational AI, BALA sends the current question, up to eight recent messages, and a derived numeric summary to the configured provider through BALA’s protected server. Raw Apple Health files and record-level history are not sent.</p>
+      <p>The current browser version does not turn on a cloud AI mode. If BALA ever adds an optional server-backed coach later, it must remain explicit, revocable, and limited to the minimum derived context needed for that answer. Raw Apple Health files and full record history should stay local.</p>
       <p>Spoken replies use the device’s installed text-to-speech voices. Voice input uses the browser’s speech-recognition feature, which may process microphone audio through Apple, Google, Microsoft, or another browser service depending on the device. BALA does not store the recording.</p>
       <h2>Connected wearable services</h2>
       <p>Future HealthKit, Health Connect, Fitbit, Samsung Health, Oura, and Garmin connections must request the minimum permissions needed, retain source provenance, and provide deletion and revocation controls.</p>
       <h2>Safety</h2>
       <p>BALA provides health-awareness information based on supported body signals and optional Daily Factors reflections. These entries may help you notice patterns, but they are not medical advice. BALA is not a medical device or a substitute for professional medical care.</p>
       <h2>Delete your browser data</h2>
-      <p>Use Clear local data inside BALA. Removing the installed app or clearing site storage also deletes browser-local BALA data.</p>
+      <p>Use Clear local data inside BALA. Removing the installed app or clearing site storage also deletes browser-local BALA data, including manual check-ins, Daily Factors, and imported summaries stored in this browser profile.</p>
     </main>
   </body>
 </html>

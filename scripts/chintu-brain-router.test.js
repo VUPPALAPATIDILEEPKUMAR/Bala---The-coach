@@ -59,6 +59,7 @@ ok(JSON.stringify(ce.actions) === JSON.stringify(['git_status', 'validate_app', 
 console.log('\nSingle intents:');
 ok(brain.route('run validator').actions[0] === 'run_validator_dry_run', '"run validator" -> run_validator_dry_run');
 ok(brain.route('check connectors').actions[0] === 'connector_readiness', '"check connectors" -> connector_readiness');
+ok(brain.route('Telegram Dry Run Guide').intent === 'telegram_dry_run_guide', '"Telegram Dry Run Guide" -> telegram_dry_run_guide');
 ok(brain.route('run release guard').actions[0] === 'release_guard', '"run release guard" -> release_guard');
 ok(brain.route('check git').actions[0] === 'git_status', '"check git" -> git_status');
 ok(brain.route('validate Bala').sequence === 'bala_health_check', '"validate Bala" -> bala_health_check sequence');

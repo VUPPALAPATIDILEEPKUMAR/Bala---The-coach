@@ -49,19 +49,23 @@ ok(lastWave.jobs.indexOf('release-manager-agent') !== -1, 'release manager runs 
 
 // --- Summary shape ----------------------------------------------------------
 console.log('\nSummary:');
-const summary = orch.buildSummary();
+const summary = orch.buildSummary({ summaryMode: 'operator-summary' });
 ok(summary.runType === 'dry-run', 'summary run type is dry-run');
+ok(summary.summaryMode === 'operator-summary', 'summary mode can switch to operator-summary');
 ok(summary.jobs.every((j) => j.status === 'planned'), 'no job claims it executed (status=planned)');
-ok(typeof orch.toMarkdown(summary) === 'string' && orch.toMarkdown(summary).indexOf('Agent Orchestrator') !== -1, 'markdown renders');
+ok(summary.safeJobs.length === orch.JOBS.length, 'safe jobs lists the coordination-only board');
+ok(summary.approvalRequired.indexOf('Any real connector send') !== -1, 'summary names approval-gated actions');
+ok(typeof orch.toMarkdown(summary) === 'string' && orch.toMarkdown(summary).indexOf('Requires approval') !== -1, 'markdown renders operator summary sections');
 
 // --- Actually writes files --------------------------------------------------
 console.log('\nWrite:');
-const res = orch.run();
+const res = orch.run({ summaryMode: 'operator-summary' });
 ok(res.ok === true, 'run() completes ok');
 ok(fs.existsSync(orch.jsonPath), 'writes latest_orchestrator_summary.json');
 ok(fs.existsSync(orch.mdPath), 'writes latest_orchestrator_summary.md');
 const written = JSON.parse(fs.readFileSync(orch.jsonPath, 'utf8'));
 ok(written.runType === 'dry-run', 'written summary is a dry run');
+ok(written.summaryMode === 'operator-summary', 'written summary records operator-summary mode');
 
 console.log('');
 if (fails === 0) {

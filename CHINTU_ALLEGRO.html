@@ -526,6 +526,38 @@
       </div>
     </div>
 
+    <div>
+      <div class="section-label">Phone Runtime</div>
+      <div class="status-card">
+        <div class="status-dot dot-green"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Phone Command Contract</div>
+          <div class="status-card-note">Active · normalize, allowlist, founder-tone reply</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-amber"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Telegram Adapter</div>
+          <div class="status-card-note">Dry-run ready · message + edited_message only</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-amber"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Telegram Runner</div>
+          <div class="status-card-note">Env-gated · fixture or poll-once only</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-gray"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Live Send</div>
+          <div class="status-card-note">Off unless approved · send flag + env gates required</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick actions -->
     <div>
       <div class="section-label">Quick Actions</div>
@@ -538,7 +570,7 @@
         <button class="qa-btn" onclick="quickAction('Generate Codex prompt')">⚡ Codex prompt</button>
         <button class="qa-btn" onclick="quickAction('Run validator agent dry run')">🔍 Validator dry run</button>
         <button class="qa-btn" onclick="quickAction('Check connector readiness')">🔌 Connector check</button>
-        <button class="qa-btn" onclick="quickAction('Prepare Telegram first test')">📨 Telegram setup</button>
+        <button class="qa-btn" onclick="quickChat('Telegram Dry Run Guide')">📨 Telegram Dry Run Guide</button>
         <button class="qa-btn" onclick="quickAction('Create founder brief')">📋 Founder brief</button>
         <button class="qa-btn" onclick="quickAction('Review BALA scoring model')">📊 BALA scoring</button>
         <button class="qa-btn" onclick="quickAction('Plan report explainer MVP')">🩺 Report explainer</button>
@@ -1199,7 +1231,7 @@ function packetConnectorReadiness() {
       "Slack/Discord connectors (roadmap only)",
       "Any live external send until explicitly approved",
     ],
-    nextAction: "Run the readiness commands in your terminal. Review the output. If Telegram shows READY, you can request the live activation flow with: 'Prepare Telegram first test'.",
+    nextAction: "Run the readiness commands in your terminal. Review the output. Then open the Telegram Dry Run Guide to test the fixture and poll-once preview path before any send gate is considered.",
     track: "Chintu OS — Connectors",
     riskLevel: "low",
     approvalRequired: false,
@@ -1209,38 +1241,38 @@ function packetConnectorReadiness() {
 
 function packetTelegramSetup() {
   return {
-    understood: "You want to set up and test the Telegram connector for the first time — safely, with all gates active.",
-    lane: "Chintu OS — Telegram First Activation (Track 2)",
+    understood: "You want the safe Telegram dry-run guide — fixture first, poll-once later, send still off unless every gate is opened intentionally.",
+    lane: "Chintu OS — Telegram Phone Runtime (Track 2)",
     safetyGates: [
-      "Never print TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in any file or log",
-      "Set env vars locally — never commit to repo",
-      "Preview message must be shown before send",
-      "Explicit approval phrase required: 'approve telegram-test-send'",
-      "Message must go to personal chat only (not a public group)",
+      "Default mode is dry-run preview only",
+      "Never print TELEGRAM_BOT_TOKEN in any file, UI, or log",
+      "Set env vars locally — never commit them",
+      "Sender allowlist is required before any real send",
+      "Health-sensitive commands never send or execute locally",
       "No BALA health data in Telegram messages by default",
     ],
     filesInvolved: [
-      "scripts/chintu-connector-send.js — Telegram send logic",
-      "CHINTU_CONNECTOR_ACTIVATION_GUIDE.md — step-by-step guide",
-      "CHINTU_CONNECTOR_ACTIVATION_MATRIX.md — status matrix",
-      ".env.local — where to store secrets (never commit)",
+      "scripts/chintu-telegram-adapter.js — Telegram update normalization",
+      "scripts/chintu-telegram-runner.js — fixture, poll-once, send gates",
+      "CHINTU_TELEGRAM_CONNECTOR_RUNTIME.md — runtime contract",
+      "CHINTU_TELEGRAM_SETUP_SAFE.md — safe activation steps",
     ],
-    prompt: `# Telegram first activation sequence\n\n# 1. Set env vars (PowerShell — never commit these)\n$env:TELEGRAM_BOT_TOKEN = "your-token-here"\n$env:TELEGRAM_CHAT_ID  = "your-chat-id-here"\n\n# 2. Validate env (no secrets printed)\nnode scripts\\chintu-connector-send.js --validate-env\n\n# 3. Preview the dry-run message\nnode scripts\\chintu-connector-send.js --dry-run --message "Chintu first test"\n\n# 4. Only after reviewing preview — live send requires approval phrase\n# node scripts\\chintu-connector-send.js --message "Chintu first test" --approve "approve telegram-test-send"`,
+    prompt: `# Telegram dry-run guide\n\n# 1. Fixture dry-run (safe default)\nnode scripts\\chintu-telegram-runner.js --fixture scripts\\fixtures\\telegram-check-everything.json --dry-run\n\n# 2. Later: live intake without send (requires TELEGRAM_BOT_TOKEN)\nnode scripts\\chintu-telegram-runner.js --poll-once --dry-run\n\n# 3. Send stays off unless every gate is set\n# TELEGRAM_BOT_TOKEN\n# CHINTU_TELEGRAM_ALLOWED_CHAT_IDS or CHINTU_TELEGRAM_ALLOWED_SENDER_IDS\n# CHINTU_TELEGRAM_SEND_ENABLED=1\n# --send`,
     validationCommands: [
-      "node scripts\\chintu-connector-send.js --validate-env",
-      "node scripts\\chintu-connector-send.js --dry-run --message \"Chintu first test\"",
-      "node scripts\\chintu-connector-send.test.js",
+      "node scripts\\chintu-telegram-adapter.test.js",
+      "node scripts\\chintu-telegram-runner.test.js",
+      "node scripts\\chintu-no-network-egress.test.js",
     ],
     parked: [
-      "Live send — requires env vars set + approval phrase 'approve telegram-test-send'",
-      "Automated scheduled messages (Stage 23+)",
-      "Telegram group sends (approval required separately)",
+      "Webhook mode",
+      "Infinite polling / daemon mode",
+      "Browser token entry",
     ],
-    nextAction: "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in your local PowerShell session (do NOT commit). Run the validate and dry-run commands. Review the preview. Then return and say: 'approve telegram-test-send' when ready.",
+    nextAction: "Run the fixture dry-run first. When that looks right, set TELEGRAM_BOT_TOKEN locally and try poll-once dry-run. Keep send off until you intentionally set the allowlist env vars, CHINTU_TELEGRAM_SEND_ENABLED=1, and pass --send.",
     track: "Chintu OS — Connectors",
-    riskLevel: "medium",
-    approvalRequired: true,
-    connectorRequired: "Telegram — requires env vars set locally, never committed",
+    riskLevel: "low",
+    approvalRequired: false,
+    connectorRequired: "Telegram — env-gated and dry-run by default",
   };
 }
 

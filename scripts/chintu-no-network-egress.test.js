@@ -48,9 +48,15 @@ if (!fs.existsSync(scriptsDir)) {
 // these tokens as regex strings to detect them in app code. Exempt it
 // here so the integrity guard does not flag the guard's own patterns.
 // chintu-local-bridge.js requires the `http` module to bind a LOCAL loopback
-// server (127.0.0.1 only). That is a local runtime, not network egress, so it
-// is allowlisted here alongside the validator and the gated connector sender.
-const scannerAllowlist = new Set(['chintu-validate.ps1', 'chintu-connector-send.js', 'chintu-local-bridge.js']);
+// server (127.0.0.1 only). chintu-telegram-runner.js is the single Stage 30
+// script allowed to call Telegram getUpdates/sendMessage and the local bridge,
+// but only with explicit env gates and localhost-only comments/markers.
+const scannerAllowlist = new Set([
+  'chintu-validate.ps1',
+  'chintu-connector-send.js',
+  'chintu-local-bridge.js',
+  'chintu-telegram-runner.js',
+]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
   if (!/^chintu-/i.test(f)) return false;
@@ -76,6 +82,28 @@ if (!fs.existsSync(connectorSender)) {
   ]) {
     if (!senderText.includes(required)) {
       fail(`connector sender missing required gate marker: ${required}`);
+    }
+  }
+}
+
+const telegramRunner = path.join(scriptsDir, 'chintu-telegram-runner.js');
+if (!fs.existsSync(telegramRunner)) {
+  fail('scripts/chintu-telegram-runner.js missing');
+} else {
+  const runnerText = fs.readFileSync(telegramRunner, 'utf8');
+  for (const required of [
+    'TELEGRAM_BOT_TOKEN',
+    'CHINTU_TELEGRAM_ALLOWED_CHAT_IDS',
+    'CHINTU_TELEGRAM_ALLOWED_SENDER_IDS',
+    'CHINTU_TELEGRAM_SEND_ENABLED',
+    '--poll-once',
+    '--send',
+    '--execute-local',
+    '127.0.0.1',
+    'api.telegram.org',
+  ]) {
+    if (!runnerText.includes(required)) {
+      fail(`telegram runner missing required gate marker: ${required}`);
     }
   }
 }

@@ -251,6 +251,22 @@ const RULES = [
     }),
   },
   {
+    name: 'telegram_dry_run_guide',
+    match: (s) => hasAny(s, ['telegram dry run guide', 'telegram setup', 'prepare telegram first test',
+      'phone connector guide', 'phone dry run guide', 'telegram fixture guide']),
+    build: () => ({
+      intent: 'telegram_dry_run_guide',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.CONVERSATION,
+      reply:
+        'Here is the safe Telegram path, bro: first run `node scripts/chintu-telegram-runner.js --fixture scripts\\\\fixtures\\\\telegram-check-everything.json --dry-run`. ' +
+        'Later, if you set `TELEGRAM_BOT_TOKEN`, you can poll once with `node scripts/chintu-telegram-runner.js --poll-once --dry-run`. ' +
+        'Live send stays OFF unless you explicitly set the Telegram allowlist env vars, `CHINTU_TELEGRAM_SEND_ENABLED=1`, and pass `--send`. Default mode is preview only.',
+      next: 'connector_status',
+    }),
+  },
+  {
     name: 'connector_status',
     match: (s) => hasAny(s, ['connector status', 'connector config', 'connector mode']),
     build: () => ({
@@ -296,8 +312,8 @@ const RULES = [
       type: TYPE.SINGLE,
       actions: ['agent_orchestrator_dry_run'],
       reply:
-        'Running the agent board as a dry run. It coordinates the predefined safe agents (validator, ' +
-        'connector-safety, BALA-UX, prompt-engineer, release-manager) and writes a run summary. Dry run ' +
+        'Running the agent board summary as a dry run. It coordinates the predefined safe agents (validator, ' +
+        'connector-safety, BALA-UX, prompt-engineer, release-manager) and writes an operator summary. Dry run ' +
         'only — it reports, it does not change files.',
       next: 'release_guard',
     }),

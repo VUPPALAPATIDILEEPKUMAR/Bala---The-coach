@@ -552,10 +552,10 @@ function renderWeeklyReflection() {
   const disclaimerNode = document.querySelector("#weekly-reflection-disclaimer");
 
   if (!result) {
-    if (countNode) countNode.textContent = "Log a few daily factors to see your weekly reflection.";
-    if (notesNode) notesNode.textContent = "";
+    if (countNode) countNode.textContent = "No weekly reflection yet. Log a few daily factors and BALA will summarize only the signals and factors available.";
+    if (notesNode) notesNode.textContent = "What changed this week will appear here once you have a few daily-factor check-ins.";
     if (pillsNode) pillsNode.replaceChildren();
-    if (disclaimerNode) disclaimerNode.textContent = "";
+    if (disclaimerNode) disclaimerNode.textContent = "BALA uses available signals and reflections only. It does not diagnose or monitor emergencies.";
     return;
   }
 
@@ -701,9 +701,10 @@ function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory(), behavi
   const latestBehavior = behaviors.at(-1);
   const baseline = baselineAnalysis(metrics);
   return [
-    "BALA WELLNESS SUMMARY",
+    "BALA DOCTOR-READY SUMMARY",
     `Generated: ${new Date().toLocaleString()}`,
     `Source: ${metrics.source || "Local check-in"}`,
+    `Data confidence: ${metricEvidence(metrics).length} supported signals available in this export or check-in`,
     `Baseline: ${baseline.days} days - ${baseline.level}`,
     baseline.copy,
     "",
@@ -722,7 +723,8 @@ function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory(), behavi
       return recent.map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${summarizeBehaviorFactors(entry)}${entry.note ? ` · ${entry.note}` : ""}`);
     })(),
     "",
-    "This report is health-awareness context from supported body signals. Discuss persistent concerns with a qualified clinician.",
+    "Use this summary to describe patterns, questions, and recent observations from the signals BALA had available.",
+    "This report is health-awareness context from supported body signals only. It does not provide diagnosis or a treatment plan, and it is not for urgent decisions. Discuss persistent concerns with a qualified clinician.",
   ].join("\n");
 }
 
@@ -954,10 +956,10 @@ function renderScoreExplainer(metrics, breakdown) {
   host.innerHTML = [
     row("Signals used", list(used.map((s) => s.label), "none yet")),
     row("Missing signals", list(missing.map((s) => s.label), "none \u2014 full picture")),
-    row("Confidence", `${confidence} (based on ${used.length} of ${SIGNALS.length} signals)`),
+    row("Data confidence", `${confidence} (based on ${used.length} of ${SIGNALS.length} supported signals)`),
     row("Supporting your score", list(supporting, "building")),
     attention.length ? row("Worth a closer look", list(attention, "")) : "",
-    `<p style="margin:6px 0 0;opacity:0.85">Adding the missing signals raises confidence. BALA shows a calm reflection guide from the signals you shared.</p>`,
+    `<p style="margin:6px 0 0;opacity:0.85">Adding the missing signals raises data confidence. BALA shows a calm reflection guide from the signals you shared.</p>`,
   ].join("");
 }
 
@@ -1248,7 +1250,7 @@ function renderBaselineAndTimeline(metrics) {
 
   document.querySelector("#change-summary-copy").textContent = baseline.ready
     ? baseline.copy
-    : "Add 3 check-ins to compare your latest signals with your baseline.";
+    : "Add 3 check-ins to compare today's available signals with your baseline.";
   const labelsNode = document.querySelector("#change-labels");
   labelsNode.replaceChildren();
   baseline.comparisons.forEach((comparison) => {
@@ -1304,7 +1306,7 @@ function renderBaselineAndTimeline(metrics) {
   if (!shownEntries.length) {
     const empty = document.createElement("p");
     empty.className = "timeline-empty";
-    empty.textContent = "Add your first check-in above to start your private history. Recent check-ins appear here and stay on this device.";
+    empty.textContent = "Add your first check-in above to start your private history. What changed today will start to make sense once recent check-ins appear here and stay on this device.";
     timelineNode.append(empty);
     return;
   }

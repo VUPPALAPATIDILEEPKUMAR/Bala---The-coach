@@ -824,6 +824,8 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .device-grid { grid-template-columns: 1fr; }
   .page-header h1 { font-size: 39px; letter-spacing: -1.9px; }
   .score-panel { grid-template-columns: 88px 1fr; }
+  .alcohol-calc-grid { grid-template-columns: 1fr; }
+}
   
 /* Stage 23 — transparent Score explanation disclosure (safe, static) */
 .score-explainer {
@@ -841,6 +843,19 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .score-explainer > summary::-webkit-details-marker { display: none; }
 .score-explainer > summary::before { content: "ⓘ "; opacity: 0.7; }
 .score-explainer[open] > summary { margin-bottom: 6px; }
+.score-confidence-note {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.score-explainer-dynamic {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--canvas);
+}
 .score-explainer-copy {
   font-size: 0.8rem;
   line-height: 1.5;

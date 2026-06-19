@@ -1,123 +1,68 @@
-# Chintu Telegram Status Plan (planning only, parked)
+# Chintu Telegram Status Plan (Stage 30 runtime status)
 
-**Status:** PARKED. Nothing in this repo sends Telegram messages.
-**Scope:** what a safe Chintu-OS-only Telegram heartbeat *could* look
-like, and what you'd need to approve before any byte goes out.
+**Status:** DRY-RUN READY by default. A Telegram runner exists, but live send
+stays off unless explicit env gates and the `--send` flag are present.
+**Scope:** the first safe phone-command runtime for Chintu OS.
 
-This plan is operator-side only. Telegram is never a destination for
-BALA user data, health metrics, or medical content — full stop.
-
----
-
-## 1. Current known status (from repo only)
-
-- `CHINTU_MEMORY_VAULT/PARKED_SYSTEMS.md` lists "Telegram bot — parked"
-  with the note "No implementation. Future notification channel for
-  non-health status only."
-- It also lists "Health data in Telegram / Discord / webhooks /
-  notifications — prohibited. Hard rule. Never."
-- No `scripts/chintu-*.ps1` calls Telegram. The
-  `chintu-no-network-egress.test.js` test would fail if any did.
-- No Telegram token, chat ID, or webhook URL is stored in this repo,
-  in `.env`, or in any script.
-
-Conclusion: **Telegram is not currently a destination for anything
-Chintu OS does.**
+Telegram is never a destination for BALA user data, health metrics, or medical
+content — full stop.
 
 ---
 
-## 2. What "Telegram alive" would mean (if ever activated)
+## 1. Current runtime
 
-A Telegram channel would be considered "alive" for Chintu OS purposes
-only if all of the following are true:
+- `scripts/chintu-telegram-adapter.js` normalizes Telegram updates into the
+  phone command contract.
+- `scripts/chintu-telegram-runner.js` supports:
+  - fixture mode
+  - poll-once dry-run mode
+  - approved-send mode
+- `scripts/chintu-no-network-egress.test.js` only allowlists network access for
+  `scripts/chintu-telegram-runner.js` and the localhost bridge runtime.
+- No token is committed to this repo.
 
-1. The founder has personally created a dedicated Chintu-OS-only
-   channel.
-2. The bot token lives in a place outside this repo (Windows
-   Credential Manager or a manually-managed env var).
-3. A single dedicated script reads that token, formats one short
-   heartbeat message, and sends it. That script is reviewable in a
-   diff before approval.
-4. The message body never includes BALA user data, health metrics,
-   medical content, or secrets.
-5. The script has an off-switch: if a `CHINTU_TELEGRAM_PAUSE` flag
-   file exists in the repo root, the script no-ops.
-
-Until all five hold, Telegram is silent. That is the safe default.
+See [CHINTU Telegram Connector Runtime](./CHINTU_TELEGRAM_CONNECTOR_RUNTIME.md)
+and [Chintu Telegram Setup Safe](./CHINTU_TELEGRAM_SETUP_SAFE.md).
 
 ---
 
-## 3. Why no Telegram message arrives today
+## 2. What "Telegram alive" means now
 
-Because no script attempts to send one. There is no scheduler, no
-webhook, no service. The repo's no-network-egress test enforces this.
-If you expected a Telegram notification, the expectation is from a
-previous mental model — not from anything in the current code.
+Telegram send is considered "alive" only if all of the following are true:
 
----
+1. `TELEGRAM_BOT_TOKEN` is set outside the repo.
+2. `CHINTU_TELEGRAM_ALLOWED_CHAT_IDS` or
+   `CHINTU_TELEGRAM_ALLOWED_SENDER_IDS` is set.
+3. `CHINTU_TELEGRAM_SEND_ENABLED=1`.
+4. The CLI includes `--send`.
+5. The update came from an allowlisted sender.
+6. The command is not health-sensitive.
+7. The runner writes `CHINTU_OUTBOX/telegram_connector_audit.jsonl`.
 
-## 4. A safe smoke test design (NOT executed by any current script)
-
-If and only if §2's five conditions later hold, a smoke test would
-look like this:
-
-1. Create a `CHINTU_TELEGRAM_HEARTBEAT.ps1` script (does not exist
-   today).
-2. Have it read the token from `[Environment]::GetEnvironmentVariable("CHINTU_TG_TOKEN", "User")`.
-3. Have it read the chat id from `CHINTU_TG_CHAT_ID` env var.
-4. Have it `POST` only the body documented in §6 below.
-5. Test in a private dev channel first.
-
-Note: the moment such a script is added, the
-`chintu-no-network-egress.test.js` test would block the release guard
-unless that script is added to its allowlist. That is the correct
-gate.
+Until all seven hold, Telegram stays preview-only.
 
 ---
 
-## 5. What founder must approve manually before anything sends
+## 3. Safe default
 
-- Creation of the dedicated Chintu-OS-only Telegram channel.
-- Storage of the bot token in Credential Manager or a User env var
-  (not in repo, not in `.env`, not in any script).
-- The exact text of the message body (see §6).
-- The exact trigger (manual only, or scheduled — and if scheduled,
-  by which OS scheduler).
-- An allowlist amendment to `chintu-no-network-egress.test.js`.
+- Default mode is fixture or dry-run.
+- No daemon.
+- No infinite polling.
+- No webhook.
+- No browser token input.
+- No health data transfer.
 
 ---
 
-## 6. The only acceptable message body
+## 4. Safe smoke commands
 
-```text
-Chintu heartbeat
-2026-06-18 03:42 -04:00 | branch main
-Tree: clean. Unpushed: 0.
-Next: run scripts/chintu-master-launcher.ps1.
+```bash
+node scripts/chintu-telegram-runner.js --fixture scripts\fixtures\telegram-hi.json --dry-run
+node scripts/chintu-telegram-runner.js --poll-once --dry-run
+node scripts/chintu-telegram-runner.js --poll-once --send
 ```
 
-What this message contains:
-
-- A timestamp.
-- A branch name.
-- A working-tree summary ("clean" or "N uncommitted").
-- An unpushed-commit count.
-- One short next-action sentence.
-
-What this message MUST NOT contain:
-
-- Any BALA user data.
-- Any health metric (heart rate, sleep, steps, BP, glucose, mood,
-  symptoms, weight, anything).
-- Any medical content.
-- Any commit message body (commit messages can contain context the
-  founder might not want broadcast).
-- Any path under `CHINTU_MEMORY_VAULT/` (vault content stays local).
-- Any secret, token, file path, or environment value.
-
----
-
-## 7. What must never be sent over Telegram (ever)
+## 5. What must never be sent over Telegram (ever)
 
 - BALA user notes, scores, trends, or coach text.
 - Any health-data field, even abstracted.
@@ -129,11 +74,10 @@ Chintu-OS-only heartbeats.
 
 ---
 
-## 8. Trigger to revisit
+## 6. Trigger to expand
 
-Founder explicitly opens this lane. Until then, parked. The
-`chintu-runtime-health.ps1` script will keep reporting Telegram as
-"parked (expected)".
+Founder explicitly opens the next lane: webhook or daemon support. Until then,
+poll-once only.
 
 ---
 

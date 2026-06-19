@@ -153,9 +153,9 @@ const ACTIONS = {
     next: 'connector_readiness',
   },
   agent_orchestrator_dry_run: {
-    label: 'node scripts/chintu-agent-orchestrator.js',
+    label: 'node scripts/chintu-agent-orchestrator.js --summary',
     kind: 'generate',
-    build: () => ({ cmd: process.execPath, args: ['scripts/chintu-agent-orchestrator.js'] }),
+    build: () => ({ cmd: process.execPath, args: ['scripts/chintu-agent-orchestrator.js', '--summary'] }),
     next: 'release_guard',
   },
   open_allegro: {

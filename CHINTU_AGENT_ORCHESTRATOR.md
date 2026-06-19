@@ -1,4 +1,4 @@
-# Chintu Agent Orchestrator — Stage 24 (MVP foundation)
+# Chintu Agent Orchestrator — Stage 30
 
 The orchestrator is the seed of "multiple agents working over time". The first
 version is deliberately safe: it coordinates and reports, it does not edit files,
@@ -11,6 +11,7 @@ push, or send.
   names real bridge actions.
 - Bridge action: `agent_orchestrator_dry_run`.
 - Allegro: routed via "run agent board dry run".
+- CLI summary mode: `node scripts/chintu-agent-orchestrator.js --summary`
 
 ## The board
 
@@ -28,11 +29,25 @@ push, or send.
 - The release manager runs last, sequentially — it is the gate the others feed.
 - Each job names the allowlisted bridge action the operator can run to actually
   perform its check. The orchestrator itself performs none of them.
+- The `--summary` mode adds an operator-facing summary of:
+  - available agents
+  - safe jobs
+  - bridge action mappings
+  - what stays dry-run only
+  - what still requires human approval
 
 ## Output
 
 `CHINTU_AGENT_RUNS/latest_orchestrator_summary.json` and
 `CHINTU_AGENT_RUNS/latest_orchestrator_summary.md`.
+
+## Approval boundary
+
+- The orchestrator never edits files.
+- The orchestrator never pushes.
+- The orchestrator never sends connector messages.
+- Human approval is still required for any real connector send, file-edit path,
+  or release action.
 
 ## Parked
 

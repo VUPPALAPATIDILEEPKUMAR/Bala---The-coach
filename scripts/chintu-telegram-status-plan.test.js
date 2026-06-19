@@ -2,7 +2,7 @@
 // Chintu telegram-status-plan integrity test.
 //
 // Verifies that CHINTU_TELEGRAM_STATUS_PLAN.md:
-//   1. Exists and is marked PARKED in its header.
+//   1. Exists and is marked DRY-RUN READY in its header.
 //   2. Carries the BALA safety footer.
 //   3. Explicitly prohibits sending BALA / health / medical content.
 //   4. Names the no-network-egress test as the enforcement gate.
@@ -38,8 +38,8 @@ if (!fs.existsSync(docPath)) {
 const text = fs.readFileSync(docPath, 'utf8');
 const head = text.split(/\r?\n/).slice(0, 20).join('\n');
 
-if (!/\*\*Status:\*\*\s*PARKED/i.test(head)) {
-  fail('CHINTU_TELEGRAM_STATUS_PLAN.md missing **Status:** PARKED in header');
+if (!/\*\*Status:\*\*\s*DRY-RUN READY/i.test(head)) {
+  fail('CHINTU_TELEGRAM_STATUS_PLAN.md missing **Status:** DRY-RUN READY in header');
 }
 if (!text.includes(FOOTER)) {
   fail('CHINTU_TELEGRAM_STATUS_PLAN.md missing BALA safety footer');
@@ -58,7 +58,7 @@ if (fs.existsSync(scriptsDir)) {
     if (!/\.ps1$/.test(f)) continue;
     const t = fs.readFileSync(path.join(scriptsDir, f), 'utf8');
     if (/api\.telegram\.org/i.test(t)) {
-      fail(`scripts/${f} references api.telegram.org - Telegram is parked, no script may target it`);
+      fail(`scripts/${f} references api.telegram.org - Telegram runtime must stay inside the dedicated JS runner only`);
     }
   }
 }

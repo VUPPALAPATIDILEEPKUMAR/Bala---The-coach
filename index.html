@@ -104,6 +104,7 @@
           <div class="score-insight">
             <p class="section-label" id="guide-label">Today's Guide</p>
             <p class="score-data-source" id="score-data-source">Data source: Demo Mode</p>
+            <p class="score-confidence-note" id="score-confidence-note">Data confidence uses only the supported signals available today.</p>
             <h2 id="score-heading">You’re ready for a steady day</h2>
             <p id="score-guide-copy">
               Your sleep and recovery are near your usual range. Keep activity moderate and
@@ -119,8 +120,7 @@
               <div class="score-explainer-dynamic" id="score-explainer-dynamic" hidden></div>
               <p class="score-explainer-copy">
                 BALA Score is a reflection guide based on available check-in signals. It does not provide diagnosis and is not for emergency decisions. It reflects only the signals you have
-                shared — such as sleep, recovery, heart-rate signals, and activity — and
-                missing signals lower its confidence. For urgent symptoms such as chest pain
+                shared — such as sleep, recovery, heart-rate signals, and activity. Data confidence depends on how many supported signals were available today. For urgent symptoms such as chest pain
                 or pressure, trouble breathing, fainting, severe weakness, or stroke-like
                 symptoms, seek urgent care or contact local emergency services. Do not rely
                 on the BALA Score for emergency decisions.
@@ -198,8 +198,8 @@
 
           <section class="change-summary" aria-labelledby="change-summary-title">
             <p class="section-label">Latest compared with baseline</p>
-            <h3 id="change-summary-title">What changed?</h3>
-            <p id="change-summary-copy">Add 3 check-ins to compare your latest signals with your baseline.</p>
+            <h3 id="change-summary-title">What changed today?</h3>
+            <p id="change-summary-copy">Add 3 check-ins to compare today's available signals with your baseline.</p>
             <div class="change-labels" id="change-labels"></div>
           </section>
 
@@ -273,7 +273,7 @@
             <div>
               <p class="section-label">7-day check-in</p>
               <h2 id="weekly-reflection-title">Weekly Reflection</h2>
-              <p id="weekly-reflection-count">Log a few daily factors to see your weekly reflection.</p>
+              <p id="weekly-reflection-count">No weekly reflection yet. Log a few daily factors and BALA will summarize only the signals and factors available.</p>
             </div>
           </header>
           <div class="wr-pills" id="weekly-reflection-pills" aria-label="This week's logged factors"></div>
@@ -848,7 +848,7 @@
         </div>
         <div class="alcohol-calc-panel" id="alcohol-calc-panel" hidden>
           <p class="alcohol-calc-title">Alcohol reflection — optional check-in</p>
-          <p class="alcohol-calc-subtitle">Estimate how much pure alcohol was in what you had. Useful if you notice patterns between alcohol and sleep or recovery signals.</p>
+          <p class="alcohol-calc-subtitle">Estimate the standard-drink equivalent from what you had. This is only for pattern reflection with sleep or recovery signals, not for BAC, safety-to-drive, or medical decisions.</p>
           <div class="alcohol-calc-grid">
             <label class="alcohol-label">Drink type
               <select name="alcohol_type" id="alcohol-type">
@@ -877,7 +877,7 @@
           <div class="alcohol-result" id="alcohol-result" hidden>
             <p class="alcohol-estimate" id="alcohol-estimate"></p>
             <p class="alcohol-note">Some people notice changes in sleep quality, HRV, hydration, or resting heart rate after alcohol — this helps you track that pattern for yourself.</p>
-            <p class="alcohol-disclaimer">This is for personal reflection only — not medical advice. One US standard drink = 14 g pure alcohol (e.g. 355 ml of 5% beer, 148 ml of 12% wine, or 44 ml of 40% spirits).</p>
+            <p class="alcohol-disclaimer">This is an approximate standard-drink estimate for personal reflection only — not medical advice. One US standard drink = 14 g pure alcohol (e.g. 355 ml of 5% beer, 148 ml of 12% wine, or 44 ml of 40% spirits).</p>
           </div>
           <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks (US)</button>
         </div>
