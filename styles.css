@@ -825,3 +825,25 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .page-header h1 { font-size: 39px; letter-spacing: -1.9px; }
   .score-panel { grid-template-columns: 88px 1fr; }
   
+/* Stage 23 — transparent Score explanation disclosure (safe, static) */
+.score-explainer {
+  margin-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 10px;
+}
+.score-explainer > summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted, #5b6470);
+  list-style: none;
+}
+.score-explainer > summary::-webkit-details-marker { display: none; }
+.score-explainer > summary::before { content: "ⓘ "; opacity: 0.7; }
+.score-explainer[open] > summary { margin-bottom: 6px; }
+.score-explainer-copy {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted, #5b6470);
+  margin: 0;
+}

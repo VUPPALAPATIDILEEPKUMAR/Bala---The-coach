@@ -414,10 +414,10 @@
   <div class="logo">CA</div>
   <div>
     <span class="topbar-title">Chintu Allegro</span>
-    <span class="topbar-sub">local operator shell</span>
+    <span class="topbar-sub">local operator shell - brain runtime active</span>
   </div>
   <div class="topbar-badges">
-    <span class="badge badge-stage">Stage 22</span>
+    <span class="badge badge-stage">Stage 24</span>
     <span class="badge badge-local">LOCAL-FIRST</span>
     <span class="badge badge-safe">SAFE BY DESIGN</span>
     <button class="install-hint" onclick="openInstall()">⬇ Install as app</button>
@@ -933,7 +933,7 @@ function runCommand() {
 
   // Stage 24: when the bridge is live, route the whole message through the brain (/api/chat).
   if (BRIDGE.online) { chatToBrain(raw); return; }
-  // Offline: fall back to the Stage 22/23 copy-paste planning packets below.
+  // Offline: fall back to the legacy copy-paste planning packets below.
 
   let packet;
 
@@ -992,7 +992,7 @@ You are a senior product engineer and safety reviewer for BALA, a mobile-first h
 <context>
 BALA helps users understand daily body signals from sleep, HRV, resting heart rate, SpO₂, steps, activity, recovery, and symptoms.
 It is NOT a medical device. It is a local-first health-awareness companion.
-Previous stage: Stage 22. Last commit: feat: add Chintu Allegro operator app shell.
+Current stage: Stage 24. Last confirmed commit: feat: add Chintu brain router and live action sequences.
 </context>
 <task>
 Plan the next BALA sprint. Identify the top 3-5 features from the backlog that are:
@@ -1289,7 +1289,7 @@ function packetBALAScoring() {
       "No fertility/contraception predictions in score",
     ],
     filesInvolved: [
-      "BALA_SCORE_MODEL_REVIEW_PLAN.md — full review plan (Stage 22)",
+      "BALA_SCORE_MODEL_REVIEW_PLAN.md — full review plan",
       "BALA_NEXT_PRODUCT_INTELLIGENCE_PLAN.md — intelligence roadmap",
       "app.js — current BALA score logic",
       "index.html — score display UI",
@@ -1332,7 +1332,7 @@ No score-based emergency claims — always: "If symptoms feel serious, contact e
       "Lab report values in base score (parked — review explainer track only)",
       "Cardiac risk prediction in score (never)",
     ],
-    nextAction: "Review BALA_SCORE_MODEL_REVIEW_PLAN.md (Stage 22 doc). Copy the prompt above into Claude. Review the model it generates. Bring back the approved scoring spec.",
+    nextAction: "Review BALA_SCORE_MODEL_REVIEW_PLAN.md. Copy the prompt above into Claude. Review the model it generates. Bring back the approved scoring spec.",
     track: "BALA Your Coach",
     riskLevel: "low",
     approvalRequired: false,
@@ -1353,7 +1353,7 @@ function packetReportExplainer() {
       "Emergency signals in report → redirect to clinician immediately",
     ],
     filesInvolved: [
-      "BALA_REPORT_METRIC_EXPLAINER_PLAN.md — Stage 22 plan",
+      "BALA_REPORT_METRIC_EXPLAINER_PLAN.md — planning doc",
       "BALA_REPORT_EXPLAINER_ARCHITECTURE.md — Stage 21 architecture",
       "BALA_REPORT_EXPLAINER_SAFETY_PLAN.md — safety boundaries",
     ],
@@ -1396,7 +1396,7 @@ No report data uploaded externally. Local processing only.
       "Medication interaction checking",
       "Building the UI (this is planning stage only)",
     ],
-    nextAction: "Review BALA_REPORT_METRIC_EXPLAINER_PLAN.md (Stage 22). Copy the prompt into Claude. Review the MVP flow. Get founder approval before building the UI.",
+    nextAction: "Review BALA_REPORT_METRIC_EXPLAINER_PLAN.md. Copy the prompt into Claude. Review the MVP flow. Get founder approval before building the UI.",
     track: "BALA Your Coach",
     riskLevel: "low",
     approvalRequired: false,

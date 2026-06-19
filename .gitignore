@@ -33,3 +33,7 @@ CHINTU_OUTBOX/latest_connector_readiness.json
 CHINTU_OUTBOX/latest_connector_preview.json
 CHINTU_OUTBOX/connector_audit.log.jsonl
 CHINTU_OUTBOX/connector_sent.log.jsonl
+CHINTU_OUTBOX/local_bridge_audit.jsonl
+CHINTU_AGENT_RUNS/latest_orchestrator_summary.json
+CHINTU_AGENT_RUNS/latest_orchestrator_summary.md
+CHINTU_AGENT_RUNS/validator-agent_*/

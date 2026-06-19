@@ -47,7 +47,10 @@ if (!fs.existsSync(scriptsDir)) {
 // chintu-validate.ps1 is the BALA-side scanner: it legitimately holds
 // these tokens as regex strings to detect them in app code. Exempt it
 // here so the integrity guard does not flag the guard's own patterns.
-const scannerAllowlist = new Set(['chintu-validate.ps1', 'chintu-connector-send.js']);
+// chintu-local-bridge.js requires the `http` module to bind a LOCAL loopback
+// server (127.0.0.1 only). That is a local runtime, not network egress, so it
+// is allowlisted here alongside the validator and the gated connector sender.
+const scannerAllowlist = new Set(['chintu-validate.ps1', 'chintu-connector-send.js', 'chintu-local-bridge.js']);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
   if (!/^chintu-/i.test(f)) return false;

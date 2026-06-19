@@ -240,3 +240,24 @@ BALA must:
 
 > BALA is a health-awareness companion — not a medical device, diagnostic tool, or treatment provider.
 > This plan must never be implemented in a way that diagnoses conditions, recommends treatment, or replaces clinical judgement.
+
+---
+
+## Stage 23 decision — PARKED (not built this stage)
+
+The Report Explainer is intentionally **not** implemented as live UI in Stage 23. A
+real report-text parser (metric, value, unit, flag extraction) is too large to add
+safely alongside the live-bridge work, and it is safety-sensitive. It stays parked.
+
+When it is built, it must stay inside these rails:
+
+- User pastes report text manually. No file upload until that path is proven safe.
+- BALA extracts only obvious rows (e.g. `A1c 5.8 % High`) — metric, value, unit, flag.
+- BALA shows a neutral "question for your doctor" per row.
+- No diagnosis. No treatment advice. No medication advice. No X-ray interpretation.
+- Required on-screen copy: "I can help organize report values and prepare questions for
+  your doctor. I cannot diagnose conditions or tell you what treatment to take."
+- All processing stays local. No report text leaves the device.
+
+Next actionable step: prototype the paste-and-parse function in isolation with unit
+tests over sample report strings, behind a feature flag, before any UI is shipped.
