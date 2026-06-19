@@ -12,6 +12,7 @@ const http = require('node:http');
 const https = require('node:https');
 
 const adapter = require('./chintu-telegram-adapter.js');
+const { buildTrace } = require('./chintu-action-trace.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const outboxDir = path.join(repoRoot, 'CHINTU_OUTBOX');
@@ -774,6 +775,34 @@ async function runWithArgs(argv, env, deps) {
   }
 
   appendAudit(buildAuditEntry(result, { sendRequested, executeLocalRequested, discoveryMode }));
+
+  // Stage 34: append canonical action trace v1 alongside the legacy audit entry.
+  // Unsupported/blocked updates (e.g. no text) still produce a preview but with
+  // ok=true,supported=false — skip tracing those to avoid spurious entries.
+  if (preview && preview.ok && preview.supported) {
+    const syntheticRouteResult = {
+      intent: preview.intent,
+      risk: preview.risk,
+      message: preview.text || '',
+      sequence: preview.wouldRunSequence || null,
+    };
+    const sendEnabled = String(env.CHINTU_TELEGRAM_SEND_ENABLED || '').trim() === '1';
+    const traceSource = sourceMode === 'fixture' ? 'fixture' : 'telegram';
+    const trace = buildTrace(syntheticRouteResult, {
+      source: traceSource,
+      dryRun,
+      executed: Boolean(result.bridge && result.bridge.executed),
+      endpoint: (result.bridge && result.bridge.endpoint) || null,
+      bridgeResult: (result.bridge && result.bridge.ok === true)
+        ? { ok: true, port: result.bridge.port || null }
+        : null,
+      sendFlag: sendRequested,
+      sendEnabled,
+      auditPath,
+    });
+    appendAudit(trace);
+  }
+
   return result;
 }
 
