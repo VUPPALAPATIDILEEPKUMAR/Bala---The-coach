@@ -35,9 +35,11 @@ const unsafe = [
 const allowFiles = new Set([
   'chintu_os_master_autonomous_builder_prompt.md',
   'chintu-medical-claims.test.js',
-  // BALA_SAFE_COPY_REVIEW.md's job is to enumerate risky phrases in a
-  // "risky -> safer" replacement table. Mentioning them is the point.
+  // BALA_SAFE_COPY_REVIEW.md lists risky phrases in a risky->safer table.
   'bala_safe_copy_review.md',
+  // CHINTU_SKILLS_MAP.md documents blocked language Chintu must never generate.
+  // Listing forbidden phrases here is intentional (same pattern as above).
+  'chintu_skills_map.md',
 ]);
 
 let fails = 0;
@@ -80,17 +82,15 @@ for (const full of targets) {
   for (const re of unsafe) {
     const m = text.match(re);
     if (m) {
-      fail(`unsafe medical claim in ${rel}: "${m[0]}"`);
+      fail('unsafe medical claim in ' + rel + ': "' + m[0] + '"');
     }
   }
 }
 
 if (fails === 0) {
-  console.log(
-    `Medical claims: PASS (${scanned} file(s) scanned, ${unsafe.length} pattern(s) checked)`
-  );
+  console.log('Medical claims: PASS (' + scanned + ' file(s) scanned, ' + unsafe.length + ' pattern(s) checked)');
   process.exit(0);
 }
 
-console.error(`Medical claims: FAIL (${fails} issue(s))`);
+console.error('Medical claims: FAIL (' + fails + ' issue(s))');
 process.exit(1);
