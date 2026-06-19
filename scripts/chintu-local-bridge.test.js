@@ -9,6 +9,7 @@
 // =============================================================================
 
 const http = require('http');
+const net = require('net');
 const assert = require('assert');
 const bridge = require('./chintu-local-bridge.js');
 
@@ -19,8 +20,12 @@ function ok(cond, msg) {
 }
 
 function request(port, method, path, bodyObj, headers) {
+  const data = bodyObj == null ? null : JSON.stringify(bodyObj);
+  return requestRaw(port, method, path, data, headers);
+}
+
+function requestRaw(port, method, path, body, headers) {
   return new Promise((resolve, reject) => {
-    const data = bodyObj ? JSON.stringify(bodyObj) : null;
     const req = http.request(
       { host: '127.0.0.1', port, method, path, headers: Object.assign({ 'Content-Type': 'application/json' }, headers || {}) },
       (res) => {
@@ -34,8 +39,28 @@ function request(port, method, path, bodyObj, headers) {
       }
     );
     req.on('error', reject);
-    if (data) req.write(data);
+    if (body != null) req.write(body);
     req.end();
+  });
+}
+
+function requestPartialAndClose(port, rawRequest) {
+  return new Promise((resolve) => {
+    let finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      resolve();
+    }
+    const socket = net.createConnection({ host: '127.0.0.1', port }, () => {
+      socket.write(rawRequest);
+      setTimeout(() => {
+        socket.destroy();
+        finish();
+      }, 50);
+    });
+    socket.on('error', finish);
+    socket.on('close', finish);
   });
 }
 
@@ -140,6 +165,36 @@ function request(port, method, path, bodyObj, headers) {
     const rawCmd = await request(port, 'POST', '/api/action', { action: 'git status --short' });
     ok(rawCmd.status === 400, 'raw command string is rejected (only action names accepted)');
 
+    const badChatJson = await requestRaw(port, 'POST', '/api/chat', 'not-json', { 'Content-Type': 'application/json' });
+    ok(badChatJson.status === 400 && badChatJson.json && badChatJson.json.ok === false &&
+      /invalid json/i.test(badChatJson.json.error), 'chat rejects invalid JSON with a controlled 400');
+
+    const emptyChatBody = await requestRaw(port, 'POST', '/api/chat', '', { 'Content-Type': 'application/json' });
+    ok(emptyChatBody.status === 400 && emptyChatBody.json && emptyChatBody.json.ok === false &&
+      /body required/i.test(emptyChatBody.json.error), 'chat rejects an empty body with a controlled 400');
+
+    const oversizedChatBody = await requestRaw(
+      port,
+      'POST',
+      '/api/chat',
+      JSON.stringify({ message: 'x'.repeat(bridge.MAX_REQUEST_BODY_BYTES + 1024) }),
+      { 'Content-Type': 'application/json' }
+    );
+    ok(oversizedChatBody.status === 413 && oversizedChatBody.json && oversizedChatBody.json.ok === false &&
+      /too large/i.test(oversizedChatBody.json.error), 'chat rejects an oversized body with a controlled 413');
+
+    const badActionJson = await requestRaw(port, 'POST', '/api/action', '{"action":', { 'Content-Type': 'application/json' });
+    ok(badActionJson.status === 400 && badActionJson.json && badActionJson.json.ok === false &&
+      /invalid json/i.test(badActionJson.json.error), 'action rejects invalid JSON with a controlled 400');
+
+    const badSequenceJson = await requestRaw(port, 'POST', '/api/sequence', '{"sequence":', { 'Content-Type': 'application/json' });
+    ok(badSequenceJson.status === 400 && badSequenceJson.json && badSequenceJson.json.ok === false &&
+      /invalid json/i.test(badSequenceJson.json.error), 'sequence rejects invalid JSON with a controlled 400');
+
+    const textPlainBadJson = await requestRaw(port, 'POST', '/api/chat', 'still-not-json', { 'Content-Type': 'text/plain' });
+    ok(textPlainBadJson.status === 400 && textPlainBadJson.json && textPlainBadJson.json.ok === false &&
+      /invalid json/i.test(textPlainBadJson.json.error), 'chat with text/plain invalid JSON stays controlled');
+
     const statusAction = await request(port, 'POST', '/api/action', { action: 'status' });
     ok(statusAction.status === 200 && statusAction.json.action === 'status' && typeof statusAction.json.stdout === 'string', 'status action runs and returns JSON result');
     ok(typeof statusAction.json.nextSuggestedAction === 'string', 'result includes a next suggested action');
@@ -175,6 +230,27 @@ function request(port, method, path, bodyObj, headers) {
       Array.isArray(seqGood.json.results) && seqGood.json.results.length === bridge.SEQUENCES.chintu_health_check.steps.length,
       'named sequence runs and returns one result per allowlisted step');
 
+    const originalSequenceBuilds = bridge.SEQUENCES.check_everything.steps.map((step) => ({
+      step,
+      build: bridge.ACTIONS[step].build,
+      next: bridge.ACTIONS[step].next,
+    }));
+    try {
+      for (const { step } of originalSequenceBuilds) {
+        bridge.ACTIONS[step].build = () => ({ cmd: 'git', args: ['status', '--short'] });
+        bridge.ACTIONS[step].next = null;
+      }
+      const seqEverything = await request(port, 'POST', '/api/sequence', { sequence: 'check_everything' });
+      ok(seqEverything.status === 200 && seqEverything.json.sequence === 'check_everything' &&
+        Array.isArray(seqEverything.json.results) && seqEverything.json.results.length === bridge.SEQUENCES.check_everything.steps.length,
+        'check_everything sequence still runs through the allowlisted steps');
+    } finally {
+      for (const item of originalSequenceBuilds) {
+        bridge.ACTIONS[item.step].build = item.build;
+        bridge.ACTIONS[item.step].next = item.next;
+      }
+    }
+
     const seqWithQuery = await request(port, 'POST', '/api/sequence?trace=1', { sequence: 'chintu_health_check' });
     ok(seqWithQuery.status === 200 && seqWithQuery.json.sequence === 'chintu_health_check',
       'sequence route still works with a query string');
@@ -190,6 +266,19 @@ function request(port, method, path, bodyObj, headers) {
 
     const seqList = await request(port, 'POST', '/api/sequence', { sequence: ['git_status'] });
     ok(seqList.status === 400, 'an arbitrary list (not a named sequence) is rejected');
+
+    await requestPartialAndClose(
+      port,
+      'POST /api/chat HTTP/1.1\r\n' +
+      'Host: 127.0.0.1\r\n' +
+      'Content-Type: application/json\r\n' +
+      'Content-Length: 32\r\n' +
+      '\r\n' +
+      '{"message":"partial'
+    );
+    const healthAfterPartial = await request(port, 'GET', '/api/health');
+    ok(healthAfterPartial.status === 200 && healthAfterPartial.json && healthAfterPartial.json.ok === true,
+      'partial request body does not crash the bridge');
   } finally {
     server.close();
   }

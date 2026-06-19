@@ -42,6 +42,7 @@ const HOST = '127.0.0.1';
 const DEFAULT_PORT = 18791;
 const COMMAND_TIMEOUT_MS = 120000;
 const MAX_OUTPUT_CHARS = 16000;
+const MAX_REQUEST_BODY_BYTES = 64 * 1024;
 
 const isWin = process.platform === 'win32';
 const PS = isWin ? 'powershell' : 'pwsh';
@@ -396,6 +397,72 @@ function sendJson(req, res, code, obj) {
   res.end(body);
 }
 
+function sendJsonError(req, res, code, message, extra) {
+  return sendJson(req, res, code, Object.assign({ ok: false, error: message }, extra || {}));
+}
+
+function readJsonBody(req, res, onBody) {
+  let raw = '';
+  let bytes = 0;
+  let done = false;
+
+  function finish(code, payload) {
+    if (done) return;
+    done = true;
+    sendJson(req, res, code, payload);
+  }
+
+  req.on('data', (chunk) => {
+    if (done) return;
+    bytes += Buffer.byteLength(chunk);
+    if (bytes > MAX_REQUEST_BODY_BYTES) {
+      req.resume();
+      return finish(413, { ok: false, error: 'Request body too large.' });
+    }
+    raw += chunk;
+  });
+
+  req.on('end', () => {
+    if (done) return;
+    if (!raw.trim()) return finish(400, { ok: false, error: 'JSON request body required.' });
+
+    let body;
+    try {
+      body = JSON.parse(raw);
+    } catch (_) {
+      return finish(400, { ok: false, error: 'Invalid JSON body.' });
+    }
+    done = true;
+    onBody(body);
+  });
+
+  req.on('aborted', () => {
+    if (done) return;
+    done = true;
+    audit({
+      timestamp: new Date().toISOString(),
+      action: '(request-aborted)',
+      allowed: false,
+      label: getRequestRoute(req),
+      exitCode: -1,
+      durationMs: 0,
+      outputSummary: '',
+      errorSummary: 'request body stream aborted before completion',
+    });
+    if (!res.headersSent && !res.writableEnded && !res.destroyed) {
+      sendJsonError(req, res, 400, 'Request body was interrupted before completion.');
+    }
+  });
+
+  req.on('error', () => {
+    if (done) return;
+    done = true;
+    if (!res.headersSent && !res.writableEnded && !res.destroyed) {
+      sendJsonError(req, res, 400, 'Request body could not be read safely.');
+    }
+  });
+}
+
 function statusPayload() {
   return {
     ok: true,
@@ -452,18 +519,7 @@ function handler(req, res) {
   }
 
   if ((req.method === 'POST') && (route === '/api/chat' || route === '/api/sequence')) {
-    let raw = '';
-    let tooBig = false;
-    req.on('data', (c) => {
-      raw += c;
-      if (raw.length > 8192) { tooBig = true; req.destroy(); }
-    });
-    req.on('end', () => {
-      if (tooBig) return sendJson(req, res, 413, { ok: false, error: 'Request body too large.' });
-      let body;
-      try { body = raw ? JSON.parse(raw) : {}; }
-      catch (_) { return sendJson(req, res, 400, { ok: false, error: 'Invalid JSON body.' }); }
-
+    readJsonBody(req, res, (body) => {
       if (route === '/api/chat') {
         const message = body && typeof body.message === 'string' ? body.message.slice(0, 2000) : '';
         return sendJson(req, res, 200, handleChat(message));
@@ -484,18 +540,7 @@ function handler(req, res) {
   }
 
   if (req.method === 'POST' && route === '/api/action') {
-    let raw = '';
-    let tooBig = false;
-    req.on('data', (c) => {
-      raw += c;
-      if (raw.length > 8192) { tooBig = true; req.destroy(); }
-    });
-    req.on('end', () => {
-      if (tooBig) return sendJson(req, res, 413, { ok: false, error: 'Request body too large.' });
-      let body;
-      try { body = raw ? JSON.parse(raw) : {}; }
-      catch (_) { return sendJson(req, res, 400, { ok: false, error: 'Invalid JSON body.' }); }
-
+    readJsonBody(req, res, (body) => {
       const name = body && typeof body.action === 'string' ? body.action.trim() : '';
 
       // The ONLY thing we accept is an exact key of the action map.
@@ -557,7 +602,7 @@ function main() {
 }
 
 // Export internals for the test harness; only auto-start when run directly.
-module.exports = { ACTIONS, SEQUENCES, redact, originAllowed, runAction, runSequence, handleChat, statusPayload, HOST, DEFAULT_PORT, handler, start, getRequestRoute };
+module.exports = { ACTIONS, SEQUENCES, redact, originAllowed, runAction, runSequence, handleChat, statusPayload, HOST, DEFAULT_PORT, MAX_REQUEST_BODY_BYTES, handler, start, getRequestRoute };
 
 if (require.main === module) {
   main();
