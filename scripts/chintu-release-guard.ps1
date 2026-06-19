@@ -108,6 +108,7 @@ Run-Extra "iMac Option 12 SHA"     "scripts\chintu-imac-option-12-sha-parse.test
 Run-Extra "Dry-run adapter"        "scripts\chintu-dry-run-adapter.test.js" "node"
 Run-Extra "Connector sender"       "scripts\chintu-connector-send.test.js" "node"
 Run-Extra "Connector policy"       "scripts\chintu-connector-policy.test.js" "node"
+Run-Extra "Phone command contract" "scripts\chintu-phone-command-contract.test.js" "node"
 Run-Extra "Outbox shape"           "scripts\chintu-outbox-shape.test.js" "node"
 Run-Extra "Action planner"         "scripts\chintu-action-planner.test.js" "node"
 Run-Extra "Planner fixtures"       "scripts\chintu-action-planner-fixtures.test.js" "node"
