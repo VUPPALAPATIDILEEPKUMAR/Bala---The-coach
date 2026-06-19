@@ -928,6 +928,39 @@ function scoreBreakdown(metrics, symptomContext = null) {
   return { total, parts: parts.sort((a, b) => a.score - b.score) };
 }
 
+function renderScoreExplainer(metrics, breakdown) {
+  const host = document.querySelector("#score-explainer-dynamic");
+  if (!host) return;
+  const SIGNALS = [
+    { key: "sleep", label: "Sleep" },
+    { key: "hrv", label: "HRV" },
+    { key: "rhr", label: "Resting heart rate" },
+    { key: "activity", label: "Activity" },
+    { key: "spo2", label: "SpO\u2082 estimate" },
+  ];
+  const parts = Array.isArray(breakdown?.parts) ? breakdown.parts : [];
+  const present = new Set(parts.map((p) => p.key));
+  const used = SIGNALS.filter((s) => present.has(s.key));
+  const missing = SIGNALS.filter((s) => !present.has(s.key));
+  if (!used.length) { host.hidden = true; host.innerHTML = ""; return; }
+  const confidence = used.length >= 4 ? "High" : used.length >= 2 ? "Medium" : "Low";
+  const contributors = parts.filter((p) => p.key !== "symptoms").slice().sort((a, b) => b.score - a.score);
+  const supporting = contributors.slice(0, 2).map((p) => p.label);
+  const attention = contributors.filter((p) => p.score < 70).slice(-2).map((p) => p.label);
+  const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const list = (arr, empty) => (arr.length ? arr.map(esc).join(", ") : empty);
+  const row = (label, value) => `<p style="margin:0 0 6px"><strong>${label}:</strong> ${value}</p>`;
+  host.hidden = false;
+  host.innerHTML = [
+    row("Signals used", list(used.map((s) => s.label), "none yet")),
+    row("Missing signals", list(missing.map((s) => s.label), "none \u2014 full picture")),
+    row("Confidence", `${confidence} (based on ${used.length} of ${SIGNALS.length} signals)`),
+    row("Supporting your score", list(supporting, "building")),
+    attention.length ? row("Worth a closer look", list(attention, "")) : "",
+    `<p style="margin:6px 0 0;opacity:0.85">Adding the missing signals raises confidence. BALA shows a calm reflection guide from the signals you shared.</p>`,
+  ].join("");
+}
+
 function scoreMetrics(metrics) {
   return scoreBreakdown(metrics).total;
 }
@@ -1809,6 +1842,7 @@ function updateDashboard(metrics) {
   ["#score-check-1", "#score-check-2", "#score-check-3"].forEach((selector, index) => {
     document.querySelector(selector).textContent = checkCopy[index] || "Add another signal for more context";
   });
+  renderScoreExplainer(metrics, breakdown);
 
   if (metrics.sleep) {
     const hours = Math.floor(metrics.sleep);

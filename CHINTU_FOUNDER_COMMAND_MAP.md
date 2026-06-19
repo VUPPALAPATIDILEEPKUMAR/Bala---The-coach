@@ -101,6 +101,14 @@ Runs the validator, snapshot test, health check, alive briefing, and
 control room regeneration in order, and stops on the first FAIL. See
 `scripts\chintu-master-launcher.ps1`.
 
+## Chintu Allegro / Release lane
+
+| Command | Purpose |
+|---|---|
+| `scripts\chintu-allegro-start.ps1` | Starts the local Chintu bridge and opens Chintu Allegro. Local bridge only; no secrets; no live connector send. |
+| `scripts\chintu-stage23-release.ps1` | Gated Stage 23 release script for local bridge runtime. Validates before commit/push; no secrets; no live connector send. |
+| `scripts\chintu-stage24-release.ps1` | Gated Stage 24 release script for brain router and live action sequences. Validates before commit/push; no secrets; no live connector send. |
+
 ## What this map will never include
 
 - Push, force-push, or destructive git

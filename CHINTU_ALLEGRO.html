@@ -464,6 +464,24 @@
           <div class="status-card-note">No cloud sync · Data stays local</div>
         </div>
       </div>
+      <div class="status-card" id="sc-bridge">
+        <div class="status-dot dot-amber" id="sc-bridge-dot"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Live Bridge</div>
+          <div class="status-card-note" id="sc-bridge-note">Checking 127.0.0.1:18791…</div>
+          <div class="status-card-note" id="sc-bridge-last" style="margin-top:3px"></div>
+          <div class="status-card-note" id="sc-bridge-validation" style="margin-top:3px"></div>
+        </div>
+      </div>
+      <div class="status-card" id="sc-brain">
+        <div class="status-dot dot-green" id="sc-brain-dot"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Brain Runtime</div>
+          <div class="status-card-note" id="sc-brain-note">Deterministic brain · active</div>
+          <div class="status-card-note" id="sc-prov-ollama" style="margin-top:3px">Ollama: unknown</div>
+          <div class="status-card-note" id="sc-prov-openclaw" style="margin-top:3px">OpenClaw: unknown</div>
+        </div>
+      </div>
       <div class="status-card" id="sc-voice">
         <div class="status-dot dot-amber" id="sc-voice-dot"></div>
         <div class="status-card-body">
@@ -512,6 +530,9 @@
     <div>
       <div class="section-label">Quick Actions</div>
       <div class="qa-grid">
+        <button class="qa-btn" onclick="quickChat('what can you do')">💬 What can you do?</button>
+        <button class="qa-btn" onclick="quickChat('check everything')">✅ Check everything</button>
+        <button class="qa-btn" onclick="quickChat('bro whats next')">➡️ Bro what's next?</button>
         <button class="qa-btn" onclick="quickAction('Build next BALA sprint')">🏃 Build BALA sprint</button>
         <button class="qa-btn" onclick="quickAction('Generate Claude prompt')">✦ Claude prompt</button>
         <button class="qa-btn" onclick="quickAction('Generate Codex prompt')">⚡ Codex prompt</button>
@@ -526,7 +547,24 @@
       </div>
     </div>
 
+    <!-- Live Bridge actions (Stage 23) -->
+    <div>
+      <div class="section-label">Live Actions <span id="liveModeTag" style="font-size:0.62rem;color:var(--muted)">(bridge offline)</span></div>
+      <div class="qa-grid">
+        <button class="qa-btn" onclick="liveAction('release_guard')">🛡 Run Release Guard</button>
+        <button class="qa-btn" onclick="liveAction('connector_readiness')">🔌 Connector Readiness</button>
+        <button class="qa-btn" onclick="liveAction('run_validator_dry_run')">🔍 Validator Dry Run</button>
+        <button class="qa-btn" onclick="liveAction('validate_app')">✅ Validate BALA App</button>
+        <button class="qa-btn" onclick="liveAction('action_packet_bala_sprint')">🏃 BALA Sprint Packet</button>
+        <button class="qa-btn" onclick="liveAction('prompt_xml_bala')">✦ XML Prompt</button>
+        <button class="qa-btn" onclick="liveAction('git_status')">📋 Git Status</button>
+        <button class="qa-btn" onclick="liveAction('git_log')">🕑 Git Log</button>
+        <button class="qa-btn qa-wide" onclick="liveAction('open_bala_public')">🌐 Open BALA Public Link</button>
+      </div>
+    </div>
+
   </aside>
+
 
   <!-- Main content -->
   <main class="main">
@@ -892,6 +930,11 @@ function runCommand() {
   if (!raw) return;
 
   const lower = raw.toLowerCase();
+
+  // Stage 24: when the bridge is live, route the whole message through the brain (/api/chat).
+  if (BRIDGE.online) { chatToBrain(raw); return; }
+  // Offline: fall back to the Stage 22/23 copy-paste planning packets below.
+
   let packet;
 
   if (lower.includes('bala sprint') || lower.includes('next bala') || lower.includes('bala enhance')) {
@@ -1524,6 +1567,261 @@ Prefer dry-run and preview before any real action.
     connectorRequired: "None",
   };
 }
+
+// ============================================================
+// Stage 23 — Live Bridge integration
+// The browser NEVER runs commands. It asks the local bridge to
+// run one allowlisted action by name, and renders the result.
+// ============================================================
+const BRIDGE = { base: null, online: false, ports: [18791, 18792, 18793, 18794, 18795, 18796] };
+let lastLiveResult = null;
+
+const LIVE_LABELS = {
+  release_guard: 'Release Guard', validate_app: 'Validate BALA App',
+  run_validator_dry_run: 'Validator Dry Run', connector_readiness: 'Connector Readiness',
+  connector_status: 'Connector Status', git_status: 'Git Status', git_log: 'Git Log',
+  action_packet_bala_sprint: 'BALA Sprint Packet', action_packet_connector_check: 'Connector Check Packet',
+  prompt_xml_bala: 'XML Prompt (BALA)', prompt_xml_chintu: 'XML Prompt (Chintu)',
+  prompt_costar_both: 'COSTAR Prompt', prompt_acr_both: 'ACR Prompt',
+  open_allegro: 'Open Allegro', open_bala_local: 'Open BALA (local)',
+  open_bala_public: 'Open BALA public link', status: 'Status'
+};
+
+const LIVE_CLI = {
+  release_guard: 'powershell -ExecutionPolicy Bypass -File scripts\\chintu-release-guard.ps1',
+  validate_app: 'powershell -ExecutionPolicy Bypass -File scripts\\chintu-validate.ps1',
+  run_validator_dry_run: 'powershell -ExecutionPolicy Bypass -File scripts\\chintu-agent-runner.ps1 -Agent "validator-agent" -DryRun',
+  connector_readiness: 'node scripts/chintu-connector-send.js --readiness',
+  connector_status: 'node scripts/chintu-connector-send.js --status',
+  git_status: 'git status --short', git_log: 'git log --oneline -5',
+  action_packet_bala_sprint: 'node scripts/chintu-action-packet.js --template bala-sprint',
+  action_packet_connector_check: 'node scripts/chintu-action-packet.js --template connector-readiness',
+  prompt_xml_bala: 'node scripts/chintu-prompt-engine.js --framework xml --track bala --task "Build next BALA sprint"',
+  prompt_xml_chintu: 'node scripts/chintu-prompt-engine.js --framework xml --track chintu --task "Advance Chintu OS safely"',
+  prompt_costar_both: 'node scripts/chintu-prompt-engine.js --framework costar --track both --task "Plan next safe stage"',
+  prompt_acr_both: 'node scripts/chintu-prompt-engine.js --framework acr --track both --task "Plan next safe stage"',
+  open_allegro: 'start CHINTU_ALLEGRO.html', open_bala_local: 'start index.html',
+  open_bala_public: 'start https://vuppalapatidileepkumar.github.io/Bala---The-coach/',
+  status: 'git status --short'
+};
+
+async function probeBridge() {
+  for (const p of BRIDGE.ports) {
+    try {
+      const r = await fetch('http://127.0.0.1:' + p + '/api/health', { method: 'GET' });
+      if (r.ok) { const j = await r.json(); if (j && j.ok) { BRIDGE.base = 'http://127.0.0.1:' + p; BRIDGE.online = true; return true; } }
+    } catch (e) { /* keep trying */ }
+  }
+  BRIDGE.online = false; BRIDGE.base = null; return false;
+}
+
+function setBridgeCard() {
+  const dot = document.getElementById('sc-bridge-dot');
+  const note = document.getElementById('sc-bridge-note');
+  const tag = document.getElementById('liveModeTag');
+  if (!dot || !note) return;
+  if (BRIDGE.online) {
+    dot.className = 'status-dot dot-green';
+    note.textContent = 'Bridge connected · ' + BRIDGE.base.replace('http://', '');
+    if (tag) { tag.textContent = '(live)'; tag.style.color = 'var(--good, #36b37e)'; }
+  } else {
+    dot.className = 'status-dot dot-amber';
+    note.innerHTML = 'Bridge not running. Start it with<br><code>scripts\\chintu-allegro-start.ps1</code>';
+    if (tag) { tag.textContent = '(bridge offline)'; tag.style.color = 'var(--muted)'; }
+  }
+}
+
+async function refreshBridge() { await probeBridge(); setBridgeCard(); refreshProviders(); }
+
+function mapToLiveAction(lower) {
+  if (lower.includes('release guard')) return 'release_guard';
+  if (lower.includes('validate bala') || lower.includes('validate app') || lower.includes('review bala app') || lower.includes('review bala')) return 'validate_app';
+  if (lower.includes('run validator') || lower.includes('validator dry') || lower.includes('run the validator')) return 'run_validator_dry_run';
+  if (lower.includes('connector status')) return 'connector_status';
+  if (lower.includes('check connector') || lower.includes('connector readiness') || lower.includes('connector check') || lower.includes('check connectors') || (lower.includes('connector') && lower.includes('ready'))) return 'connector_readiness';
+  if (lower.includes('git status')) return 'git_status';
+  if (lower.includes('git log')) return 'git_log';
+  if (lower.includes('build next bala sprint') || lower.includes('bala sprint') || lower.includes('next bala') || lower.includes('create action packet')) return 'action_packet_bala_sprint';
+  if (lower.includes('connector packet')) return 'action_packet_connector_check';
+  if ((lower.includes('xml') && lower.includes('prompt')) || lower.includes('generate xml')) return 'prompt_xml_bala';
+  if (lower.includes('open') && lower.includes('public')) return 'open_bala_public';
+  if (lower.includes('open allegro')) return 'open_allegro';
+  if (lower.includes('open bala') || lower.includes('open app')) return 'open_bala_local';
+  return null;
+}
+
+function liveBusy(label) {
+  document.getElementById('responseTitle').textContent = '⏳ Running: ' + label;
+  document.getElementById('responseBody').innerHTML =
+    '<div class="response-empty"><div class="empty-icon">⏳</div><div>Calling the local bridge…<br>' + escHtml(label) + '</div></div>';
+}
+
+async function liveAction(name) {
+  const label = LIVE_LABELS[name] || name;
+  if (!BRIDGE.online) { await refreshBridge(); }
+  if (!BRIDGE.online) { renderLiveOffline(name, label); return; }
+  liveBusy(label);
+  try {
+    const r = await fetch(BRIDGE.base + '/api/action', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: name })
+    });
+    const j = await r.json();
+    renderLiveResult(name, label, j);
+  } catch (e) {
+    BRIDGE.online = false; setBridgeCard(); renderLiveOffline(name, label);
+  }
+}
+
+function renderLiveResult(name, label, j) {
+  lastLiveResult = j;
+  const code = (j.exitCode === 0)
+    ? '<span class="risk-low">exit 0 · OK</span>'
+    : '<span class="risk-high">exit ' + escHtml(String(j.exitCode)) + '</span>';
+  document.getElementById('responseTitle').textContent = '✦ ' + label;
+  let html = '';
+  html += section('lane', '🔌 Live action', '<strong>' + escHtml(label) + '</strong> · ' + code + ' · ' + escHtml(String(j.durationMs || 0)) + ' ms');
+  html += section('files', '⌨ Command label', codeBlock(j.command || j.label || name));
+  if (j.stdout && j.stdout.trim()) html += section('prompt', '📤 Output (stdout)', codeBlock(j.stdout));
+  if (j.stderr && j.stderr.trim()) html += section('safety', '⚠ Errors (stderr)', codeBlock(j.stderr));
+  if (j.error) html += section('safety', '⚠ Bridge message', escHtml(j.error));
+  if (j.nextSuggestedAction) {
+    const nx = j.nextSuggestedAction;
+    html += section('nextaction', '→ Next suggested action',
+      '<button class="qa-btn" onclick="liveAction(\'' + nx + '\')">▶ ' + escHtml(LIVE_LABELS[nx] || nx) + '</button>');
+  }
+  html += section('understood', '📎 Result', '<button class="copy-all-btn" onclick="copyLiveResult()">Copy result JSON</button>');
+  document.getElementById('responseBody').innerHTML = html;
+
+  const lastEl = document.getElementById('sc-bridge-last');
+  if (lastEl) lastEl.textContent = 'Last: ' + label + ' (' + (j.exitCode === 0 ? 'ok' : 'exit ' + j.exitCode) + ')';
+  if (name === 'release_guard' || name === 'validate_app' || name === 'run_validator_dry_run') {
+    const v = document.getElementById('sc-bridge-validation');
+    if (v) v.textContent = 'Validation: ' + (j.exitCode === 0 ? 'PASS' : 'see output');
+  }
+  speak(label + '. ' + (j.exitCode === 0 ? 'Completed.' : 'Returned exit ' + j.exitCode));
+}
+
+function renderLiveOffline(name, label) {
+  setBridgeCard();
+  document.getElementById('responseTitle').textContent = '⚠ Bridge offline — ' + label;
+  let html = '';
+  html += section('safety', '⚠ Bridge not running',
+    'Start it with <code>powershell -ExecutionPolicy Bypass -File scripts\\chintu-allegro-start.ps1</code>, then reload this page. Until then, run this command yourself:');
+  html += section('prompt', '⌨ Copy-paste command', codeBlock(LIVE_CLI[name] || name));  html += section('nextaction', '→ Next human action', '<div class="next-action-text">Start the bridge, then click ' + escHtml(label) + ' again to run it live.</div>');
+  document.getElementById('responseBody').innerHTML = html;
+}
+
+function copyLiveResult() {
+  if (!lastLiveResult) return;
+  navigator.clipboard.writeText(JSON.stringify(lastLiveResult, null, 2));
+}
+
+// ============================================================
+// Stage 24 — Brain chat (/api/chat) + provider status
+// The browser sends only the founder's message. The local
+// bridge routes it through the deterministic brain router and
+// runs ONLY allowlisted actions. The browser executes nothing.
+// ============================================================
+let lastChat = null;
+
+function quickChat(text) {
+  const el = document.getElementById('cmdInput');
+  if (el) el.value = text;
+  runCommand();
+}
+
+async function chatToBrain(raw) {
+  if (!BRIDGE.online) { await refreshBridge(); }
+  if (!BRIDGE.online) { renderLiveOffline('git_status', 'Chintu Chat'); return; }
+  document.getElementById('responseTitle').textContent = '⏳ Chintu is thinking…';
+  document.getElementById('responseBody').innerHTML =
+    '<div class="response-empty"><div class="empty-icon">💬</div><div>Routing “' + escHtml(raw) + '” through the brain…</div></div>';
+  try {
+    const r = await fetch(BRIDGE.base + '/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: raw })
+    });
+    const j = await r.json();
+    renderChat(raw, j);
+  } catch (e) {
+    BRIDGE.online = false; setBridgeCard(); renderLiveOffline('git_status', 'Chintu Chat');
+  }
+}
+
+function renderChat(raw, j) {
+  lastChat = j;
+  document.getElementById('responseTitle').textContent = '✦ Chintu';
+  let html = '';
+  // Natural reply (founder tone) first.
+  html += section('understood', '💬 Chintu', '<div style="white-space:pre-wrap;line-height:1.55">' + escHtml(j.reply || '') + '</div>');
+  // Detected intent / track / risk.
+  const meta = 'intent: <strong>' + escHtml(j.intent || '?') + '</strong> · track: <strong>' + escHtml(j.track || '?') +
+    '</strong> · risk: <strong>' + escHtml(j.risk || '?') + '</strong>';
+  html += section('lane', '🏷 Read', meta);
+  // Real bridge action results, if any.
+  if (Array.isArray(j.results) && j.results.length) {
+    let out = '';
+    for (const res of j.results) {
+      const code = (res.exitCode === 0) ? 'exit 0 · OK' : 'exit ' + res.exitCode;
+      out += '<div style="margin-bottom:8px"><strong>' + escHtml(res.label || res.action || 'action') + '</strong> · ' + escHtml(code) + '</div>';
+      if (res.stdout && res.stdout.trim()) out += codeBlock(res.stdout);
+      if (res.stderr && res.stderr.trim()) out += codeBlock(res.stderr);
+    }
+    html += section('prompt', '🔌 Live bridge output (real)', out);
+  } else {
+    html += section('files', '🔌 Live actions', '<em>No local actions were run for this message.</em>');
+  }
+  // Safety gates.
+  if (Array.isArray(j.safetyGates) && j.safetyGates.length) {
+    html += section('safety', '🛡 Safety gates', bulletList(j.safetyGates));
+  }
+  // Next suggested action — clickable, runs that single allowlisted action live.
+  if (j.nextSuggestedAction) {
+    const nx = j.nextSuggestedAction;
+    html += section('nextaction', '→ Next suggested action',
+      '<button class="qa-btn" onclick="liveAction(\'' + nx + '\')">▶ ' + escHtml(LIVE_LABELS[nx] || nx) + '</button>');
+  }
+  html += section('understood', '📎 Result', '<button class="copy-all-btn" onclick="copyChat()">Copy chat JSON</button>');
+  document.getElementById('responseBody').innerHTML = html;
+
+  const lastEl = document.getElementById('sc-bridge-last');
+  if (lastEl) lastEl.textContent = 'Last chat: ' + (j.intent || 'reply');
+  speak(j.reply || '');
+}
+
+function copyChat() {
+  if (!lastChat) return;
+  navigator.clipboard.writeText(JSON.stringify(lastChat, null, 2));
+}
+
+// Provider status card (deterministic brain + optional local providers).
+async function refreshProviders() {
+  const setNote = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  if (!BRIDGE.online) {
+    setNote('sc-prov-ollama', 'Ollama: bridge offline');
+    setNote('sc-prov-openclaw', 'OpenClaw: bridge offline');
+    return;
+  }
+  try {
+    const r = await fetch(BRIDGE.base + '/api/providers/status', { method: 'GET' });
+    const j = await r.json();
+    const find = (id) => (j.providers || []).find((p) => p.id === id) || {};
+    const ol = find('ollama'); const oc = find('openclaw');
+    setNote('sc-prov-ollama', 'Ollama: ' + (ol.available ? 'available' : 'unavailable'));
+    setNote('sc-prov-openclaw', 'OpenClaw: ' + (oc.available ? 'available' : 'unavailable'));
+    const bn = document.getElementById('sc-brain-note');
+    if (bn) bn.textContent = 'Deterministic brain · active' + (j.cloud === false ? ' · no cloud' : '');
+  } catch (e) {
+    setNote('sc-prov-ollama', 'Ollama: unknown');
+    setNote('sc-prov-openclaw', 'OpenClaw: unknown');
+  }
+}
+
+// Probe on load and whenever the tab regains focus.
+refreshBridge();
+window.addEventListener('focus', () => { if (!BRIDGE.online) refreshBridge(); });
+
 </script>
 </body>
 </html>
