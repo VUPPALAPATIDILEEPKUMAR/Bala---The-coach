@@ -30,6 +30,7 @@ const KNOWN_ACTIONS = [
   'status', 'git_status', 'git_log',
   'release_guard', 'validate_app', 'run_validator_dry_run',
   'connector_readiness', 'connector_status',
+  'github_status', 'github_repo_summary',
   'prompt_xml_bala', 'prompt_xml_chintu', 'prompt_costar_both', 'prompt_acr_both',
   'action_packet_bala_sprint', 'action_packet_connector_check',
   'agent_orchestrator_dry_run',
@@ -267,6 +268,19 @@ const RULES = [
     }),
   },
   {
+    name: 'connector_setup_check',
+    match: (s) => hasAny(s, ['connector setup check', 'setup check connectors', 'connector checklist']),
+    build: () => ({
+      intent: 'connector_setup_check',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.CONVERSATION,
+      reply:
+        'Here is the safe connector setup check path, bro: run `node scripts/chintu-telegram-runner.js --setup-check` for Telegram readiness, then run `node scripts/chintu-github-connector.js --status` for the GitHub dry-run lane. Both are preview-only and print no secrets.',
+      next: 'github_status',
+    }),
+  },
+  {
     name: 'connector_status',
     match: (s) => hasAny(s, ['connector status', 'connector config', 'connector mode']),
     build: () => ({
@@ -277,6 +291,32 @@ const RULES = [
       actions: ['connector_status'],
       reply: 'Showing the local connector status (mode + which connectors are configured). No secrets are printed.',
       next: 'connector_readiness',
+    }),
+  },
+  {
+    name: 'github_status',
+    match: (s) => hasAny(s, ['github status', 'gh status', 'repo status', 'github connector status']),
+    build: () => ({
+      intent: 'github_status',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['github_status'],
+      reply: 'Checking the local GitHub dry-run status: gh availability, auth state, and safe repo context. No API writes, no pushes.',
+      next: 'github_repo_summary',
+    }),
+  },
+  {
+    name: 'github_repo_summary',
+    match: (s) => hasAny(s, ['repo summary', 'github repo summary', 'gh repo summary']),
+    build: () => ({
+      intent: 'github_repo_summary',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['github_repo_summary'],
+      reply: 'Summarizing the local GitHub repo state for dry-run planning: branch, remotes, recent commits, and dirty files only.',
+      next: 'github_status',
     }),
   },
 

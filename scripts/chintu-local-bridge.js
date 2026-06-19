@@ -116,6 +116,18 @@ const ACTIONS = {
     build: () => ({ cmd: process.execPath, args: ['scripts/chintu-connector-send.js', '--status'] }),
     next: 'connector_readiness',
   },
+  github_status: {
+    label: 'node scripts/chintu-github-connector.js --status',
+    kind: 'read',
+    build: () => ({ cmd: process.execPath, args: ['scripts/chintu-github-connector.js', '--status'] }),
+    next: 'github_repo_summary',
+  },
+  github_repo_summary: {
+    label: 'node scripts/chintu-github-connector.js --repo-summary',
+    kind: 'read',
+    build: () => ({ cmd: process.execPath, args: ['scripts/chintu-github-connector.js', '--repo-summary'] }),
+    next: 'github_status',
+  },
   prompt_xml_bala: {
     label: 'node scripts/chintu-prompt-engine.js --framework xml --track bala',
     kind: 'generate',

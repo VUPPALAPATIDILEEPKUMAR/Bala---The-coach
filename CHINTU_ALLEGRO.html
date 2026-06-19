@@ -546,14 +546,21 @@
         <div class="status-dot dot-amber"></div>
         <div class="status-card-body">
           <div class="status-card-title">Telegram Runner</div>
-          <div class="status-card-note">Env-gated · fixture or poll-once only</div>
+          <div class="status-card-note">Poll-once dry-run ready · setup-check + allowlist first</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-blue"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">GitHub Connector</div>
+          <div class="status-card-note">Dry-run connector ready · local gh + repo summaries only</div>
         </div>
       </div>
       <div class="status-card">
         <div class="status-dot dot-gray"></div>
         <div class="status-card-body">
-          <div class="status-card-title">Live Send</div>
-          <div class="status-card-note">Off unless approved · send flag + env gates required</div>
+          <div class="status-card-title">Real Sends / Actions</div>
+          <div class="status-card-note">Approval-gated · Telegram send and GitHub writes stay off</div>
         </div>
       </div>
     </div>
@@ -570,6 +577,8 @@
         <button class="qa-btn" onclick="quickAction('Generate Codex prompt')">⚡ Codex prompt</button>
         <button class="qa-btn" onclick="quickAction('Run validator agent dry run')">🔍 Validator dry run</button>
         <button class="qa-btn" onclick="quickAction('Check connector readiness')">🔌 Connector check</button>
+        <button class="qa-btn" onclick="quickChat('connector setup check')">🧭 Connector Setup Check</button>
+        <button class="qa-btn" onclick="quickChat('github status')">🐙 GitHub status</button>
         <button class="qa-btn" onclick="quickChat('Telegram Dry Run Guide')">📨 Telegram Dry Run Guide</button>
         <button class="qa-btn" onclick="quickAction('Create founder brief')">📋 Founder brief</button>
         <button class="qa-btn" onclick="quickAction('Review BALA scoring model')">📊 BALA scoring</button>
@@ -587,6 +596,8 @@
         <button class="qa-btn" onclick="liveAction('connector_readiness')">🔌 Connector Readiness</button>
         <button class="qa-btn" onclick="liveAction('run_validator_dry_run')">🔍 Validator Dry Run</button>
         <button class="qa-btn" onclick="liveAction('validate_app')">✅ Validate BALA App</button>
+        <button class="qa-btn" onclick="liveAction('github_status')">🐙 GitHub Status</button>
+        <button class="qa-btn" onclick="liveAction('github_repo_summary')">📘 Repo Summary</button>
         <button class="qa-btn" onclick="liveAction('action_packet_bala_sprint')">🏃 BALA Sprint Packet</button>
         <button class="qa-btn" onclick="liveAction('prompt_xml_bala')">✦ XML Prompt</button>
         <button class="qa-btn" onclick="liveAction('git_status')">📋 Git Status</button>
@@ -671,6 +682,21 @@
           <div class="cmd-item">
             <div class="cmd-label">Validate env vars (no secrets printed)</div>
             <div class="cmd-line">node scripts\chintu-connector-send.js --validate-env</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Telegram setup check</div>
+            <div class="cmd-line">node scripts\chintu-telegram-runner.js --setup-check</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">GitHub dry-run status</div>
+            <div class="cmd-line">node scripts\chintu-github-connector.js --status</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
+          <div class="cmd-item">
+            <div class="cmd-label">GitHub local repo summary</div>
+            <div class="cmd-line">node scripts\chintu-github-connector.js --repo-summary</div>
             <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
           </div>
         </div>
@@ -1205,33 +1231,36 @@ function packetValidatorDryRun() {
 
 function packetConnectorReadiness() {
   return {
-    understood: "You want to check the readiness of all Chintu connectors — Telegram status, env vars, dry-run health.",
+    understood: "You want to check the readiness of all Chintu connectors — Telegram setup-check, GitHub dry-run status, env vars, and dry-run health.",
     lane: "Chintu OS — Connector Readiness (Track 2)",
     safetyGates: [
       "Validate env only — no secrets printed",
       "Dry-run mode stays on until founder explicitly approves live send",
-      "Telegram first test requires: env vars set + allowlist confirmed + approval phrase spoken",
+      "Telegram first test requires: env vars set + allowlist confirmed before normal poll-once runs",
       "No health data transferred via connectors by default",
     ],
     filesInvolved: [
       "scripts/chintu-connector-send.js — connector logic",
+      "scripts/chintu-telegram-runner.js — Telegram setup-check + poll-once runtime",
+      "scripts/chintu-github-connector.js — GitHub dry-run connector",
       "scripts/chintu-connector-send.test.js — safety tests",
-      "CHINTU_CONNECTOR_READINESS.md — readiness state",
+      "CHINTU_GITHUB_CONNECTOR_DRY_RUN.md — GitHub dry-run guide",
       "CHINTU_FREE_CONNECTOR_PLUGIN_ROADMAP.md — activation roadmap",
     ],
-    prompt: `# Connector readiness check sequence\n\n# Step 1: Full readiness report\nnode scripts\\chintu-connector-send.js --readiness\n\n# Step 2: Validate env vars (no secrets printed)\nnode scripts\\chintu-connector-send.js --validate-env\n\n# Step 3: Check test suite (should pass, no network calls)\nnode scripts\\chintu-connector-send.test.js\n\n# Step 4: Check connector policy\nnode scripts\\chintu-connector-policy.test.js`,
+    prompt: `# Connector setup check sequence\n\n# Step 1: Telegram setup-check\nnode scripts\\chintu-telegram-runner.js --setup-check\n\n# Step 2: GitHub dry-run status\nnode scripts\\chintu-github-connector.js --status\n\n# Step 3: Full readiness report\nnode scripts\\chintu-connector-send.js --readiness\n\n# Step 4: Validate env vars (no secrets printed)\nnode scripts\\chintu-connector-send.js --validate-env`,
     validationCommands: [
+      "node scripts\\chintu-telegram-runner.js --setup-check",
+      "node scripts\\chintu-github-connector.js --status",
       "node scripts\\chintu-connector-send.js --readiness",
       "node scripts\\chintu-connector-send.js --validate-env",
       "node scripts\\chintu-connector-send.test.js",
       "node scripts\\chintu-connector-policy.test.js",
     ],
     parked: [
-      "GitHub connector (next planned activation after Telegram)",
       "Slack/Discord connectors (roadmap only)",
       "Any live external send until explicitly approved",
     ],
-    nextAction: "Run the readiness commands in your terminal. Review the output. Then open the Telegram Dry Run Guide to test the fixture and poll-once preview path before any send gate is considered.",
+    nextAction: "Run the Telegram setup-check and GitHub dry-run status commands first. Then open the Telegram Dry Run Guide to test the fixture, discovery mode, and poll-once preview path before any send gate is considered.",
     track: "Chintu OS — Connectors",
     riskLevel: "low",
     approvalRequired: false,
@@ -1241,7 +1270,7 @@ function packetConnectorReadiness() {
 
 function packetTelegramSetup() {
   return {
-    understood: "You want the safe Telegram dry-run guide — fixture first, poll-once later, send still off unless every gate is opened intentionally.",
+    understood: "You want the safe Telegram dry-run guide — setup-check first, fixture first, ID discovery before allowlist, poll-once later, send still off unless every gate is opened intentionally.",
     lane: "Chintu OS — Telegram Phone Runtime (Track 2)",
     safetyGates: [
       "Default mode is dry-run preview only",
@@ -1256,8 +1285,9 @@ function packetTelegramSetup() {
       "scripts/chintu-telegram-runner.js — fixture, poll-once, send gates",
       "CHINTU_TELEGRAM_CONNECTOR_RUNTIME.md — runtime contract",
       "CHINTU_TELEGRAM_SETUP_SAFE.md — safe activation steps",
+      "CHINTU_TELEGRAM_POLL_ONCE_RUNBOOK.md — exact founder runbook",
     ],
-    prompt: `# Telegram dry-run guide\n\n# 1. Fixture dry-run (safe default)\nnode scripts\\chintu-telegram-runner.js --fixture scripts\\fixtures\\telegram-check-everything.json --dry-run\n\n# 2. Later: live intake without send (requires TELEGRAM_BOT_TOKEN)\nnode scripts\\chintu-telegram-runner.js --poll-once --dry-run\n\n# 3. Send stays off unless every gate is set\n# TELEGRAM_BOT_TOKEN\n# CHINTU_TELEGRAM_ALLOWED_CHAT_IDS or CHINTU_TELEGRAM_ALLOWED_SENDER_IDS\n# CHINTU_TELEGRAM_SEND_ENABLED=1\n# --send`,
+    prompt: `# Telegram dry-run guide\n\n# 1. Setup-check\nnode scripts\\chintu-telegram-runner.js --setup-check\n\n# 2. Fixture dry-run (safe default)\nnode scripts\\chintu-telegram-runner.js --fixture scripts\\fixtures\\telegram-check-everything.json --dry-run\n\n# 3. Discover IDs before allowlisting\nnode scripts\\chintu-telegram-runner.js --poll-once --dry-run --discover-ids\n\n# 4. Later: live intake without send (requires TELEGRAM_BOT_TOKEN + allowlist)\nnode scripts\\chintu-telegram-runner.js --poll-once --dry-run\n\n# 5. Send stays off unless every gate is set\n# TELEGRAM_BOT_TOKEN\n# CHINTU_TELEGRAM_ALLOWED_CHAT_IDS or CHINTU_TELEGRAM_ALLOWED_SENDER_IDS\n# CHINTU_TELEGRAM_SEND_ENABLED=1\n# --send`,
     validationCommands: [
       "node scripts\\chintu-telegram-adapter.test.js",
       "node scripts\\chintu-telegram-runner.test.js",
@@ -1268,7 +1298,7 @@ function packetTelegramSetup() {
       "Infinite polling / daemon mode",
       "Browser token entry",
     ],
-    nextAction: "Run the fixture dry-run first. When that looks right, set TELEGRAM_BOT_TOKEN locally and try poll-once dry-run. Keep send off until you intentionally set the allowlist env vars, CHINTU_TELEGRAM_SEND_ENABLED=1, and pass --send.",
+    nextAction: "Run setup-check first. Then run the fixture dry-run. When that looks right, set TELEGRAM_BOT_TOKEN locally, use discover-ids, set the allowlist env vars, and only then try poll-once dry-run. Keep send off until you intentionally set CHINTU_TELEGRAM_SEND_ENABLED=1 and pass --send.",
     track: "Chintu OS — Connectors",
     riskLevel: "low",
     approvalRequired: false,
@@ -1611,7 +1641,8 @@ let lastLiveResult = null;
 const LIVE_LABELS = {
   release_guard: 'Release Guard', validate_app: 'Validate BALA App',
   run_validator_dry_run: 'Validator Dry Run', connector_readiness: 'Connector Readiness',
-  connector_status: 'Connector Status', git_status: 'Git Status', git_log: 'Git Log',
+  connector_status: 'Connector Status', github_status: 'GitHub Status', github_repo_summary: 'Repo Summary',
+  git_status: 'Git Status', git_log: 'Git Log',
   action_packet_bala_sprint: 'BALA Sprint Packet', action_packet_connector_check: 'Connector Check Packet',
   prompt_xml_bala: 'XML Prompt (BALA)', prompt_xml_chintu: 'XML Prompt (Chintu)',
   prompt_costar_both: 'COSTAR Prompt', prompt_acr_both: 'ACR Prompt',
@@ -1625,6 +1656,8 @@ const LIVE_CLI = {
   run_validator_dry_run: 'powershell -ExecutionPolicy Bypass -File scripts\\chintu-agent-runner.ps1 -Agent "validator-agent" -DryRun',
   connector_readiness: 'node scripts/chintu-connector-send.js --readiness',
   connector_status: 'node scripts/chintu-connector-send.js --status',
+  github_status: 'node scripts/chintu-github-connector.js --status',
+  github_repo_summary: 'node scripts/chintu-github-connector.js --repo-summary',
   git_status: 'git status --short', git_log: 'git log --oneline -5',
   action_packet_bala_sprint: 'node scripts/chintu-action-packet.js --template bala-sprint',
   action_packet_connector_check: 'node scripts/chintu-action-packet.js --template connector-readiness',
@@ -1670,6 +1703,8 @@ function mapToLiveAction(lower) {
   if (lower.includes('validate bala') || lower.includes('validate app') || lower.includes('review bala app') || lower.includes('review bala')) return 'validate_app';
   if (lower.includes('run validator') || lower.includes('validator dry') || lower.includes('run the validator')) return 'run_validator_dry_run';
   if (lower.includes('connector status')) return 'connector_status';
+  if (lower.includes('github status') || lower.includes('gh status')) return 'github_status';
+  if (lower.includes('repo summary') || lower.includes('github repo summary')) return 'github_repo_summary';
   if (lower.includes('check connector') || lower.includes('connector readiness') || lower.includes('connector check') || lower.includes('check connectors') || (lower.includes('connector') && lower.includes('ready'))) return 'connector_readiness';
   if (lower.includes('git status')) return 'git_status';
   if (lower.includes('git log')) return 'git_log';

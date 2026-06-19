@@ -60,6 +60,9 @@ console.log('\nSingle intents:');
 ok(brain.route('run validator').actions[0] === 'run_validator_dry_run', '"run validator" -> run_validator_dry_run');
 ok(brain.route('check connectors').actions[0] === 'connector_readiness', '"check connectors" -> connector_readiness');
 ok(brain.route('Telegram Dry Run Guide').intent === 'telegram_dry_run_guide', '"Telegram Dry Run Guide" -> telegram_dry_run_guide');
+ok(brain.route('connector setup check').intent === 'connector_setup_check', '"connector setup check" -> connector_setup_check');
+ok(brain.route('github status').actions[0] === 'github_status', '"github status" -> github_status');
+ok(brain.route('repo summary').actions[0] === 'github_repo_summary', '"repo summary" -> github_repo_summary');
 ok(brain.route('run release guard').actions[0] === 'release_guard', '"run release guard" -> release_guard');
 ok(brain.route('check git').actions[0] === 'git_status', '"check git" -> git_status');
 ok(brain.route('validate Bala').sequence === 'bala_health_check', '"validate Bala" -> bala_health_check sequence');
@@ -107,6 +110,7 @@ ok(brain.route('check everything but I have chest pain').intent === 'health_emer
 console.log('\nAction integrity:');
 const sampleInputs = ['hi', 'check everything', 'validate bala', 'run validator', 'make bala better',
   'create claude prompt', 'create codex prompt', 'open bala public link', 'run agent board dry run',
+  'github status', 'repo summary',
   'check connectors', 'what can you do', 'asdf'];
 let allReal = true;
 for (const m of sampleInputs) {

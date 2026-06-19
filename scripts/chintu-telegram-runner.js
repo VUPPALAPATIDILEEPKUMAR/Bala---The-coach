@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Stage 30 note:
+// Stage 31 note:
 // Network calls are allowed in this file only, and only for:
 //   1. Telegram Bot API getUpdates/sendMessage with explicit env gates.
 //   2. Local bridge checks against 127.0.0.1 only when --execute-local is set.
@@ -233,6 +233,7 @@ function buildAuditEntry(result, context) {
     sendPerformed: Boolean(result.send && result.send.sent),
     sendStatus: result.send ? result.send.status : 'not_requested',
     sendReason: result.send ? result.send.reason : null,
+    discoveryMode: Boolean(context.discoveryMode),
   };
 }
 
@@ -245,6 +246,65 @@ function getAllowlistOptions(env) {
 
 function hasConfiguredAllowlist(options) {
   return options.allowedChatIds.length > 0 || options.allowedSenderIds.length > 0;
+}
+
+function maskId(value) {
+  const id = normalizeId(value);
+  if (!id) return '(missing)';
+  if (id.length <= 4) return id;
+  return id.slice(0, 2) + '...' + id.slice(-2);
+}
+
+function describeSetup(env, options, bridgeStatus) {
+  const sendEnabled = String(env.CHINTU_TELEGRAM_SEND_ENABLED || '').trim() === '1';
+  return {
+    tokenConfigured: Boolean(String(env.TELEGRAM_BOT_TOKEN || '').trim()),
+    allowlistConfigured: hasConfiguredAllowlist(options),
+    allowedChatCount: options.allowedChatIds.length,
+    allowedSenderCount: options.allowedSenderIds.length,
+    sendEnabled,
+    defaultMode: 'dry-run',
+    bridgeOnline: Boolean(bridgeStatus && bridgeStatus.ok),
+    bridgePort: bridgeStatus && bridgeStatus.ok ? bridgeStatus.port : null,
+    sendMode: sendEnabled ? 'gated-ready' : 'disabled',
+  };
+}
+
+async function buildSetupCheck(env, deps) {
+  const options = getAllowlistOptions(env);
+  const bridge = await deps.probeLocalBridge();
+  const setup = describeSetup(env, options, bridge);
+  const lines = [
+    'Chintu Telegram setup check',
+    '  token: ' + (setup.tokenConfigured ? 'configured' : 'missing'),
+    '  allowlist: ' + (setup.allowlistConfigured
+      ? 'configured (' + setup.allowedChatCount + ' chat ID(s), ' + setup.allowedSenderCount + ' sender ID(s))'
+      : 'missing'),
+    '  default mode: ' + setup.defaultMode,
+    '  send: ' + (setup.sendEnabled ? 'enabled only when --send is passed' : 'disabled until CHINTU_TELEGRAM_SEND_ENABLED=1'),
+    '  bridge: ' + (setup.bridgeOnline ? ('connected on 127.0.0.1:' + setup.bridgePort) : 'offline'),
+    '  safe next step: ' + (
+      !setup.tokenConfigured
+        ? 'Set TELEGRAM_BOT_TOKEN only in your local shell, then rerun --setup-check.'
+        : !setup.allowlistConfigured
+          ? 'Use --poll-once --dry-run --discover-ids, then set allowlist env vars.'
+          : 'Run --poll-once --dry-run. Add --execute-local only after the bridge is running.'
+    ),
+  ];
+  return {
+    ok: true,
+    mode: 'setup-check',
+    setup,
+    lines,
+  };
+}
+
+function extractDiscoveryIds(preview) {
+  return {
+    chatId: preview && preview.commandSummary ? preview.commandSummary.chatId || null : null,
+    senderId: preview && preview.commandSummary ? preview.commandSummary.senderId || null : null,
+    senderName: preview && preview.commandSummary ? preview.commandSummary.senderName || '' : '',
+  };
 }
 
 async function maybeExecuteLocal(preview, requested, deps) {
@@ -308,14 +368,26 @@ async function maybeSend(preview, sendRequested, env, deps) {
   };
 }
 
+function requireAllowlistForPollOnce(args, options) {
+  if (args.fixture) return;
+  if (args['discover-ids']) return;
+  if (hasConfiguredAllowlist(options)) return;
+  throw new Error('Telegram allowlist env vars are required for --poll-once. Use --discover-ids first to learn chat/sender IDs safely.');
+}
+
 async function runWithArgs(argv, env, deps) {
   const args = parseArgs(argv);
   const sendRequested = Boolean(args.send);
   const executeLocalRequested = Boolean(args['execute-local']);
+  const discoveryMode = Boolean(args['discover-ids']);
   const dryRun = sendRequested ? false : true;
   const allowlistOptions = getAllowlistOptions(env);
   let sourceMode = '';
   let selected = null;
+
+  if (args['setup-check']) {
+    return buildSetupCheck(env, deps);
+  }
 
   if (args.fixture) {
     const fixture = loadFixture(String(args.fixture));
@@ -327,16 +399,17 @@ async function runWithArgs(argv, env, deps) {
     if (!token) {
       throw new Error('TELEGRAM_BOT_TOKEN is required for --poll-once.');
     }
+    requireAllowlistForPollOnce(args, allowlistOptions);
     const offset = args.offset == null ? null : Number(args.offset);
     if (args.offset != null && !Number.isFinite(offset)) {
       throw new Error('--offset must be a number.');
     }
     const updates = await deps.telegramGetUpdates(token, Number.isFinite(offset) ? offset : null);
     selected = selectUpdate(updates);
-    sourceMode = 'poll-once';
+    sourceMode = discoveryMode ? 'poll-once-discovery' : 'poll-once';
     selected.offset = Number.isFinite(offset) ? offset : null;
   } else {
-    throw new Error('Choose one source: --fixture <path> or --poll-once.');
+    throw new Error('Choose one source: --fixture <path>, --poll-once, or --setup-check.');
   }
 
   if (!selected || !selected.update) {
@@ -371,30 +444,40 @@ async function runWithArgs(argv, env, deps) {
       sendPerformed: false,
       sendStatus: 'not_requested',
       sendReason: 'no_updates',
+      discoveryMode,
     });
     return noUpdateResult;
   }
 
   const preview = adapter.buildTelegramDryRunPreview(selected.update, allowlistOptions);
   let bridge;
-  try {
-    bridge = await maybeExecuteLocal(preview, executeLocalRequested, deps);
-  } catch (error) {
-    bridge = {
-      attempted: executeLocalRequested,
-      executed: false,
-      reason: redactText(error && error.message ? error.message : String(error)),
-    };
+  if (discoveryMode) {
+    bridge = { attempted: false, executed: false, reason: 'discover-ids mode never executes locally' };
+  } else {
+    try {
+      bridge = await maybeExecuteLocal(preview, executeLocalRequested, deps);
+    } catch (error) {
+      bridge = {
+        attempted: executeLocalRequested,
+        executed: false,
+        reason: redactText(error && error.message ? error.message : String(error)),
+      };
+    }
   }
+
   let send;
-  try {
-    send = await maybeSend(preview, sendRequested, env, deps);
-  } catch (error) {
-    send = {
-      status: 'error',
-      sent: false,
-      reason: redactText(error && error.message ? error.message : String(error)),
-    };
+  if (discoveryMode) {
+    send = { status: 'blocked', sent: false, reason: 'discover-ids mode never sends replies' };
+  } else {
+    try {
+      send = await maybeSend(preview, sendRequested, env, deps);
+    } catch (error) {
+      send = {
+        status: 'error',
+        sent: false,
+        reason: redactText(error && error.message ? error.message : String(error)),
+      };
+    }
   }
 
   const result = {
@@ -403,6 +486,7 @@ async function runWithArgs(argv, env, deps) {
     dryRun,
     sendRequested,
     executeLocalRequested,
+    discoveryMode,
     updatesSeen: selected.count,
     nextOffset: selected.nextOffset,
     fixturePath: selected.fixturePath || null,
@@ -412,21 +496,55 @@ async function runWithArgs(argv, env, deps) {
     send,
     auditLog: path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
   };
-  appendAudit(buildAuditEntry(result, { sendRequested, executeLocalRequested }));
+
+  if (discoveryMode) {
+    result.discovery = extractDiscoveryIds(preview);
+    result.discoverySummary = [
+      'Discovery mode captured one Telegram update safely.',
+      '  chat ID: ' + maskId(result.discovery.chatId),
+      '  sender ID: ' + maskId(result.discovery.senderId),
+      '  sender name: ' + (result.discovery.senderName || '(missing)'),
+      'Set CHINTU_TELEGRAM_ALLOWED_CHAT_IDS / CHINTU_TELEGRAM_ALLOWED_SENDER_IDS in your local shell before normal poll-once runs.',
+    ];
+  }
+
+  appendAudit(buildAuditEntry(result, { sendRequested, executeLocalRequested, discoveryMode }));
   return result;
 }
 
 function printUsage() {
-  console.log('Usage:');
-  console.log('  node scripts/chintu-telegram-runner.js --fixture scripts\\fixtures\\telegram-hi.json --dry-run');
-  console.log('  node scripts/chintu-telegram-runner.js --poll-once --dry-run');
+  console.log('Chintu Telegram runner');
+  console.log('');
+  console.log('Modes:');
+  console.log('  --setup-check');
+  console.log('    Print a safe readiness checklist. No network send. No token printing.');
+  console.log('');
+  console.log('  --fixture <path> --dry-run');
+  console.log('    Run a local JSON fixture only.');
+  console.log('');
+  console.log('  --poll-once --dry-run');
+  console.log('    Read Telegram getUpdates once. Requires TELEGRAM_BOT_TOKEN and an allowlist.');
+  console.log('');
+  console.log('  --poll-once --dry-run --discover-ids');
+  console.log('    Read one update without an allowlist so you can discover chat/sender IDs safely.');
+  console.log('');
+  console.log('  --poll-once --dry-run --execute-local');
+  console.log('    Hand allowlisted safe commands to the localhost bridge only if it is online.');
+  console.log('');
+  console.log('  --poll-once --send');
+  console.log('    Still gated. Requires TELEGRAM_BOT_TOKEN, allowlist env, CHINTU_TELEGRAM_SEND_ENABLED=1, and a safe allowlisted message.');
+  console.log('');
+  console.log('Examples:');
+  console.log('  node scripts/chintu-telegram-runner.js --setup-check');
+  console.log('  node scripts/chintu-telegram-runner.js --fixture scripts\\fixtures\\telegram-check-everything.json --dry-run');
+  console.log('  node scripts/chintu-telegram-runner.js --poll-once --dry-run --discover-ids');
+  console.log('  node scripts/chintu-telegram-runner.js --poll-once --dry-run --execute-local');
   console.log('  node scripts/chintu-telegram-runner.js --poll-once --send');
-  console.log('  Optional: --offset <number> --execute-local');
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (!args.fixture && !args['poll-once']) {
+  if (args.help || args.h || Object.keys(args).length === 1 && Array.isArray(args._) && args._.length === 0) {
     printUsage();
     return;
   }
@@ -437,6 +555,17 @@ async function main() {
     probeLocalBridge,
     executeLocalBridgeChat,
   });
+
+  if (result.mode === 'setup-check') {
+    console.log(result.lines.join('\n'));
+    return;
+  }
+
+  if (result.discoverySummary) {
+    console.log(result.discoverySummary.join('\n'));
+    console.log('');
+  }
+
   console.log(redactText(JSON.stringify(result, null, 2)));
 }
 
@@ -456,6 +585,7 @@ module.exports = {
   telegramSendMessage,
   probeLocalBridge,
   executeLocalBridgeChat,
+  buildSetupCheck,
   paths: {
     auditPath,
   },

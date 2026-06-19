@@ -205,6 +205,10 @@ function requestPartialAndClose(port, rawRequest) {
     // --- Stage 24: new action exists ---------------------------------------
     ok(Object.prototype.hasOwnProperty.call(bridge.ACTIONS, 'agent_orchestrator_dry_run'),
       'agent_orchestrator_dry_run action exists');
+    ok(Object.prototype.hasOwnProperty.call(bridge.ACTIONS, 'github_status'),
+      'github_status action exists');
+    ok(Object.prototype.hasOwnProperty.call(bridge.ACTIONS, 'github_repo_summary'),
+      'github_repo_summary action exists');
 
     // --- Stage 24: provider status -----------------------------------------
     const prov = await request(port, 'GET', '/api/providers/status');

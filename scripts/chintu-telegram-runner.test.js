@@ -39,6 +39,31 @@ function readAuditLines() {
     CHINTU_TELEGRAM_SEND_ENABLED: '0',
   };
 
+  const setupMissingToken = await runner.runWithArgs(['--setup-check'], {
+    TELEGRAM_BOT_TOKEN: '',
+    CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '',
+    CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '',
+    CHINTU_TELEGRAM_SEND_ENABLED: '0',
+  }, makeDeps());
+  assert.equal(setupMissingToken.mode, 'setup-check');
+  assert.equal(setupMissingToken.setup.tokenConfigured, false);
+  assert.equal(setupMissingToken.setup.allowlistConfigured, false);
+  assert.match(setupMissingToken.lines.join('\n'), /token: missing/i);
+
+  const setupWithEnv = await runner.runWithArgs(['--setup-check'], {
+    TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+    CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
+    CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
+    CHINTU_TELEGRAM_SEND_ENABLED: '1',
+  }, makeDeps({
+    probeLocalBridge: async () => ({ ok: true, port: 18791 }),
+  }));
+  assert.equal(setupWithEnv.setup.tokenConfigured, true);
+  assert.equal(setupWithEnv.setup.allowlistConfigured, true);
+  assert.equal(setupWithEnv.setup.bridgeOnline, true);
+  assert.equal(setupWithEnv.setup.sendEnabled, true);
+  assert.doesNotMatch(setupWithEnv.lines.join('\n'), /ABCDEFGHIJKLMNOPQRST/);
+
   const fixtureHi = ['--fixture', 'scripts\\fixtures\\telegram-hi.json', '--dry-run'];
   const hi = await runner.runWithArgs(fixtureHi, baseEnv, makeDeps());
   assert.equal(hi.ok, true);
@@ -46,31 +71,51 @@ function readAuditLines() {
   assert.equal(hi.preview.intent, 'greeting');
   assert.equal(hi.send.status, 'not_requested');
 
-  const liveGetUpdates = [];
-  const polled = await runner.runWithArgs(['--poll-once', '--dry-run'], {
-    ...baseEnv,
+  await assert.rejects(
+    () => runner.runWithArgs(['--poll-once', '--dry-run'], baseEnv, makeDeps()),
+    /TELEGRAM_BOT_TOKEN is required/
+  );
+
+  await assert.rejects(
+    () => runner.runWithArgs(['--poll-once', '--dry-run'], {
+      ...baseEnv,
+      TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+      CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '',
+      CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '',
+    }, makeDeps()),
+    /allowlist env vars are required/i
+  );
+
+  const discovery = await runner.runWithArgs(['--poll-once', '--dry-run', '--discover-ids'], {
     TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+    CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '',
+    CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '',
+    CHINTU_TELEGRAM_SEND_ENABLED: '0',
   }, makeDeps({
-    telegramGetUpdates: async (token, offset) => {
-      liveGetUpdates.push({ token, offset });
-      return [{
-        update_id: 900002,
-        message: {
-          message_id: 4002,
-          date: 1781740860,
-          chat: { id: 710001, type: 'private' },
-          from: { id: 510001, first_name: 'Founder' },
-          text: 'check everything',
-        },
-      }];
-    },
+    telegramGetUpdates: async () => [{
+      update_id: 900002,
+      message: {
+        message_id: 4002,
+        date: 1781740860,
+        chat: { id: 710001, type: 'private' },
+        from: { id: 510001, first_name: 'Founder' },
+        text: 'check everything',
+      },
+    }],
   }));
-  assert.equal(polled.preview.wouldRunSequence, 'check_everything');
-  assert.equal(liveGetUpdates.length, 1);
-  assert.equal(typeof liveGetUpdates[0].token, 'string');
-  assert.equal(liveGetUpdates[0].offset, null);
+  assert.equal(discovery.discoveryMode, true);
+  assert.equal(discovery.discovery.chatId, '710001');
+  assert.equal(discovery.discovery.senderId, '510001');
+  assert.equal(discovery.bridge.executed, false);
+  assert.equal(discovery.send.sent, false);
 
   let bridgeCalled = false;
+  const executedOffline = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-check-everything.json', '--execute-local'], baseEnv, makeDeps({
+    probeLocalBridge: async () => ({ ok: false, port: null }),
+  }));
+  assert.equal(executedOffline.bridge.executed, false);
+  assert.match(executedOffline.bridge.reason, /offline/i);
+
   const executed = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-check-everything.json', '--execute-local'], baseEnv, makeDeps({
     probeLocalBridge: async () => ({ ok: true, port: 18791 }),
     executeLocalBridgeChat: async (port, message) => {
@@ -83,6 +128,19 @@ function readAuditLines() {
   assert.equal(bridgeCalled, true);
   assert.equal(executed.bridge.executed, true);
   assert.equal(executed.bridge.resultsCount, 1);
+
+  const sendBlocked = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-hi.json', '--send'], {
+    TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+    CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
+    CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
+    CHINTU_TELEGRAM_SEND_ENABLED: '0',
+  }, makeDeps({
+    telegramSendMessage: async () => {
+      throw new Error('send should stay blocked');
+    },
+  }));
+  assert.equal(sendBlocked.send.status, 'blocked');
+  assert.match(sendBlocked.send.reason, /SEND_ENABLED is not 1/i);
 
   let sendCalled = false;
   const sent = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-hi.json', '--send'], {
@@ -116,17 +174,12 @@ function readAuditLines() {
   assert.equal(blockedEmergency.send.status, 'blocked');
   assert.match(blockedEmergency.send.reason, /health-sensitive/i);
 
-  await assert.rejects(
-    () => runner.runWithArgs(['--poll-once', '--dry-run'], baseEnv, makeDeps()),
-    /TELEGRAM_BOT_TOKEN is required/
-  );
-
   const redacted = runner.redactText('token 123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789 https://api.telegram.org/bot123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789/getUpdates');
   assert.doesNotMatch(redacted, /ABCDEFGHIJKLMNOPQRST/);
   assert.doesNotMatch(redacted, /api\.telegram\.org/);
 
   const auditLines = readAuditLines();
-  assert.ok(auditLines.length >= 5, 'audit log should contain one line per run');
+  assert.ok(auditLines.length >= 7, 'audit log should contain one line per actionable run');
 
   cleanupAudit();
   console.log('PASS chintu-telegram-runner.test.js');
