@@ -11,7 +11,12 @@ const repoRoot = path.resolve(__dirname, '..');
 const auditPath = runner.paths.auditPath;
 
 function cleanupAudit() {
-  if (fs.existsSync(auditPath)) fs.unlinkSync(auditPath);
+  try {
+    if (fs.existsSync(auditPath)) fs.unlinkSync(auditPath);
+  } catch (e) {
+    // EPERM on NTFS mounts (Linux sandbox) — safe to ignore, file is test-only.
+    if (e.code !== 'EPERM') throw e;
+  }
 }
 
 function makeDeps(overrides) {
@@ -64,7 +69,7 @@ function readAuditLines() {
   assert.equal(setupWithEnv.setup.sendEnabled, true);
   assert.doesNotMatch(setupWithEnv.lines.join('\n'), /ABCDEFGHIJKLMNOPQRST/);
 
-  const fixtureHi = ['--fixture', 'scripts\\fixtures\\telegram-hi.json', '--dry-run'];
+  const fixtureHi = ['--fixture', 'scripts/fixtures/telegram-hi.json', '--dry-run'];
   const hi = await runner.runWithArgs(fixtureHi, baseEnv, makeDeps());
   assert.equal(hi.ok, true);
   assert.equal(hi.sourceMode, 'fixture');
@@ -110,13 +115,13 @@ function readAuditLines() {
   assert.equal(discovery.send.sent, false);
 
   let bridgeCalled = false;
-  const executedOffline = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-check-everything.json', '--execute-local'], baseEnv, makeDeps({
+  const executedOffline = await runner.runWithArgs(['--fixture', 'scripts/fixtures/telegram-check-everything.json', '--execute-local'], baseEnv, makeDeps({
     probeLocalBridge: async () => ({ ok: false, port: null }),
   }));
   assert.equal(executedOffline.bridge.executed, false);
   assert.match(executedOffline.bridge.reason, /offline/i);
 
-  const executed = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-check-everything.json', '--execute-local'], baseEnv, makeDeps({
+  const executed = await runner.runWithArgs(['--fixture', 'scripts/fixtures/telegram-check-everything.json', '--execute-local'], baseEnv, makeDeps({
     probeLocalBridge: async () => ({ ok: true, port: 18791 }),
     executeLocalBridgeChat: async (port, message) => {
       bridgeCalled = true;
@@ -129,7 +134,7 @@ function readAuditLines() {
   assert.equal(executed.bridge.executed, true);
   assert.equal(executed.bridge.resultsCount, 1);
 
-  const sendBlocked = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-hi.json', '--send'], {
+  const sendBlocked = await runner.runWithArgs(['--fixture', 'scripts/fixtures/telegram-hi.json', '--send'], {
     TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
     CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
     CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
@@ -143,7 +148,7 @@ function readAuditLines() {
   assert.match(sendBlocked.send.reason, /SEND_ENABLED is not 1/i);
 
   let sendCalled = false;
-  const sent = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-hi.json', '--send'], {
+  const sent = await runner.runWithArgs(['--fixture', 'scripts/fixtures/telegram-hi.json', '--send'], {
     TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
     CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
     CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
@@ -161,7 +166,7 @@ function readAuditLines() {
   assert.equal(sent.send.status, 'sent');
   assert.equal(sent.send.messageId, 555);
 
-  const blockedEmergency = await runner.runWithArgs(['--fixture', 'scripts\\fixtures\\telegram-emergency.json', '--send'], {
+  const blockedEmergency = await runner.runWithArgs(['--fixture', 'scripts/fixtures/telegram-emergency.json', '--send'], {
     TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
     CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
     CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',

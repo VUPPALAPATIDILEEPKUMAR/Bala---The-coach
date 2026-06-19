@@ -141,6 +141,72 @@ async function telegramSendMessage(token, chatId, text) {
   return response.json.result || {};
 }
 
+function normalizeToken(raw) {
+  // Trim whitespace and surrounding quotes; strip optional leading 'bot' prefix.
+  return String(raw || '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/^bot/i, '');
+}
+
+async function telegramGetMe(token) {
+  const response = await requestJson(https, {
+    protocol: 'https:',
+    hostname: 'api.telegram.org',
+    path: '/bot' + token + '/getMe',
+    method: 'GET',
+  });
+  if (response.statusCode !== 200 || !response.json || response.json.ok !== true) {
+    throw new Error('Telegram getMe failed with HTTP ' + response.statusCode + '.');
+  }
+  return response.json.result || {};
+}
+
+async function telegramGetWebhookInfo(token) {
+  const response = await requestJson(https, {
+    protocol: 'https:',
+    hostname: 'api.telegram.org',
+    path: '/bot' + token + '/getWebhookInfo',
+    method: 'GET',
+  });
+  if (response.statusCode !== 200 || !response.json || response.json.ok !== true) {
+    throw new Error('Telegram getWebhookInfo failed with HTTP ' + response.statusCode + '.');
+  }
+  return response.json.result || {};
+}
+
+async function telegramGetUpdatesDebug(token) {
+  // timeout=0, limit=10 — never sets offset, never drops updates.
+  const response = await requestJson(https, {
+    protocol: 'https:',
+    hostname: 'api.telegram.org',
+    path: '/bot' + token + '/getUpdates?timeout=0&limit=10',
+    method: 'GET',
+  });
+  if (response.statusCode !== 200 || !response.json || response.json.ok !== true) {
+    throw new Error('Telegram getUpdates debug call failed with HTTP ' + response.statusCode + '.');
+  }
+  return response.json.result || [];
+}
+
+async function telegramDeleteWebhook(token, dropPendingUpdates) {
+  const payload = JSON.stringify({ drop_pending_updates: dropPendingUpdates === true });
+  const response = await requestJson(https, {
+    protocol: 'https:',
+    hostname: 'api.telegram.org',
+    path: '/bot' + token + '/deleteWebhook',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    },
+  }, payload);
+  if (response.statusCode !== 200 || !response.json || response.json.ok !== true) {
+    throw new Error('Telegram deleteWebhook failed with HTTP ' + response.statusCode + '.');
+  }
+  return response.json;
+}
+
 async function localBridgeRequest(port, route, body) {
   const payload = body ? JSON.stringify(body) : null;
   const response = await requestJson(http, {
@@ -299,6 +365,193 @@ async function buildSetupCheck(env, deps) {
   };
 }
 
+async function buildTokenCheck(env, deps) {
+  const token = normalizeToken(env.TELEGRAM_BOT_TOKEN);
+  if (!token) {
+    return {
+      ok: false,
+      mode: 'token-check',
+      error: 'TELEGRAM_BOT_TOKEN is not set.',
+      lines: ['Token check: FAIL — TELEGRAM_BOT_TOKEN is not set.'],
+    };
+  }
+  const shape = token.length >= 8
+    ? token.slice(0, 4) + '...' + token.slice(-4)
+    : '***';
+  const lines = [
+    'Chintu Telegram token check',
+    '  token shape: ' + shape + ' (' + token.length + ' chars) — never printed in full',
+  ];
+
+  let me = {};
+  try {
+    me = await deps.telegramGetMe(token);
+    lines.push('  getMe: OK');
+    lines.push('    id: ' + (me.id != null ? me.id : '(missing)'));
+    lines.push('    username: @' + (me.username || '(missing)'));
+    lines.push('    first_name: ' + (me.first_name || '(missing)'));
+  } catch (err) {
+    lines.push('  getMe: FAIL — ' + redactText(err && err.message ? err.message : String(err)));
+    return { ok: false, mode: 'token-check', error: redactText(err && err.message ? err.message : String(err)), lines };
+  }
+
+  let webhook = {};
+  try {
+    webhook = await deps.telegramGetWebhookInfo(token);
+    const webhookSet = Boolean(webhook.url);
+    if (webhookSet) {
+      lines.push('  webhook: SET (url redacted)');
+      lines.push('  WARNING: Webhook is active. getUpdates returns NOTHING while a webhook is set.');
+      lines.push('     Run --delete-webhook --dry-run to preview removal.');
+      lines.push('     Then run --delete-webhook to clear it (drop_pending_updates: false).');
+    } else {
+      lines.push('  webhook: not set (good — --poll-once will work)');
+    }
+    lines.push('  pending_update_count: ' + (webhook.pending_update_count || 0));
+    if (webhook.last_error_message) {
+      lines.push('  last_error: ' + webhook.last_error_message);
+    }
+    if (webhook.allowed_updates && webhook.allowed_updates.length) {
+      lines.push('  allowed_updates: ' + webhook.allowed_updates.join(', '));
+    }
+  } catch (err) {
+    lines.push('  getWebhookInfo: FAIL — ' + redactText(err && err.message ? err.message : String(err)));
+  }
+
+  return {
+    ok: true,
+    mode: 'token-check',
+    botId: me.id != null ? me.id : null,
+    username: me.username || null,
+    firstName: me.first_name || null,
+    webhookSet: Boolean(webhook.url),
+    pendingUpdateCount: webhook.pending_update_count || 0,
+    lastErrorMessage: webhook.last_error_message || null,
+    allowedUpdates: webhook.allowed_updates || [],
+    lines,
+  };
+}
+
+async function buildGetUpdatesDebug(env, deps) {
+  const token = normalizeToken(env.TELEGRAM_BOT_TOKEN);
+  if (!token) {
+    throw new Error('TELEGRAM_BOT_TOKEN is required for --get-updates-debug.');
+  }
+
+  const lines = [
+    'Chintu Telegram getUpdates debug (timeout=0, limit=10)',
+    '  note: no offset set — updates are NOT consumed, safe to call repeatedly',
+  ];
+
+  const updates = await deps.telegramGetUpdatesDebug(token);
+  lines.push('  updates received: ' + updates.length);
+
+  if (updates.length === 0) {
+    lines.push('  -> No updates found.');
+    lines.push('  Possible causes:');
+    lines.push('    1. A webhook is active (run --token-check to confirm).');
+    lines.push('    2. No messages have been sent to the bot yet.');
+    lines.push('    3. A prior getUpdates call set a high offset that consumed all pending updates.');
+    lines.push('  Next step: run --token-check to inspect webhook status.');
+  }
+
+  const summaries = updates.map(function(u) {
+    const msg = u.message || u.edited_message || {};
+    const chat = msg.chat || {};
+    const from = msg.from || {};
+    return {
+      update_id: u.update_id,
+      chat_id: chat.id != null ? chat.id : null,
+      chat_type: chat.type || null,
+      sender_id: from.id != null ? from.id : null,
+      sender_username: from.username || null,
+      text: msg.text || null,
+      date: msg.date || null,
+    };
+  });
+
+  for (const s of summaries) {
+    lines.push('');
+    lines.push('  update_id: ' + s.update_id);
+    lines.push('  chat_id: ' + (s.chat_id != null ? s.chat_id : '(missing)'));
+    lines.push('  chat_type: ' + (s.chat_type || '(missing)'));
+    lines.push('  sender_id: ' + (s.sender_id != null ? s.sender_id : '(missing)'));
+    lines.push('  sender_username: ' + (s.sender_username ? '@' + s.sender_username : '(missing)'));
+    lines.push('  text: ' + (s.text != null ? s.text : '(no text)'));
+    lines.push('  date: ' + (s.date != null ? new Date(s.date * 1000).toISOString() : '(missing)'));
+  }
+
+  return {
+    ok: true,
+    mode: 'get-updates-debug',
+    updateCount: updates.length,
+    updates: summaries,
+    lines,
+    note: 'No offset set. Updates not consumed. Safe to call repeatedly.',
+  };
+}
+
+async function buildDeleteWebhook(env, args, deps) {
+  const dryRun = Boolean(args['dry-run']);
+  const token = normalizeToken(env.TELEGRAM_BOT_TOKEN);
+  if (!token) {
+    throw new Error('TELEGRAM_BOT_TOKEN is required for --delete-webhook.');
+  }
+
+  const webhook = await deps.telegramGetWebhookInfo(token);
+  const webhookSet = Boolean(webhook && webhook.url);
+
+  const lines = [
+    'Chintu Telegram delete-webhook',
+    '  current webhook: ' + (webhookSet ? 'SET' : 'not set'),
+    '  drop_pending_updates: false (hardcoded — updates are preserved, never dropped)',
+  ];
+
+  if (dryRun) {
+    lines.push('  mode: DRY RUN — no webhook will be deleted.');
+    if (webhookSet) {
+      lines.push('  would delete: YES (webhook is currently set)');
+      lines.push('  to actually delete: rerun without --dry-run');
+    } else {
+      lines.push('  would delete: NO (webhook was already not set)');
+    }
+    return {
+      ok: true,
+      mode: 'delete-webhook-dry-run',
+      webhookSet,
+      wouldDelete: webhookSet,
+      dropPendingUpdates: false,
+      lines,
+    };
+  }
+
+  if (!webhookSet) {
+    lines.push('  result: nothing to delete (webhook was already not set).');
+    return {
+      ok: true,
+      mode: 'delete-webhook',
+      webhookSet: false,
+      deleted: false,
+      reason: 'webhook was not set',
+      lines,
+    };
+  }
+
+  const result = await deps.telegramDeleteWebhook(token, false);
+  lines.push('  result: ' + (result.ok ? 'deleted OK' : 'FAIL'));
+  lines.push('  next step: run --poll-once --dry-run to verify getUpdates now returns updates.');
+
+  return {
+    ok: Boolean(result.ok),
+    mode: 'delete-webhook',
+    webhookSet: true,
+    deleted: Boolean(result.ok),
+    dropPendingUpdates: false,
+    apiResult: { ok: Boolean(result.ok) },
+    lines,
+  };
+}
+
 function extractDiscoveryIds(preview) {
   return {
     chatId: preview && preview.commandSummary ? preview.commandSummary.chatId || null : null,
@@ -389,6 +642,18 @@ async function runWithArgs(argv, env, deps) {
     return buildSetupCheck(env, deps);
   }
 
+  if (args['token-check']) {
+    return buildTokenCheck(env, deps);
+  }
+
+  if (args['get-updates-debug']) {
+    return buildGetUpdatesDebug(env, deps);
+  }
+
+  if (args['delete-webhook']) {
+    return buildDeleteWebhook(env, args, deps);
+  }
+
   if (args.fixture) {
     const fixture = loadFixture(String(args.fixture));
     selected = selectUpdate(fixture.updates);
@@ -409,7 +674,7 @@ async function runWithArgs(argv, env, deps) {
     sourceMode = discoveryMode ? 'poll-once-discovery' : 'poll-once';
     selected.offset = Number.isFinite(offset) ? offset : null;
   } else {
-    throw new Error('Choose one source: --fixture <path>, --poll-once, or --setup-check.');
+    throw new Error('Choose one source: --fixture <path>, --poll-once, --setup-check, --token-check, --get-updates-debug, or --delete-webhook.');
   }
 
   if (!selected || !selected.update) {
@@ -421,7 +686,7 @@ async function runWithArgs(argv, env, deps) {
       executeLocalRequested,
       updatesSeen: selected ? selected.count : 0,
       nextOffset: selected ? selected.nextOffset : null,
-      message: 'No Telegram updates were available.',
+      message: 'No Telegram updates were available. If unexpected, run --token-check (an active webhook causes getUpdates to return nothing).',
       auditLog: path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
     };
     appendAudit({
@@ -540,6 +805,27 @@ function printUsage() {
   console.log('  node scripts/chintu-telegram-runner.js --poll-once --dry-run --discover-ids');
   console.log('  node scripts/chintu-telegram-runner.js --poll-once --dry-run --execute-local');
   console.log('  node scripts/chintu-telegram-runner.js --poll-once --send');
+  console.log('');
+  console.log('  --token-check');
+  console.log('    Check token: getMe + getWebhookInfo. Prints bot id/username/first_name + webhook status.');
+  console.log('    Never prints token. No send. No secrets. Local diagnostic only.');
+  console.log('');
+  console.log('  --get-updates-debug');
+  console.log('    getUpdates with timeout=0, limit=10. Prints update details. No offset set.');
+  console.log('    Updates NOT consumed. Safe to call repeatedly. No send. No token printed.');
+  console.log('');
+  console.log('  --delete-webhook --dry-run');
+  console.log('    Preview webhook deletion only. No actual delete. Shows current webhook state.');
+  console.log('');
+  console.log('  --delete-webhook');
+  console.log('    Delete the configured webhook. drop_pending_updates=false (updates preserved).');
+  console.log('    Run --dry-run first to preview. Requires TELEGRAM_BOT_TOKEN in env.');
+  console.log('');
+  console.log('Extra examples:');
+  console.log('  node scripts/chintu-telegram-runner.js --token-check');
+  console.log('  node scripts/chintu-telegram-runner.js --get-updates-debug');
+  console.log('  node scripts/chintu-telegram-runner.js --delete-webhook --dry-run');
+  console.log('  node scripts/chintu-telegram-runner.js --delete-webhook');
 }
 
 async function main() {
@@ -554,9 +840,14 @@ async function main() {
     telegramSendMessage,
     probeLocalBridge,
     executeLocalBridgeChat,
+    telegramGetMe,
+    telegramGetWebhookInfo,
+    telegramGetUpdatesDebug,
+    telegramDeleteWebhook,
   });
 
-  if (result.mode === 'setup-check') {
+  const LINES_ONLY_MODES = ['setup-check', 'token-check', 'get-updates-debug', 'delete-webhook-dry-run', 'delete-webhook'];
+  if (result.lines && Array.isArray(result.lines) && LINES_ONLY_MODES.indexOf(result.mode) !== -1) {
     console.log(result.lines.join('\n'));
     return;
   }
@@ -581,11 +872,19 @@ module.exports = {
   redactText,
   runWithArgs,
   requestJson,
+  normalizeToken,
   telegramGetUpdates,
+  telegramGetMe,
+  telegramGetWebhookInfo,
+  telegramGetUpdatesDebug,
+  telegramDeleteWebhook,
   telegramSendMessage,
   probeLocalBridge,
   executeLocalBridgeChat,
   buildSetupCheck,
+  buildTokenCheck,
+  buildGetUpdatesDebug,
+  buildDeleteWebhook,
   paths: {
     auditPath,
   },

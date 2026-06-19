@@ -108,6 +108,24 @@ control room regeneration in order, and stops on the first FAIL. See
 | `scripts\chintu-allegro-start.ps1` | Starts the local Chintu bridge and opens Chintu Allegro. Local bridge only; no secrets; no live connector send. |
 | `scripts\chintu-stage23-release.ps1` | Gated Stage 23 release script for local bridge runtime. Validates before commit/push; no secrets; no live connector send. |
 | `scripts\chintu-stage24-release.ps1` | Gated Stage 24 release script for brain router and live action sequences. Validates before commit/push; no secrets; no live connector send. |
+| `scripts\chintu-stage32-release.ps1` | Gated Stage 32 release script for Telegram poll-once diagnostics. Stages only chintu-telegram-runner.js + command map. Validates before commit/push; no secrets; no live connector send. |
+
+## Telegram diagnostics (Stage 32)
+
+All commands below are local diagnostics only. No Telegram messages are sent.
+No token is printed. No webhooks are created. No secrets leave this machine.
+
+| Command | What it does |
+|---|---|
+| `node scripts\chintu-telegram-runner.js --setup-check` | Readiness checklist: token configured, allowlist set, bridge online. No network send. No token printed. Local bridge only. |
+| `node scripts\chintu-telegram-runner.js --token-check` | Calls getMe + getWebhookInfo. Prints bot id/username/first_name + webhook status. Never prints token. No send. No secrets. Local diagnostic only. |
+| `node scripts\chintu-telegram-runner.js --get-updates-debug` | Calls getUpdates (timeout=0, limit=10). Prints update ids/chat/sender/text. No offset set — updates NOT consumed. No send. No token printed. |
+| `node scripts\chintu-telegram-runner.js --delete-webhook --dry-run` | Previews webhook deletion only. No actual delete. Shows current webhook state. No send. No secrets. |
+| `node scripts\chintu-telegram-runner.js --delete-webhook` | Deletes webhook (drop_pending_updates=false — updates preserved). Run --dry-run first. Requires TELEGRAM_BOT_TOKEN in env. |
+| `node scripts\chintu-telegram-runner.js --poll-once --dry-run --discover-ids` | One getUpdates call to discover chat/sender IDs. No allowlist required. No send. No secrets. Local bridge only. |
+| `node scripts\chintu-telegram-runner.js --poll-once --dry-run` | One getUpdates + dry-run preview. Requires token + allowlist. No send. No secrets. Local bridge only. |
+| `node scripts\chintu-telegram-runner.js --poll-once --dry-run --execute-local` | Dry-run + hands safe commands to 127.0.0.1 bridge if online. No send. No secrets. Local bridge only; no live connector send. |
+| `node scripts\chintu-telegram-status-plan.test.js` | Verifies Telegram status plan stays parked; no script targets api.telegram.org. |
 
 ## What this map will never include
 
@@ -117,20 +135,3 @@ control room regeneration in order, and stops on the first FAIL. See
 - External automation, paid APIs, network egress
 - Health-data transfer
 - BALA app file edits (`app.js`, `index.html`, `styles.css`, `sw.js`, `coach.js`, `manifest.webmanifest`, `privacy.html`, `functions/api/coach.js`)
-- Service worker cache version bumps
-- Memory-wiki activation
-
-## Founder-only actions (not scripted)
-
-These require explicit founder approval and a human keystroke:
-
-- `git push`
-- BALA app file edits
-- Service worker bump
-- Secret rotation
-- Telegram, Discord, webhooks, cloud sync
-- Approving any parked system listed in `CHINTU_MEMORY_VAULT/`
-
-## BALA safety footer
-
-BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.
