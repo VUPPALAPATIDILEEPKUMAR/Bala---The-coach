@@ -29,7 +29,6 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const url = require('url');
 
 // Stage 24 brain + provider layers. These are pure-local modules (no network).
 const brain = require('./chintu-brain-router.js');
@@ -417,6 +416,14 @@ function statusPayload() {
 
 let ACTIVE_PORT = DEFAULT_PORT;
 
+function getRequestRoute(req) {
+  try {
+    return new URL(req.url || '/', 'http://' + HOST).pathname;
+  } catch (_) {
+    return '/';
+  }
+}
+
 function handler(req, res) {
   const origin = req.headers.origin;
   if (req.method === 'OPTIONS') return sendJson(req, res, 204, {});
@@ -426,8 +433,7 @@ function handler(req, res) {
     return sendJson(req, res, 403, { ok: false, error: 'Origin not allowed. The bridge only serves the local Chintu Allegro UI.' });
   }
 
-  const parsed = url.parse(req.url, true);
-  const route = parsed.pathname;
+  const route = getRequestRoute(req);
 
   if (req.method === 'GET' && route === '/api/health') {
     return sendJson(req, res, 200, { ok: true, status: 'alive', service: 'chintu-local-bridge', port: ACTIVE_PORT, time: new Date().toISOString() });
@@ -551,7 +557,7 @@ function main() {
 }
 
 // Export internals for the test harness; only auto-start when run directly.
-module.exports = { ACTIONS, SEQUENCES, redact, originAllowed, runAction, runSequence, handleChat, statusPayload, HOST, DEFAULT_PORT, handler, start };
+module.exports = { ACTIONS, SEQUENCES, redact, originAllowed, runAction, runSequence, handleChat, statusPayload, HOST, DEFAULT_PORT, handler, start, getRequestRoute };
 
 if (require.main === module) {
   main();

@@ -127,6 +127,11 @@ function request(port, method, path, bodyObj, headers) {
     ok(chatGit.status === 200 && Array.isArray(chatGit.json.results) && chatGit.json.results.length >= 1,
       'chat "check git" runs git_status live and returns results');
 
+    const seqGood = await request(port, 'POST', '/api/sequence', { sequence: 'chintu_health_check' });
+    ok(seqGood.status === 200 && seqGood.json.sequence === 'chintu_health_check' &&
+      Array.isArray(seqGood.json.results) && seqGood.json.results.length === bridge.SEQUENCES.chintu_health_check.steps.length,
+      'named sequence runs and returns one result per allowlisted step');
+
     // --- Stage 24: emergency override never runs actions -------------------
     const chatEmg = await request(port, 'POST', '/api/chat', { message: 'I have chest pain' });
     ok(chatEmg.json.intent === 'health_emergency' && chatEmg.json.results.length === 0,
