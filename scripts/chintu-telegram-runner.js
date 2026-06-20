@@ -13,7 +13,7 @@ const https = require('node:https');
 
 const adapter = require('./chintu-telegram-adapter.js');
 const { buildTrace } = require('./chintu-action-trace.js');
-const { enqueueAction, loadQueue, APPROVAL_PHRASES, executeApprovedAction, writeQueue } = require('./chintu-approve.js');
+const { enqueueAction, loadQueue, APPROVAL_PHRASES, executeApprovedAction, writeQueue, runReject } = require('./chintu-approve.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const outboxDir = path.join(repoRoot, 'CHINTU_OUTBOX');
@@ -782,6 +782,110 @@ async function runWithArgs(argv, env, deps) {
         healthDataPresent: false,
       });
       return s39PendResult;
+    }
+
+    // -- REJECT keyword -------------------------------------------------------
+    // Syntax: "REJECT" (auto-picks the single pending item)
+    //         "REJECT <approvalId>" (rejects a specific item by ID)
+    // Calls runReject() from chintu-approve.js (sets rejectedAt + audit).
+    if (/^REJECT(\s+\S+)?$/i.test(s39Text)) {
+      const s40Parts    = s39Text.trim().split(/\s+/);
+      const s40Explicit = s40Parts.length >= 2 ? s40Parts[1] : null;
+      const s40Queue    = loadQueue();
+      const s40Pending  = s40Queue.filter(function(e) { return !e.approvedAt && !e.rejectedAt; });
+
+      let s40TargetId = s40Explicit;
+      if (!s40TargetId) {
+        // No explicit ID: auto-select only if exactly one pending item.
+        if (s40Pending.length === 0) {
+          const s40NothingText = '❌ Nothing to reject.\n\nNo pending approvals found.\nSend "pending approvals" to check.';
+          const s40NothingResult = {
+            ok:                   false,
+            mode:                 'rejection_executed',
+            sourceMode,
+            reason:               'no_pending_items',
+            pendingApprovalCount: 0,
+            auditLog:             path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
+          };
+          s40NothingResult.send = await s39Send(s39ChatId, s40NothingText);
+          appendAudit({
+            timestamp:         new Date().toISOString(),
+            sourceMode,
+            mode:              'rejection_executed',
+            reason:            'no_pending_items',
+            secretsPresent:    false,
+            healthDataPresent: false,
+          });
+          return s40NothingResult;
+        }
+        if (s40Pending.length > 1) {
+          const s40IdLines = ['⚠️ Multiple pending approvals. Specify which to reject:\n'];
+          for (let _mi = 0; _mi < s40Pending.length; _mi++) {
+            s40IdLines.push('  ' + s40Pending[_mi].approvalId + '  (' + s40Pending[_mi].capabilityId + ')');
+          }
+          s40IdLines.push('\nExample: REJECT tel_upd_900011');
+          const s40MultiText   = s40IdLines.join('\n');
+          const s40MultiResult = {
+            ok:                   false,
+            mode:                 'rejection_executed',
+            sourceMode,
+            reason:               'ambiguous_multiple',
+            pendingApprovalCount: s40Pending.length,
+            auditLog:             path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
+          };
+          s40MultiResult.send = await s39Send(s39ChatId, s40MultiText);
+          appendAudit({
+            timestamp:         new Date().toISOString(),
+            sourceMode,
+            mode:              'rejection_executed',
+            reason:            'ambiguous_multiple',
+            secretsPresent:    false,
+            healthDataPresent: false,
+          });
+          return s40MultiResult;
+        }
+        s40TargetId = s40Pending[0].approvalId;
+      }
+
+      // Call runReject -- sets rejectedAt in queue and writes to audit log.
+      const s40Prior        = s40Queue.find(function(e) { return e.approvalId === s40TargetId; });
+      const s40RejectResult = runReject(s40TargetId);
+
+      let s40ReplyText;
+      if (s40RejectResult.ok) {
+        s40ReplyText =
+          '❌ Rejected.\n\n' +
+          'Approval ID: ' + s40TargetId + '\n' +
+          (s40Prior ? 'Capability: ' + s40Prior.capabilityId + '\n' : '') +
+          '\nThe queued item has been cancelled.';
+      } else {
+        s40ReplyText =
+          '⚠️ Could not reject: ' + (s40RejectResult.reason || 'unknown error') + '\n\n' +
+          'ID: ' + s40TargetId;
+      }
+
+      const s40FinalPending = loadQueue().filter(function(e) { return !e.approvedAt && !e.rejectedAt; });
+      const s40Result       = {
+        ok:                   s40RejectResult.ok,
+        mode:                 'rejection_executed',
+        sourceMode,
+        reason:               s40RejectResult.reason || null,
+        approvalId:           s40TargetId,
+        capabilityId:         s40Prior ? s40Prior.capabilityId : null,
+        pendingApprovalCount: s40FinalPending.length,
+        auditLog:             path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
+      };
+      s40Result.send = await s39Send(s39ChatId, s40ReplyText);
+      appendAudit({
+        timestamp:         new Date().toISOString(),
+        sourceMode,
+        mode:              'rejection_executed',
+        approvalId:        s40TargetId,
+        rejectResult:      s40RejectResult,
+        secretsPresent:    false,
+        healthDataPresent: false,
+      });
+      return s40Result;
     }
 
     // -- Approval phrase match -------------------------------------------------

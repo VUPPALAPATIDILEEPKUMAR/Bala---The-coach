@@ -413,6 +413,138 @@ function readAuditLines() {
   assert.equal(s39NoMatchSendCalled, true, 'Stage39 T4: Telegram reply should be sent for no-match case');
   assert.match(s39NoMatchText, /No pending approval/i, 'Stage39 T4: reply should explain no match found');
 
+  // Stage 40: REJECT keyword handler.
+  // -------------------------------------------------------------------------
+
+  // Stage 40 Test 1: "REJECT" with empty queue -> no_pending_items.
+  clearAllQueue();
+  let s40T1SendText = null;
+  const rejectEmpty = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-reject-phrase.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s40T1SendText = text;
+        return { message_id: 3001 };
+      },
+    }),
+  );
+  assert.equal(rejectEmpty.mode, 'rejection_executed', 'Stage40 T1: mode should be rejection_executed');
+  assert.equal(rejectEmpty.ok, false, 'Stage40 T1: reject with empty queue should not be ok');
+  assert.equal(rejectEmpty.reason, 'no_pending_items', 'Stage40 T1: reason should be no_pending_items');
+  assert.ok(s40T1SendText && /nothing to reject/i.test(s40T1SendText), 'Stage40 T1: reply should say nothing to reject');
+
+  // Stage 40 Test 2: "REJECT" with a single pending entry -> auto-selects and rejects.
+  clearAllQueue();
+  await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-git-push.json', '--send'],
+    s39BaseEnv,
+    makeDeps({ telegramSendMessage: async () => ({ message_id: 3002 }) }),
+  );
+  let s40T2SendText = null;
+  const rejectSingle = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-reject-phrase.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s40T2SendText = text;
+        return { message_id: 3003 };
+      },
+    }),
+  );
+  assert.equal(rejectSingle.mode, 'rejection_executed', 'Stage40 T2: mode should be rejection_executed');
+  assert.equal(rejectSingle.ok, true, 'Stage40 T2: auto-reject single pending should succeed');
+  assert.ok(s40T2SendText && /rejected/i.test(s40T2SendText), 'Stage40 T2: reply should confirm rejection');
+  const s40QueueAfterT2 = loadQueue();
+  const s40RejectedEntry = s40QueueAfterT2.find(function(e) { return e.approvalId === 'tel_upd_900011'; });
+  assert.ok(s40RejectedEntry && s40RejectedEntry.rejectedAt, 'Stage40 T2: queue entry should have rejectedAt set');
+
+  // Stage 40 Test 3: "REJECT <explicit-id>" targets the right entry.
+  clearAllQueue();
+  await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-git-push.json', '--send'],
+    s39BaseEnv,
+    makeDeps({ telegramSendMessage: async () => ({ message_id: 3004 }) }),
+  );
+  const s40T3FixturePath = path.join(__dirname, 'fixtures', '_tmp_reject_explicit.json');
+  const s40T3Body = JSON.stringify({
+    update_id: 900015,
+    message: { message_id: 4015, date: 1781741400,
+      chat: { id: 710001, type: 'private' },
+      from: { id: 510001, is_bot: false, first_name: 'Founder' },
+      text: 'REJECT tel_upd_900011' },
+  });
+  fs.writeFileSync(s40T3FixturePath, s40T3Body, 'utf8');
+  let s40T3SendText = null;
+  const rejectExplicit = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/_tmp_reject_explicit.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s40T3SendText = text;
+        return { message_id: 3005 };
+      },
+    }),
+  );
+  fs.writeFileSync(s40T3FixturePath, '{}', 'utf8');  // VirtioFS-safe cleanup
+  assert.equal(rejectExplicit.mode, 'rejection_executed', 'Stage40 T3: mode should be rejection_executed');
+  assert.equal(rejectExplicit.ok, true, 'Stage40 T3: explicit-id reject should succeed');
+  assert.equal(rejectExplicit.approvalId, 'tel_upd_900011', 'Stage40 T3: approvalId should match requested id');
+
+  // Stage 40 Test 4: "REJECT" with multiple pending entries -> ambiguous_multiple.
+  clearAllQueue();
+  const s40T4BaseEntry = {
+    capabilityId: 'chintu.gitPush', riskLabel: 'code_change',
+    source: 'telegram', userText: 'git push', preview: 'push to origin/main',
+    approvalPhrase: 'APPROVE GIT PUSH', secretsPresent: false,
+    healthDataPresent: false, createdAt: new Date().toISOString(),
+    actionDescription: 'stage40 multi-pending test',
+  };
+  enqueueAction(Object.assign({}, s40T4BaseEntry, { approvalId: 'tel_upd_multi_a' }));
+  enqueueAction(Object.assign({}, s40T4BaseEntry, { approvalId: 'tel_upd_multi_b' }));
+  let s40T4SendText = null;
+  const rejectAmbiguous = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-reject-phrase.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s40T4SendText = text;
+        return { message_id: 3006 };
+      },
+    }),
+  );
+  assert.equal(rejectAmbiguous.mode, 'rejection_executed', 'Stage40 T4: mode should be rejection_executed');
+  assert.equal(rejectAmbiguous.ok, false, 'Stage40 T4: ambiguous reject should not be ok');
+  assert.equal(rejectAmbiguous.reason, 'ambiguous_multiple', 'Stage40 T4: reason should be ambiguous_multiple');
+  assert.ok(s40T4SendText && /multiple/i.test(s40T4SendText), 'Stage40 T4: reply should mention multiple pending');
+
+  // Stage 40 Test 5: "REJECT <unknown-id>" -> not_found.
+  clearAllQueue();
+  const s40T5FixturePath = path.join(__dirname, 'fixtures', '_tmp_reject_notfound.json');
+  const s40T5Body = JSON.stringify({
+    update_id: 900016,
+    message: { message_id: 4016, date: 1781741500,
+      chat: { id: 710001, type: 'private' },
+      from: { id: 510001, is_bot: false, first_name: 'Founder' },
+      text: 'REJECT tel_upd_999999' },
+  });
+  fs.writeFileSync(s40T5FixturePath, s40T5Body, 'utf8');
+  let s40T5SendText = null;
+  const rejectNotFound = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/_tmp_reject_notfound.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s40T5SendText = text;
+        return { message_id: 3007 };
+      },
+    }),
+  );
+  fs.writeFileSync(s40T5FixturePath, '{}', 'utf8');  // VirtioFS-safe cleanup
+  assert.equal(rejectNotFound.mode, 'rejection_executed', 'Stage40 T5: mode should be rejection_executed');
+  assert.equal(rejectNotFound.ok, false, 'Stage40 T5: reject with unknown id should not be ok');
+  assert.equal(rejectNotFound.reason, 'not_found', 'Stage40 T5: reason should be not_found');
+
   const auditLines = readAuditLines();
   assert.ok(auditLines.length >= 12, 'audit log should contain one line per actionable run');
 
