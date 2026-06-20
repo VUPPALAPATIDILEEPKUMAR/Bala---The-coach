@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const runner = require('./chintu-telegram-runner.js');
-const { queuePath, loadQueue } = require('./chintu-approve.js');
+const { queuePath, loadQueue, enqueueAction } = require('./chintu-approve.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const auditPath = runner.paths.auditPath;
@@ -313,6 +313,105 @@ function readAuditLines() {
 
   // 2. Second run with same update_id: already-queued skip path — still sends confirmation (via maybeSend reply).
   clearGitPushQueueEntry();
+
+  // -------------------------------------------------------------------------
+  // Stage 39: Pre-routing approval phrase handler + "pending approvals" cmd.
+  // -------------------------------------------------------------------------
+
+  function clearAllQueue() {
+    if (fs.existsSync(queuePath)) {
+      fs.writeFileSync(queuePath, '', 'utf8');
+    }
+  }
+
+  const s39BaseEnv = {
+    TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+    CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
+    CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
+    CHINTU_TELEGRAM_SEND_ENABLED: '1',
+  };
+
+  // Stage 39 Test 1: "pending approvals" with empty queue.
+  clearAllQueue();
+  const pendingEmpty = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-pending-approvals.json', '--send'],
+    s39BaseEnv,
+    makeDeps({ telegramSendMessage: async () => ({ message_id: 2001 }) }),
+  );
+  assert.equal(pendingEmpty.mode, 'pending_approvals', 'Stage39 T1: mode should be pending_approvals');
+  assert.equal(pendingEmpty.pendingCount, 0, 'Stage39 T1: empty queue should have pendingCount 0');
+  assert.equal(pendingEmpty.ok, true, 'Stage39 T1: pending approvals (empty) should be ok');
+
+  // Stage 39 Test 2: "pending approvals" with an item in the queue.
+  clearAllQueue();
+  // Enqueue by running git-push fixture (Stage 35 path).
+  await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-git-push.json', '--send'],
+    s39BaseEnv,
+    makeDeps({ telegramSendMessage: async () => ({ message_id: 2002 }) }),
+  );
+  const pendingWithItems = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-pending-approvals.json', '--send'],
+    s39BaseEnv,
+    makeDeps({ telegramSendMessage: async () => ({ message_id: 2003 }) }),
+  );
+  assert.equal(pendingWithItems.mode, 'pending_approvals', 'Stage39 T2: mode should be pending_approvals');
+  assert.ok(pendingWithItems.pendingCount >= 1, 'Stage39 T2: should have at least 1 pending item');
+
+  // Stage 39 Test 3: Approval phrase match -- "APPROVE GIT PUSH" with a pending entry.
+  clearAllQueue();
+  // Enqueue git_push first.
+  await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-git-push.json', '--send'],
+    s39BaseEnv,
+    makeDeps({ telegramSendMessage: async () => ({ message_id: 2004 }) }),
+  );
+  let s39ApproveSendCalled = false;
+  let s39ApproveText = null;
+  const approveMatch = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-approve-phrase.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s39ApproveSendCalled = true;
+        s39ApproveText = text;
+        return { message_id: 2005 };
+      },
+    }),
+  );
+  assert.equal(approveMatch.mode, 'approval_executed', 'Stage39 T3: mode should be approval_executed');
+  assert.equal(approveMatch.ok, true, 'Stage39 T3: approve match should succeed');
+  assert.equal(approveMatch.capabilityId, 'chintu.gitPush', 'Stage39 T3: capabilityId should be chintu.gitPush');
+  assert.ok(approveMatch.executionResult, 'Stage39 T3: executionResult should be present');
+  assert.equal(approveMatch.executionResult.ok, true, 'Stage39 T3: executionResult.ok should be true');
+  assert.equal(approveMatch.executionResult.dryRun, true, 'Stage39 T3: should be dry-run without CHINTU_GITPUSH_ENABLED');
+  assert.equal(s39ApproveSendCalled, true, 'Stage39 T3: Telegram reply should be sent on approval');
+  assert.match(s39ApproveText, /approved|Approved/i, 'Stage39 T3: reply should confirm approval');
+  // Verify queue entry now has approvedAt.
+  const s39QueueAfter = loadQueue();
+  const s39ApprovedEntry = s39QueueAfter.find((e) => e.approvalId === 'tel_upd_900011');
+  assert.ok(s39ApprovedEntry && s39ApprovedEntry.approvedAt, 'Stage39 T3: queue entry should have approvedAt set');
+
+  // Stage 39 Test 4: Approval phrase with no matching pending entry.
+  clearAllQueue();
+  let s39NoMatchSendCalled = false;
+  let s39NoMatchText = null;
+  const approveNoMatch = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-approve-phrase.json', '--send'],
+    s39BaseEnv,
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        s39NoMatchSendCalled = true;
+        s39NoMatchText = text;
+        return { message_id: 2006 };
+      },
+    }),
+  );
+  assert.equal(approveNoMatch.mode, 'approval_executed', 'Stage39 T4: mode should be approval_executed');
+  assert.equal(approveNoMatch.ok, false, 'Stage39 T4: approve with no match should not be ok');
+  assert.equal(approveNoMatch.reason, 'no_pending_entry', 'Stage39 T4: reason should be no_pending_entry');
+  assert.equal(s39NoMatchSendCalled, true, 'Stage39 T4: Telegram reply should be sent for no-match case');
+  assert.match(s39NoMatchText, /No pending approval/i, 'Stage39 T4: reply should explain no match found');
 
   const auditLines = readAuditLines();
   assert.ok(auditLines.length >= 12, 'audit log should contain one line per actionable run');

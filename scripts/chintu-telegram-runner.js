@@ -13,7 +13,7 @@ const https = require('node:https');
 
 const adapter = require('./chintu-telegram-adapter.js');
 const { buildTrace } = require('./chintu-action-trace.js');
-const { enqueueAction, loadQueue, APPROVAL_PHRASES } = require('./chintu-approve.js');
+const { enqueueAction, loadQueue, APPROVAL_PHRASES, executeApprovedAction, writeQueue } = require('./chintu-approve.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const outboxDir = path.join(repoRoot, 'CHINTU_OUTBOX');
@@ -717,6 +717,171 @@ async function runWithArgs(argv, env, deps) {
   }
 
   const preview = adapter.buildTelegramDryRunPreview(selected.update, allowlistOptions);
+
+  // -------------------------------------------------------------------------
+  // Stage 39: Pre-routing handlers for approval phrases + "pending approvals".
+  // These bypass normal brain-router routing and return early.
+  // Gating: allowlisted sender, not discovery mode, non-empty text.
+  // -------------------------------------------------------------------------
+  if (preview && preview.ok && preview.allowlisted && !discoveryMode) {
+    const s39Text    = (preview.text || '').trim();
+    const s39Upper   = s39Text.toUpperCase();
+    const s39Enabled = String(env.CHINTU_TELEGRAM_SEND_ENABLED || '').trim() === '1';
+    const s39ChatId  = preview.replyEnvelope && preview.replyEnvelope.chatId;
+
+    // Inline async helper to send a Telegram reply and capture the send result.
+    const s39Send = async function(chatId, text) {
+      const tok = String(env.TELEGRAM_BOT_TOKEN || '').trim();
+      if (!sendRequested || !s39Enabled || !chatId || !tok) {
+        return { status: sendRequested ? 'blocked' : 'not_requested', sent: false };
+      }
+      try {
+        const sent = await deps.telegramSendMessage(tok, chatId, text);
+        return { status: 'sent', sent: true, messageId: sent && sent.message_id != null ? sent.message_id : null };
+      } catch (err) {
+        return { status: 'error', sent: false, reason: redactText(String(err && err.message ? err.message : err)) };
+      }
+    };
+
+    // -- "pending approvals" command ------------------------------------------
+    if (s39Text.toLowerCase() === 'pending approvals') {
+      const s39Queue   = loadQueue();
+      const s39Pending = s39Queue.filter(function(e) { return !e.approvedAt && !e.rejectedAt; });
+      let s39ReplyText;
+      if (s39Pending.length === 0) {
+        s39ReplyText = '✅ No pending approvals.\n\nAll queued items have been decided.';
+      } else {
+        const s39Lines = ['🔔 Pending approvals (' + s39Pending.length + '):\n'];
+        for (let _pi = 0; _pi < s39Pending.length; _pi++) {
+          const _pe = s39Pending[_pi];
+          s39Lines.push('• ' + _pe.capabilityId + ' (ID: ' + _pe.approvalId + ')');
+          s39Lines.push('  Created: ' + _pe.createdAt);
+          s39Lines.push('  Command: "' + (_pe.userText || '') + '"');
+          s39Lines.push('  Approve with: ' + _pe.approvalPhrase + '\n');
+        }
+        s39ReplyText = s39Lines.join('\n');
+      }
+      const s39PendResult = {
+        ok:                   true,
+        mode:                 'pending_approvals',
+        sourceMode,
+        dryRun,
+        sendRequested,
+        preview,
+        pendingCount:         s39Pending.length,
+        pendingApprovalCount: s39Pending.length,
+        auditLog:             path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
+      };
+      s39PendResult.send = await s39Send(s39ChatId, s39ReplyText);
+      appendAudit({
+        timestamp:         new Date().toISOString(),
+        sourceMode,
+        mode:              'pending_approvals',
+        pendingCount:      s39Pending.length,
+        secretsPresent:    false,
+        healthDataPresent: false,
+      });
+      return s39PendResult;
+    }
+
+    // -- Approval phrase match -------------------------------------------------
+    // Build reverse map: exact phrase -> capabilityId.
+    const S39_PHRASE_MAP = {};
+    const S39_PHRASE_ENTRIES = Object.entries(APPROVAL_PHRASES);
+    for (let _pei = 0; _pei < S39_PHRASE_ENTRIES.length; _pei++) {
+      S39_PHRASE_MAP[S39_PHRASE_ENTRIES[_pei][1]] = S39_PHRASE_ENTRIES[_pei][0];
+    }
+
+    if (Object.prototype.hasOwnProperty.call(S39_PHRASE_MAP, s39Upper)) {
+      const s39TargetCapId = S39_PHRASE_MAP[s39Upper];
+      const s39Queue       = loadQueue();
+      const s39MatchIdx    = s39Queue.findIndex(function(e) {
+        return !e.approvedAt && !e.rejectedAt && e.approvalPhrase === s39Upper;
+      });
+
+      if (s39MatchIdx === -1) {
+        // No matching pending entry.
+        const s39NfText =
+          '❌ No pending approval found for: ' + s39Upper + '\n\n' +
+          'The item may have already been approved, rejected, or never queued.\n' +
+          'Send "pending approvals" to check.';
+        const s39NfResult = {
+          ok:                   false,
+          mode:                 'approval_executed',
+          sourceMode,
+          reason:               'no_pending_entry',
+          capabilityId:         s39TargetCapId,
+          pendingApprovalCount: s39Queue.filter(function(e) { return !e.approvedAt && !e.rejectedAt; }).length,
+          auditLog:             path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
+        };
+        s39NfResult.send = await s39Send(s39ChatId, s39NfText);
+        appendAudit({
+          timestamp:         new Date().toISOString(),
+          sourceMode,
+          mode:              'approval_not_found',
+          phrase:            s39Upper,
+          secretsPresent:    false,
+          healthDataPresent: false,
+        });
+        return s39NfResult;
+      }
+
+      // Found a matching pending entry -- execute it.
+      const s39Entry      = s39Queue[s39MatchIdx];
+      const s39Now        = new Date().toISOString();
+      const s39ExecResult = executeApprovedAction(s39Entry, env);
+      const s39Updated    = Object.assign({}, s39Entry, {
+        approvedAt:      s39Now,
+        executedAt:      s39ExecResult.executedAt,
+        executionResult: s39ExecResult,
+      });
+      const s39NewQueue   = s39Queue.map(function(e, i) { return i === s39MatchIdx ? s39Updated : e; });
+      writeQueue(s39NewQueue);
+
+      // Log the approval decision to the audit trail.
+      appendAudit({
+        timestamp:         s39Now,
+        traceVersion:      '1',
+        type:              'approval_decision',
+        approvalId:        s39Entry.approvalId,
+        capabilityId:      s39Entry.capabilityId,
+        riskLabel:         s39Entry.riskLabel,
+        source:            'telegram',
+        userText:          s39Entry.userText,
+        decision:          'approved',
+        approvedAt:        s39Now,
+        executedAt:        s39ExecResult.executedAt,
+        executionResult:   s39ExecResult,
+        secretsPresent:    false,
+        healthDataPresent: false,
+      });
+
+      const s39ReplyPrefix = s39ExecResult.ok
+        ? '✅ Approved and executed.'
+        : '❌ Approval accepted but execution failed.';
+      const s39ReplyText =
+        s39ReplyPrefix + '\n\n' +
+        'Capability: ' + s39Entry.capabilityId + '\n' +
+        'Result: '     + s39ExecResult.summary;
+
+      const s39ApproveResult = {
+        ok:                   true,
+        mode:                 'approval_executed',
+        sourceMode,
+        dryRun,
+        sendRequested,
+        preview,
+        capabilityId:         s39Entry.capabilityId,
+        approvalId:           s39Entry.approvalId,
+        executionResult:      s39ExecResult,
+        pendingApprovalCount: s39NewQueue.filter(function(e) { return !e.approvedAt && !e.rejectedAt; }).length,
+        auditLog:             path.relative(repoRoot, auditPath).replace(/\\/g, '/'),
+      };
+      s39ApproveResult.send = await s39Send(s39ChatId, s39ReplyText);
+      return s39ApproveResult;
+    }
+  }
+
   let bridge;
   if (discoveryMode) {
     bridge = { attempted: false, executed: false, reason: 'discover-ids mode never executes locally' };
