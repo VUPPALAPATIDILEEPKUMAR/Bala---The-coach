@@ -27,9 +27,10 @@
 //   * No network calls. No shell exec. No fs writes except CHINTU_OUTBOX.
 // =============================================================================
 
-const fs   = require('fs');
-const path = require('path');
+const fs       = require('fs');
+const path     = require('path');
 const readline = require('readline');
+const cp       = require('child_process');
 
 const repoRoot    = path.resolve(__dirname, '..');
 const outboxDir   = path.join(repoRoot, 'CHINTU_OUTBOX');
@@ -297,14 +298,93 @@ async function runApprove(approvalId, env, ioOverride) {
 }
 
 // ---------------------------------------------------------------------------
-// Execution stub (Stage 34)
-// Real per-capability execution wired in Stage 35.
+// Canonical approval phrases — exported so callers can enqueue with the
+// correct phrase without hard-coding strings in multiple places.
+// ---------------------------------------------------------------------------
+
+const APPROVAL_PHRASES = {
+  'chintu.gitPush':          'APPROVE GIT PUSH',
+  'telegram.sendMessage':    'APPROVE TELEGRAM SEND',
+  'telegram.deleteWebhook':  'APPROVE DELETE WEBHOOK',
+};
+
+// ---------------------------------------------------------------------------
+// Synchronous Telegram HTTPS helper used by executeApprovedAction.
+// Spawns a child node process so the caller stays synchronous.
+// Token is passed via env var — never on the command line.
+// Returns parsed JSON or throws on failure.
+// ---------------------------------------------------------------------------
+
+function callTelegramApiSync(method, body, env) {
+  const bodyJson = JSON.stringify(body);
+  const script = [
+    "'use strict';",
+    "const https = require('https');",
+    "const token = process.env.TELEGRAM_BOT_TOKEN || '';",
+    "if (!token) { process.stderr.write('TELEGRAM_BOT_TOKEN not set\\n'); process.exit(1); }",
+    "const method = process.env.__TG_METHOD || '';",
+    "const payload = process.env.__TG_BODY || '{}';",
+    "const req = https.request({",
+    "  hostname: 'api.telegram.org',",
+    "  path: '/bot' + token + '/' + method,",
+    "  method: 'POST',",
+    "  headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },",
+    "}, function(res) {",
+    "  let d = '';",
+    "  res.on('data', function(c) { d += c; });",
+    "  res.on('end', function() { process.stdout.write(d); });",
+    "});",
+    "req.on('error', function(e) { process.stderr.write(e.message + '\\n'); process.exit(1); });",
+    "req.write(payload);",
+    "req.end();",
+  ].join('\n');
+
+  const childEnv = Object.assign({}, env || {}, {
+    PATH: process.env.PATH || '',
+    __TG_METHOD: method,
+    __TG_BODY: bodyJson,
+  });
+
+  const spawnResult = cp.spawnSync('node', ['-e', script], {
+    encoding: 'utf8',
+    timeout: 15000,
+    env: childEnv,
+  });
+
+  if (spawnResult.error) {
+    throw new Error('Telegram API spawn failed: ' + spawnResult.error.message);
+  }
+  if (spawnResult.status !== 0) {
+    throw new Error('Telegram ' + method + ' failed: ' + (spawnResult.stderr || 'exit ' + spawnResult.status));
+  }
+  try {
+    return JSON.parse(spawnResult.stdout);
+  } catch (_) {
+    throw new Error('Telegram API non-JSON: ' + (spawnResult.stdout || '').slice(0, 200));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Real per-capability execution (Stage 35).
+// Stays SYNCHRONOUS — uses cp.execSync / cp.spawnSync so callers and tests
+// that call this directly in sync check() blocks remain unaffected.
+//
+// Gate logic:
+//   chintu.gitPush      → execSync 'git push origin main'
+//                         only when CHINTU_GITPUSH_ENABLED=1; else dry-run.
+//   telegram.sendMessage → callTelegramApiSync('sendMessage', ...)
+//                         only when CHINTU_TELEGRAM_SEND_ENABLED=1 AND
+//                         token + preview.chatId + preview.text are set; else dry-run.
+//   telegram.deleteWebhook → callTelegramApiSync('deleteWebhook', ...)
+//                         only when TELEGRAM_BOT_TOKEN is set; else dry-run.
+//   Any other capability → stub with summary containing 'stub' (tests assert this).
 // ---------------------------------------------------------------------------
 
 function executeApprovedAction(entry, env) {
   const now = new Date().toISOString();
+  env = env || {};
 
-  // Safety: never execute if health-sensitive (belt+suspenders).
+  // Safety belt: health-sensitive actions are NEVER executed via approval queue.
   if (entry.riskLabel === 'health_sensitive') {
     return {
       ok: false,
@@ -315,38 +395,172 @@ function executeApprovedAction(entry, env) {
     };
   }
 
-  // In Stage 34 all executions are dry-run stubs.
-  // Each capability will get a real executor in Stage 35.
-  const STUB_RESULTS = {
-    'chintu.gitPush': {
+  // -------------------------------------------------------------------------
+  // chintu.gitPush
+  // -------------------------------------------------------------------------
+  if (entry.capabilityId === 'chintu.gitPush') {
+    const gitPushEnabled = String(env.CHINTU_GITPUSH_ENABLED || '').trim() === '1';
+    if (gitPushEnabled) {
+      try {
+        const output = cp.execSync('git push origin main', {
+          cwd: repoRoot,
+          encoding: 'utf8',
+          timeout: 30000,
+        });
+        return {
+          ok: true,
+          executedAt: now,
+          dryRun: false,
+          summary: 'Git push executed: ' + (output || '').trim().split('\n')[0].slice(0, 120),
+          secretsPresent: false,
+          healthDataPresent: false,
+        };
+      } catch (err) {
+        const msg = String(err.stderr || err.message || err).slice(0, 200);
+        return {
+          ok: false,
+          executedAt: now,
+          dryRun: false,
+          summary: 'Git push failed: ' + msg,
+          secretsPresent: false,
+          healthDataPresent: false,
+        };
+      }
+    }
+    // Dry-run path (env={} in tests → always lands here).
+    return {
       ok: true,
-      summary: '[Stage 34 stub] Git push dry-run — real execution wired in Stage 35.',
-      note: 'Run: git push origin main  (manually, from your Windows terminal)',
-    },
-    'telegram.sendMessage': {
-      ok: true,
-      summary: '[Stage 34 stub] Telegram send dry-run — real execution wired in Stage 35.',
-      note: 'Use --send flag with poll-once to enable real send.',
-    },
-    'telegram.deleteWebhook': {
-      ok: true,
-      summary: '[Stage 34 stub] Delete webhook dry-run — real execution wired in Stage 35.',
-      note: 'Use --delete-webhook flag in chintu-telegram-runner.js.',
-    },
-  };
+      executedAt: now,
+      dryRun: true,
+      summary: '[dry-run] Git push — set CHINTU_GITPUSH_ENABLED=1 to execute.',
+      note: 'Or run: git push origin main  (from your Windows terminal)',
+      secretsPresent: false,
+      healthDataPresent: false,
+    };
+  }
 
-  const stub = STUB_RESULTS[entry.capabilityId] || {
+  // -------------------------------------------------------------------------
+  // telegram.sendMessage
+  // -------------------------------------------------------------------------
+  if (entry.capabilityId === 'telegram.sendMessage') {
+    const sendEnabled = String(env.CHINTU_TELEGRAM_SEND_ENABLED || '').trim() === '1';
+    const token   = String(env.TELEGRAM_BOT_TOKEN || '').trim();
+    const chatId  = entry.preview && entry.preview.chatId;
+    const text    = entry.preview && entry.preview.text;
+    if (sendEnabled && token && chatId && text) {
+      try {
+        const resp = callTelegramApiSync(
+          'sendMessage',
+          { chat_id: chatId, text: text, disable_web_page_preview: true },
+          env
+        );
+        if (!resp || !resp.ok) {
+          return {
+            ok: false,
+            executedAt: now,
+            dryRun: false,
+            summary: 'Telegram sendMessage failed: ' + (resp && resp.description ? resp.description : 'unknown'),
+            secretsPresent: false,
+            healthDataPresent: false,
+          };
+        }
+        const msgId = resp.result && resp.result.message_id;
+        return {
+          ok: true,
+          executedAt: now,
+          dryRun: false,
+          summary: 'Telegram message sent (message_id: ' + (msgId || 'unknown') + ')',
+          secretsPresent: false,
+          healthDataPresent: false,
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          executedAt: now,
+          dryRun: false,
+          summary: 'Telegram sendMessage error: ' + String(err.message || err).slice(0, 200),
+          secretsPresent: false,
+          healthDataPresent: false,
+        };
+      }
+    }
+    // Dry-run path.
+    return {
+      ok: true,
+      executedAt: now,
+      dryRun: true,
+      summary: '[dry-run] Telegram sendMessage -- set CHINTU_TELEGRAM_SEND_ENABLED=1, TELEGRAM_BOT_TOKEN, preview.chatId, preview.text.',
+      note: 'Or use --send flag with chintu-telegram-runner.js.',
+      secretsPresent: false,
+      healthDataPresent: false,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // telegram.deleteWebhook
+  // -------------------------------------------------------------------------
+  if (entry.capabilityId === 'telegram.deleteWebhook') {
+    const token = String(env.TELEGRAM_BOT_TOKEN || '').trim();
+    if (token) {
+      try {
+        const resp = callTelegramApiSync(
+          'deleteWebhook',
+          { drop_pending_updates: false },
+          env
+        );
+        if (!resp || !resp.ok) {
+          return {
+            ok: false,
+            executedAt: now,
+            dryRun: false,
+            summary: 'Telegram deleteWebhook failed: ' + (resp && resp.description ? resp.description : 'unknown'),
+            secretsPresent: false,
+            healthDataPresent: false,
+          };
+        }
+        return {
+          ok: true,
+          executedAt: now,
+          dryRun: false,
+          summary: 'Telegram webhook deleted (drop_pending_updates=false -- pending updates preserved).',
+          secretsPresent: false,
+          healthDataPresent: false,
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          executedAt: now,
+          dryRun: false,
+          summary: 'Telegram deleteWebhook error: ' + String(err.message || err).slice(0, 200),
+          secretsPresent: false,
+          healthDataPresent: false,
+        };
+      }
+    }
+    // Dry-run path.
+    return {
+      ok: true,
+      executedAt: now,
+      dryRun: true,
+      summary: '[dry-run] Telegram deleteWebhook -- set TELEGRAM_BOT_TOKEN to delete webhook.',
+      note: 'Or use --delete-webhook with chintu-telegram-runner.js.',
+      secretsPresent: false,
+      healthDataPresent: false,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // Unknown capability -- stub (tests assert summary.includes('stub')).
+  // -------------------------------------------------------------------------
+  return {
     ok: true,
-    summary: '[Stage 34 stub] Execution stub — capability "' + entry.capabilityId + '" not yet wired.',
-    note: 'Wire real execution for this capability in Stage 35.',
-  };
-
-  return Object.assign({}, stub, {
     executedAt: now,
     dryRun: true,
+    summary: '[stub] Capability "' + entry.capabilityId + '" not yet wired for real execution.',
+    note: 'Wire real execution for this capability in a future stage.',
     secretsPresent: false,
     healthDataPresent: false,
-  });
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -420,9 +634,9 @@ async function main(argv, env) {
     console.log('Chintu Approval Queue CLI');
     console.log('');
     console.log('Usage:');
-    console.log('  node scripts/chintu-approve.js <approvalId>   — review and approve/reject one entry');
-    console.log('  node scripts/chintu-approve.js --list         — list all pending entries');
-    console.log('  node scripts/chintu-approve.js --reject <id>  — reject an entry without prompt');
+    console.log('  node scripts/chintu-approve.js <approvalId>   -- review and approve/reject one entry');
+    console.log('  node scripts/chintu-approve.js --list         -- list all pending entries');
+    console.log('  node scripts/chintu-approve.js --reject <id>  -- reject an entry without prompt');
     console.log('');
     console.log('Safety rules:');
     console.log('  * Exact approval phrase required (case-sensitive).');
@@ -466,4 +680,5 @@ module.exports = {
   executeApprovedAction,
   queuePath,
   auditPath,
+  APPROVAL_PHRASES,
 };

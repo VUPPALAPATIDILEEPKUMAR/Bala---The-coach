@@ -13,6 +13,7 @@ const https = require('node:https');
 
 const adapter = require('./chintu-telegram-adapter.js');
 const { buildTrace } = require('./chintu-action-trace.js');
+const { enqueueAction, loadQueue, APPROVAL_PHRASES } = require('./chintu-approve.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const outboxDir = path.join(repoRoot, 'CHINTU_OUTBOX');
@@ -801,6 +802,61 @@ async function runWithArgs(argv, env, deps) {
       auditPath,
     });
     appendAudit(trace);
+
+    // Stage 35: Enqueue requires_approval actions for founder review.
+    // Only enqueue when sender is allowlisted, not in discovery mode, and
+    // trace.risk is requires_approval. Use update_id for deduplication so
+    // repeated poll-once calls on the same update don't create duplicate entries.
+    if (trace.risk === 'requires_approval' && preview.allowlisted && !discoveryMode) {
+      const updateId = selected && selected.update && selected.update.update_id;
+      const enqueueApprovalId = updateId
+        ? 'tel_upd_' + String(updateId)
+        : 'tel_' + trace.actionId;
+      const phrase = APPROVAL_PHRASES[trace.capabilityId]
+        || ('APPROVE ' + String(trace.capabilityId || '').toUpperCase().replace(/\./g, '_'));
+      try {
+        // Dedup: skip if this update was already enqueued.
+        const existingQueue = loadQueue();
+        const alreadyQueued = existingQueue.some(function(e) { return e.approvalId === enqueueApprovalId; });
+        if (alreadyQueued) {
+          result.enqueued      = false;
+          result.enqueueSkipped = 'Already queued: ' + enqueueApprovalId;
+        } else {
+          enqueueAction({
+            approvalId:        enqueueApprovalId,
+            createdAt:         trace.timestamp,
+            capabilityId:      trace.capabilityId,
+            actionDescription: 'Telegram-triggered: ' + trace.intent,
+            riskLabel:         trace.risk,
+            source:            trace.source,
+            userText:          trace.userText,
+            preview: {
+              dryRunResult:        'Would execute ' + trace.capabilityId + ' (intent: ' + trace.intent + ')',
+              estimatedSideEffects: [],
+              rollbackPossible:    trace.capabilityId === 'chintu.gitPush',
+              rollbackInstructions: trace.capabilityId === 'chintu.gitPush'
+                ? 'git revert HEAD && git push'
+                : null,
+            },
+            approvalPhrase: phrase,
+          });
+          result.enqueued      = true;
+          result.enqueueId     = enqueueApprovalId;
+          result.enqueuePhrase = phrase;
+        }
+      } catch (enqueueErr) {
+        result.enqueued     = false;
+        result.enqueueError = String(enqueueErr && enqueueErr.message ? enqueueErr.message : enqueueErr);
+      }
+    }
+  }
+
+  // Stage 35: Surface pending approval count so the founder knows what's waiting.
+  try {
+    const queue = loadQueue();
+    result.pendingApprovalCount = queue.filter(function(e) { return !e.approvedAt && !e.rejectedAt; }).length;
+  } catch (_) {
+    result.pendingApprovalCount = null;
   }
 
   return result;
