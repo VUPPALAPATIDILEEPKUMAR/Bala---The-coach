@@ -299,6 +299,73 @@
       font-size: 0.84rem; font-weight: 600; color: var(--ink);
     }
 
+    /* ── Reality Console ── */
+    .reality-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .reality-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .reality-title { font-size: 0.9rem; font-weight: 700; }
+    .reality-sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .reality-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .reality-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      min-width: 0;
+    }
+    .reality-card.span2 { grid-column: 1 / -1; }
+    .reality-label {
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .reality-value {
+      font-size: 0.86rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .reality-note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 4px;
+      white-space: pre-wrap;
+    }
+    .reality-proof-line {
+      font-size: 0.78rem;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+    .reality-proof-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media (max-width: 920px) {
+      .reality-grid { grid-template-columns: 1fr; }
+      .reality-card.span2 { grid-column: auto; }
+    }
+
     /* ── Command Center tab ── */
     .cmd-group {
       background: var(--surface);
@@ -657,6 +724,60 @@
         </div>
       </div>
 
+      <div class="reality-panel">
+        <div class="reality-header">
+          <div>
+            <div class="reality-title">Chintu Runtime Reality</div>
+            <div class="reality-sub">Local bridge only. No secrets. No private health data.</div>
+          </div>
+          <button class="copy-all-btn" onclick="refreshReality(true)">Refresh</button>
+        </div>
+        <div class="reality-grid">
+          <div class="reality-card">
+            <div class="reality-label">Bridge</div>
+            <div class="reality-value" id="realityBridge">Checking bridge…</div>
+            <div class="reality-note" id="realityEndpoint">Last endpoint: unknown</div>
+            <div class="reality-note" id="realityUpdated">Last update: unknown</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">Last Trace</div>
+            <div class="reality-value" id="realityTrace">No local trace yet.</div>
+            <div class="reality-note" id="realityTraceMeta">Intent, risk, and execution truth will appear here.</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">Last Result</div>
+            <div class="reality-value" id="realityResult">No bridge result yet.</div>
+            <div class="reality-note" id="realityBlocked">Blocked reason: none</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">Pending Approvals</div>
+            <div class="reality-value" id="realityApprovals">0 pending</div>
+            <div class="reality-note" id="realityApprovalsNote">Approval queue is read locally from CHINTU_OUTBOX.</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">Telegram</div>
+            <div class="reality-value" id="realityTelegram">Checking local readiness…</div>
+            <div class="reality-note" id="realityTelegramNote">Setup-ready / not live-proven / live-proven will appear here.</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">BALA Safety</div>
+            <div class="reality-value" id="realityBala">Checking BALA safety skill…</div>
+            <div class="reality-note" id="realityBalaNote">Medical boundary status will appear here.</div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Founder Proof Paths</div>
+            <div class="reality-proof-line" id="realityHiProof">hi: not yet shown</div>
+            <div class="reality-proof-line" id="realityCheckProof">check everything: not yet shown</div>
+            <div class="reality-proof-line" id="realityChestProof">chest pain: not yet shown</div>
+          </div>
+        </div>
+        <div class="reality-proof-actions">
+          <button class="qa-btn" onclick="quickChat('hi')">Proof: hi</button>
+          <button class="qa-btn" onclick="quickChat('check everything')">Proof: check everything</button>
+          <button class="qa-btn" onclick="quickChat('chest pain')">Proof: chest pain</button>
+        </div>
+      </div>
+
     </div>
 
     <!-- ── Tab: Command Center ── -->
@@ -928,6 +1049,23 @@ function bulletList(items) {
 }
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtWhen(iso) {
+  if (!iso) return 'unknown';
+  return String(iso).replace('T', ' ').replace('Z', ' UTC');
+}
+function yesNo(value) {
+  return value ? 'yes' : 'no';
+}
+function setRealityText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+function formatProofLine(label, proof) {
+  if (proof && proof.seen) {
+    return label + ': shown locally at ' + fmtWhen(proof.timestamp);
+  }
+  return label + ': not yet shown in this bridge session';
 }
 
 // ── Current packet store ──
@@ -1637,6 +1775,7 @@ Prefer dry-run and preview before any real action.
 // ============================================================
 const BRIDGE = { base: null, online: false, ports: [18791, 18792, 18793, 18794, 18795, 18796] };
 let lastLiveResult = null;
+let lastReality = null;
 
 const LIVE_LABELS = {
   release_guard: 'Release Guard', validate_app: 'Validate BALA App',
@@ -1696,7 +1835,88 @@ function setBridgeCard() {
   }
 }
 
-async function refreshBridge() { await probeBridge(); setBridgeCard(); refreshProviders(); }
+function renderRealityOffline(reason) {
+  lastReality = null;
+  setRealityText('realityBridge', 'Bridge offline');
+  setRealityText('realityEndpoint', 'Last endpoint: unknown');
+  setRealityText('realityUpdated', 'Last update: unknown');
+  setRealityText('realityTrace', 'No local trace available.');
+  setRealityText('realityTraceMeta', reason || 'Start the local bridge to read runtime truth.');
+  setRealityText('realityResult', 'No bridge result yet.');
+  setRealityText('realityBlocked', 'Blocked reason: unknown while bridge is offline');
+  setRealityText('realityApprovals', 'unknown');
+  setRealityText('realityApprovalsNote', 'Queue and trace status require the localhost bridge.');
+  setRealityText('realityTelegram', 'unknown');
+  setRealityText('realityTelegramNote', 'Telegram readiness is shown only when the bridge can answer locally.');
+  setRealityText('realityBala', 'unknown');
+  setRealityText('realityBalaNote', 'BALA safety status is shown only when the bridge can answer locally.');
+  setRealityText('realityHiProof', 'hi: bridge offline');
+  setRealityText('realityCheckProof', 'check everything: bridge offline');
+  setRealityText('realityChestProof', 'chest pain: bridge offline');
+}
+
+function renderReality(data) {
+  lastReality = data;
+  const trace = data.lastCommandTrace || null;
+  const bridge = data.bridge || {};
+  const approvals = data.approvals || {};
+  const telegram = data.telegram || {};
+  const bala = data.bala || {};
+  const proof = data.founderProof || {};
+
+  setRealityText('realityBridge', BRIDGE.online ? ('Connected · ' + (BRIDGE.base || '').replace('http://', '')) : 'Bridge offline');
+  setRealityText('realityEndpoint', 'Last endpoint: ' + (bridge.endpoint || 'unknown'));
+  setRealityText('realityUpdated', 'Last update: ' + fmtWhen(bridge.lastUpdatedAt || data.time));
+
+  if (trace) {
+    setRealityText('realityTrace', [trace.source || 'bridge', trace.intent || 'unknown', trace.risk || 'unknown'].join(' · '));
+    setRealityText('realityTraceMeta', 'allowed: ' + yesNo(trace.allowed) + ' · dry-run: ' + yesNo(trace.dryRun) + ' · executed: ' + yesNo(trace.executed));
+  } else {
+    setRealityText('realityTrace', 'No local trace yet.');
+    setRealityText('realityTraceMeta', 'Run hi, check everything, or chest pain to capture a founder-visible proof path.');
+  }
+
+  setRealityText('realityResult', data.lastResultSummary || 'No bridge result yet.');
+  setRealityText('realityBlocked', 'Blocked reason: ' + (data.lastBlockedReason || 'none'));
+  setRealityText('realityApprovals', String(approvals.pendingCount || 0) + ' pending');
+  setRealityText('realityApprovalsNote', 'Queue read from CHINTU_OUTBOX · live bridge never auto-approves');
+  setRealityText('realityTelegram', telegram.status || 'unknown');
+  setRealityText('realityTelegramNote',
+    'token verified: ' + yesNo(telegram.tokenIdentityVerified) +
+    ' · allowlist: ' + yesNo(telegram.allowlistConfigured) +
+    ' · updates seen: ' + yesNo(telegram.updatesSeen) +
+    ' · send disabled: ' + yesNo(telegram.sendRemainsDisabled)
+  );
+  setRealityText('realityBala', bala.safetySkillAvailable ? 'safety skill available' : 'safety skill missing');
+  setRealityText('realityBalaNote', Array.isArray(bala.blockedConditions) ? bala.blockedConditions.join(' ') : 'Blocked conditions unknown.');
+  setRealityText('realityHiProof', formatProofLine('hi', proof.hi));
+  setRealityText('realityCheckProof', formatProofLine('check everything', proof.checkEverything));
+  setRealityText('realityChestProof', formatProofLine('chest pain', proof.chestPain));
+}
+
+async function refreshReality(showBusy) {
+  if (!BRIDGE.online) {
+    renderRealityOffline('Bridge is offline. Start scripts\\chintu-allegro-start.ps1, then refresh this panel.');
+    return;
+  }
+  if (showBusy) {
+    setRealityText('realityBridge', 'Refreshing local runtime truth…');
+  }
+  try {
+    const r = await fetch(BRIDGE.base + '/api/runtime-status', { method: 'GET' });
+    const j = await r.json();
+    renderReality(j);
+  } catch (e) {
+    renderRealityOffline('Runtime status endpoint could not be read.');
+  }
+}
+
+async function refreshBridge() {
+  await probeBridge();
+  setBridgeCard();
+  refreshProviders();
+  refreshReality(false);
+}
 
 function mapToLiveAction(lower) {
   if (lower.includes('release guard')) return 'release_guard';
@@ -1766,11 +1986,13 @@ function renderLiveResult(name, label, j) {
     const v = document.getElementById('sc-bridge-validation');
     if (v) v.textContent = 'Validation: ' + (j.exitCode === 0 ? 'PASS' : 'see output');
   }
+  refreshReality(false);
   speak(label + '. ' + (j.exitCode === 0 ? 'Completed.' : 'Returned exit ' + j.exitCode));
 }
 
 function renderLiveOffline(name, label) {
   setBridgeCard();
+  renderRealityOffline('Bridge is offline. Start scripts\\chintu-allegro-start.ps1, then rerun the proof path.');
   document.getElementById('responseTitle').textContent = '⚠ Bridge offline — ' + label;
   let html = '';
   html += section('safety', '⚠ Bridge not running',
@@ -1854,6 +2076,7 @@ function renderChat(raw, j) {
 
   const lastEl = document.getElementById('sc-bridge-last');
   if (lastEl) lastEl.textContent = 'Last chat: ' + (j.intent || 'reply');
+  refreshReality(false);
   speak(j.reply || '');
 }
 
@@ -1887,7 +2110,7 @@ async function refreshProviders() {
 
 // Probe on load and whenever the tab regains focus.
 refreshBridge();
-window.addEventListener('focus', () => { if (!BRIDGE.online) refreshBridge(); });
+window.addEventListener('focus', () => { if (!BRIDGE.online) refreshBridge(); else refreshReality(false); });
 
 </script>
 </body>

@@ -33,10 +33,13 @@ const crypto = require('crypto');
 // Stage 24 brain + provider layers. These are pure-local modules (no network).
 const brain = require('./chintu-brain-router.js');
 const aiProvider = require('./chintu-local-ai-provider.js');
+const { buildTrace } = require('./chintu-action-trace.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const outboxDir = path.join(repoRoot, 'CHINTU_OUTBOX');
 const auditPath = path.join(outboxDir, 'local_bridge_audit.jsonl');
+const queuePath = path.join(outboxDir, 'pending_approvals.jsonl');
+const telegramAuditPath = path.join(outboxDir, 'telegram_connector_audit.jsonl');
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 18791;
@@ -264,6 +267,193 @@ function audit(entry) {
   } catch (_) { /* never throw from audit */ }
 }
 
+function readJsonlSafe(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    const raw = fs.readFileSync(filePath, 'utf8').trim();
+    if (!raw) return [];
+    return raw.split(/\r?\n/).filter(Boolean).map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch (_) {
+        return null;
+      }
+    }).filter(Boolean);
+  } catch (_) {
+    return [];
+  }
+}
+
+function pendingApprovalCount() {
+  return readJsonlSafe(queuePath).filter((entry) => entry && !entry.approvedAt && !entry.rejectedAt).length;
+}
+
+function csvCount(raw) {
+  return String(raw || '').split(',').map((item) => item.trim()).filter(Boolean).length;
+}
+
+function sanitizeTraceForRuntime(trace) {
+  if (!trace) return null;
+  return {
+    timestamp: trace.timestamp || new Date().toISOString(),
+    source: trace.source || 'bridge',
+    intent: trace.intent || 'unknown',
+    risk: trace.risk || 'safe_read',
+    allowed: trace.allowed === true,
+    dryRun: trace.dryRun === true,
+    executed: trace.executed === true,
+    capabilityId: trace.capabilityId || null,
+    endpoint: trace.endpoint || null,
+    sequence: Array.isArray(trace.sequence) ? trace.sequence.slice() : null,
+    resultSummary: trace.resultSummary || 'No result summary available.',
+    blockedReason: trace.blockedReason || null,
+    safetyNotes: Array.isArray(trace.safetyNotes) ? trace.safetyNotes.slice() : [],
+  };
+}
+
+function recordRuntimeTrace(endpoint, trace) {
+  const sanitized = sanitizeTraceForRuntime(trace);
+  LAST_RUNTIME_EVENT = {
+    lastEndpoint: endpoint,
+    lastTrace: sanitized,
+    lastResultSummary: sanitized ? sanitized.resultSummary : 'No result summary available.',
+    lastBlockedReason: sanitized ? sanitized.blockedReason : null,
+    lastUpdatedAt: new Date().toISOString(),
+  };
+  if (sanitized) {
+    audit({
+      timestamp: LAST_RUNTIME_EVENT.lastUpdatedAt,
+      type: 'runtime_trace',
+      endpoint,
+      trace: sanitized,
+    });
+  }
+}
+
+function recordRuntimeEvent(endpoint, resultSummary, blockedReason) {
+  LAST_RUNTIME_EVENT = {
+    lastEndpoint: endpoint,
+    lastTrace: LAST_RUNTIME_EVENT.lastTrace,
+    lastResultSummary: resultSummary || LAST_RUNTIME_EVENT.lastResultSummary,
+    lastBlockedReason: blockedReason || null,
+    lastUpdatedAt: new Date().toISOString(),
+  };
+}
+
+function loadLastRuntimeTrace() {
+  if (LAST_RUNTIME_EVENT.lastTrace) return LAST_RUNTIME_EVENT.lastTrace;
+  const entries = readJsonlSafe(auditPath);
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].type === 'runtime_trace' && entries[i].trace) {
+      return entries[i].trace;
+    }
+  }
+  return null;
+}
+
+function founderProofStatus() {
+  const entries = readJsonlSafe(auditPath).filter((entry) => entry.type === 'runtime_trace' && entry.trace);
+  function findLatest(intent) {
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i].trace.intent === intent) {
+        return {
+          seen: true,
+          timestamp: entries[i].trace.timestamp,
+          resultSummary: entries[i].trace.resultSummary,
+        };
+      }
+    }
+    return {
+      seen: false,
+      timestamp: null,
+      resultSummary: 'Not yet shown in this bridge session.',
+    };
+  }
+  return {
+    hi: findLatest('greeting'),
+    checkEverything: findLatest('check_everything'),
+    chestPain: findLatest('health_emergency'),
+  };
+}
+
+function telegramRuntimeStatus() {
+  const entries = readJsonlSafe(telegramAuditPath);
+  const tokenConfigured = Boolean(String(process.env.TELEGRAM_BOT_TOKEN || '').trim());
+  const allowlistConfigured =
+    csvCount(process.env.CHINTU_TELEGRAM_ALLOWED_CHAT_IDS) > 0 ||
+    csvCount(process.env.CHINTU_TELEGRAM_ALLOWED_SENDER_IDS) > 0;
+  const sendEnabled = String(process.env.CHINTU_TELEGRAM_SEND_ENABLED || '').trim() === '1';
+  const lastTokenCheck = entries.filter((entry) => entry.mode === 'token-check').slice(-1)[0] || null;
+  const lastModeEntry = entries.filter((entry) => entry.mode || entry.sourceMode || entry.type).slice(-1)[0] || null;
+  const updatesSeen = entries.some((entry) => entry.updateId != null);
+  const idsDiscovered = entries.some((entry) => entry.discoveryMode === true || (entry.chatId && entry.senderId));
+  const livePollOnceDemonstrated = entries.some((entry) => entry.sourceMode === 'poll-once');
+
+  let status = 'setup-ready / not live-proven';
+  if (livePollOnceDemonstrated) status = 'live-proven';
+  else if (!fs.existsSync(path.join(__dirname, 'chintu-telegram-runner.js'))) status = 'not available';
+
+  return {
+    status,
+    connectorCodeExists:
+      fs.existsSync(path.join(__dirname, 'chintu-telegram-runner.js')) &&
+      fs.existsSync(path.join(__dirname, 'chintu-telegram-adapter.js')),
+    tokenConfigured,
+    tokenIdentityVerified: Boolean(lastTokenCheck && lastTokenCheck.ok === true),
+    webhookChecked: Boolean(lastTokenCheck),
+    webhookActive: lastTokenCheck ? Boolean(lastTokenCheck.webhookSet) : null,
+    updatesSeen,
+    idsDiscovered,
+    allowlistConfigured,
+    livePollOnceDemonstrated,
+    sendRemainsDisabled: !sendEnabled,
+    lastMode: lastModeEntry ? (lastModeEntry.mode || lastModeEntry.sourceMode || lastModeEntry.type) : null,
+  };
+}
+
+function balaRuntimeStatus() {
+  return {
+    safetySkillAvailable: fs.existsSync(path.join(__dirname, 'chintu-bala-skill.js')),
+    blockedConditions: [
+      'No diagnosis, treatment, prediction, or prevention claims.',
+      'No emergency monitoring or doctor replacement.',
+      'Health-sensitive commands never trigger local automation.',
+    ],
+  };
+}
+
+function runtimeStatusPayload() {
+  const trace = loadLastRuntimeTrace();
+  const lastResultSummary = LAST_RUNTIME_EVENT.lastUpdatedAt
+    ? LAST_RUNTIME_EVENT.lastResultSummary
+    : (trace ? trace.resultSummary : LAST_RUNTIME_EVENT.lastResultSummary);
+  const lastBlockedReason = LAST_RUNTIME_EVENT.lastUpdatedAt
+    ? LAST_RUNTIME_EVENT.lastBlockedReason
+    : (trace ? trace.blockedReason : null);
+  return {
+    ok: true,
+    service: 'chintu-local-bridge',
+    version: 1,
+    host: HOST,
+    port: ACTIVE_PORT,
+    time: new Date().toISOString(),
+    bridge: {
+      connected: true,
+      endpoint: LAST_RUNTIME_EVENT.lastEndpoint || (trace ? trace.endpoint : null),
+      lastUpdatedAt: LAST_RUNTIME_EVENT.lastUpdatedAt || (trace ? trace.timestamp : null),
+    },
+    lastCommandTrace: trace,
+    lastResultSummary,
+    lastBlockedReason,
+    approvals: {
+      pendingCount: pendingApprovalCount(),
+    },
+    telegram: telegramRuntimeStatus(),
+    bala: balaRuntimeStatus(),
+    founderProof: founderProofStatus(),
+  };
+}
+
 // -----------------------------------------------------------------------------
 // Run an allowlisted action. `name` MUST already be a key of ACTIONS.
 // -----------------------------------------------------------------------------
@@ -346,6 +536,37 @@ function runSequence(name) {
   return { ok: allOk, sequence: name, label: seq.label, stopped, steps: seq.steps.slice(), results };
 }
 
+function buildBridgeTrace(message, decision, results) {
+  const bridgeResult = {
+    ok: results.length > 0 ? results.every((result) => result.ok) : true,
+    resultsCount: results.length,
+    actions: results.map((result) => result.action),
+    exitCodes: results.map((result) => result.exitCode),
+  };
+  const trace = buildTrace(Object.assign({}, decision, { message }), {
+    source: 'bridge',
+    dryRun: false,
+    executed: results.length > 0,
+    endpoint: '/api/chat',
+    bridgeResult,
+    sendFlag: false,
+    sendEnabled: false,
+    auditPath: 'CHINTU_OUTBOX/local_bridge_audit.jsonl',
+  });
+
+  if (results.length === 0 && trace.allowed) {
+    trace.resultSummary = 'No local action executed. Conversational reply only.';
+  } else if (results.length > 0 && trace.allowed) {
+    if (decision.sequence) {
+      trace.resultSummary = 'Local bridge executed sequence "' + decision.sequence + '" (' + results.length + ' step(s)).';
+    } else {
+      trace.resultSummary = 'Local bridge executed ' + results.length + ' allowlisted action(s).';
+    }
+  }
+
+  return trace;
+}
+
 // -----------------------------------------------------------------------------
 // /api/chat — the alive layer. Route the message through the deterministic brain
 // router, then (if the decision is safe) execute the actions/sequence it named
@@ -368,6 +589,9 @@ function handleChat(message) {
     }
   }
 
+  const trace = buildBridgeTrace(message, decision, results);
+  recordRuntimeTrace('/api/chat', trace);
+
   return {
     ok: true,
     reply: decision.reply,
@@ -379,6 +603,7 @@ function handleChat(message) {
     actions: decision.actions,
     filesLikely: decision.filesLikely,
     safetyGates: decision.safetyGates,
+    trace: sanitizeTraceForRuntime(trace),
     results,
     ranLive: results.length > 0,
     nextSuggestedAction: decision.nextSuggestedAction,
@@ -487,13 +712,20 @@ function statusPayload() {
     actions: Object.keys(ACTIONS),
     actionCount: Object.keys(ACTIONS).length,
     sequences: Object.keys(SEQUENCES),
-    endpoints: ['/api/health', '/api/status', '/api/providers/status', '/api/action', '/api/chat', '/api/sequence'],
+    endpoints: ['/api/health', '/api/status', '/api/runtime-status', '/api/providers/status', '/api/action', '/api/chat', '/api/sequence'],
     brain: 'deterministic',
     time: new Date().toISOString(),
   };
 }
 
 let ACTIVE_PORT = DEFAULT_PORT;
+let LAST_RUNTIME_EVENT = {
+  lastEndpoint: null,
+  lastTrace: null,
+  lastResultSummary: 'No bridge requests handled yet.',
+  lastBlockedReason: null,
+  lastUpdatedAt: null,
+};
 
 function getRequestRoute(req) {
   try {
@@ -522,6 +754,10 @@ function handler(req, res) {
     return sendJson(req, res, 200, statusPayload());
   }
 
+  if (req.method === 'GET' && route === '/api/runtime-status') {
+    return sendJson(req, res, 200, runtimeStatusPayload());
+  }
+
   if (req.method === 'GET' && route === '/api/providers/status') {
     // Deterministic brain is always active; optional local providers are probed.
     aiProvider.detect()
@@ -546,7 +782,9 @@ function handler(req, res) {
           allowedSequences: Object.keys(SEQUENCES),
         });
       }
-      return sendJson(req, res, 200, runSequence(name));
+      const result = runSequence(name);
+      recordRuntimeEvent('/api/sequence', 'Sequence "' + name + '" executed (' + result.results.length + ' step(s)).', result.ok ? null : 'One or more sequence steps failed.');
+      return sendJson(req, res, 200, result);
     });
     return;
   }
@@ -567,6 +805,7 @@ function handler(req, res) {
       }
 
       const result = runAction(name);
+      recordRuntimeEvent('/api/action', 'Action "' + name + '" returned exit ' + result.exitCode + '.', result.ok ? null : 'Action exited with ' + result.exitCode + '.');
       return sendJson(req, res, 200, result);
     });
     return;
@@ -585,12 +824,12 @@ function start(port, attemptsLeft, cb) {
       start(port + 1, attemptsLeft - 1, cb);
     } else {
       console.error('Bridge failed to start:', err.message);
-      process.exit(1);
+      if (cb) cb(null, err);
     }
   });
   server.listen(port, HOST, () => {
     ACTIVE_PORT = port;
-    cb(server, port);
+    if (cb) cb(server, port);
   });
   return server;
 }
@@ -600,21 +839,17 @@ function main() {
     try { fs.mkdirSync(outboxDir, { recursive: true }); } catch (_) {}
   }
   start(DEFAULT_PORT, 5, (server, port) => {
+    if (!server) { process.exit(1); }
     audit({ timestamp: new Date().toISOString(), action: '(start)', allowed: true, label: 'bridge listening on ' + HOST + ':' + port, exitCode: 0, durationMs: 0, outputSummary: '', errorSummary: '' });
     console.log('Chintu Local Bridge running at http://' + HOST + ':' + port);
     console.log('  Health   : http://' + HOST + ':' + port + '/api/health');
     console.log('  Status   : http://' + HOST + ':' + port + '/api/status');
-    console.log('  Providers: http://' + HOST + ':' + port + '/api/providers/status');
-    console.log('  Chat     : POST /api/chat   { "message": "check everything" }');
-    console.log('  Sequence : POST /api/sequence { "sequence": "check_everything" }');
-    console.log('  Actions  : ' + Object.keys(ACTIONS).length + ' allowlisted · Sequences: ' + Object.keys(SEQUENCES).length);
-    console.log('  Audit    : CHINTU_OUTBOX/local_bridge_audit.jsonl');
+    console.log('  Actions  : ' + Object.keys(ACTIONS).length + ' allowlisted \u00b7 Sequences: ' + Object.keys(SEQUENCES).length);
     console.log('Press Ctrl+C to stop.');
   });
 }
 
-// Export internals for the test harness; only auto-start when run directly.
-module.exports = { ACTIONS, SEQUENCES, redact, originAllowed, runAction, runSequence, handleChat, statusPayload, HOST, DEFAULT_PORT, MAX_REQUEST_BODY_BYTES, handler, start, getRequestRoute };
+module.exports = { ACTIONS, SEQUENCES, redact, originAllowed, runAction, runSequence, handleChat, statusPayload, runtimeStatusPayload, HOST, DEFAULT_PORT, MAX_REQUEST_BODY_BYTES, handler, start, getRequestRoute };
 
 if (require.main === module) {
   main();

@@ -32,8 +32,10 @@ ok(html.includes('Stage 24'), 'html contains the Stage 24 label');
 ok(/brain runtime active/i.test(html), 'html contains "brain runtime active"');
 ok(!/>\s*Stage 22\s*</i.test(html), 'html does not contain visible Stage 22 badge text');
 ok(/\/api\/chat|api\/chat/i.test(html), 'html contains bridge chat integration references');
+ok(/\/api\/runtime-status|api\/runtime-status/i.test(html), 'html contains runtime-status integration references');
 ok(/Phone Command Contract/i.test(html), 'html contains the phone runtime status section');
 ok(/Telegram Dry Run Guide/i.test(html), 'html contains the Telegram dry-run quick action');
+ok(/Chintu Runtime Reality/i.test(html), 'html contains the runtime reality panel');
 
 console.log('');
 if (fails === 0) {

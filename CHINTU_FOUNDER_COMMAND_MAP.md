@@ -109,6 +109,7 @@ control room regeneration in order, and stops on the first FAIL. See
 | `scripts\chintu-stage23-release.ps1` | Gated Stage 23 release script for local bridge runtime. Validates before commit/push; no secrets; no live connector send. |
 | `scripts\chintu-stage24-release.ps1` | Gated Stage 24 release script for brain router and live action sequences. Validates before commit/push; no secrets; no live connector send. |
 | `scripts\chintu-stage32-release.ps1` | Gated Stage 32 release script for Telegram poll-once diagnostics. Stages only chintu-telegram-runner.js + command map. Validates before commit/push; no secrets; no live connector send. |
+| `scripts\chintu-stage41-release.ps1` | Gated Stage 41 release script for the Runtime Reality panel and truthful `/api/runtime-status`. Stages only the explicit Stage 41 allowlist, blocks queue/audit/tmp artifacts, validates before commit/push, and keeps approval execution dry-run only. |
 
 ## Telegram diagnostics (Stage 32)
 
