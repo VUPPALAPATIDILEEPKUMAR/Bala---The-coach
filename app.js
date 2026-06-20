@@ -716,11 +716,16 @@ function buildDoctorReadySummary(metrics, symptoms = getSymptomHistory(), behavi
       ? symptoms.slice(-10).map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${(entry.symptoms || []).join(", ") || "No listed symptom"}${entry.note ? ` - ${entry.note}` : ""}`)
       : ["- None recorded"]),
     "",
-    "RECENT DAILY FACTORS",
+    "DAILY NOTES (self-entered)",
+    "These are notes I entered myself. They are personal reflections, not medical observations.",
     ...(() => {
-      const recent = behaviors.slice(-5).filter((e) => (e.factors || []).length);
-      if (!recent.length) return ["- None recorded"];
-      return recent.map((entry) => `- ${new Date(entry.date).toLocaleDateString()}: ${summarizeBehaviorFactors(entry)}${entry.note ? ` · ${entry.note}` : ""}`);
+      const withFactors = behaviors.filter((e) => (e.factors || []).length || e.note);
+      if (!withFactors.length) return ["- None recorded"];
+      return withFactors.slice(-30).map((entry) => {
+        const factorText = summarizeBehaviorFactors(entry);
+        const noteText = entry.note ? `; note: "${String(entry.note).slice(0, 200)}"` : "";
+        return `- ${new Date(entry.date).toLocaleDateString()}: ${factorText || "(note only)"}${noteText}`;
+      });
     })(),
     "",
     "Use this summary to describe patterns, questions, and recent observations from the signals BALA had available.",
@@ -1201,10 +1206,18 @@ function timelineSummary(metrics) {
       })
       : ["- No valid check-ins yet."]),
     "",
-    "RECENT DAILY FACTORS",
-    recentBehavior && (recentBehavior.factors || []).length
-      ? `- ${new Date(recentBehavior.date).toLocaleDateString()}: ${summarizeBehaviorFactors(recentBehavior)}${recentBehavior.note ? `; note: ${recentBehavior.note}` : ""}`
-      : "- None recorded.",
+    "DAILY NOTES (self-entered)",
+    "These are notes I entered myself. They are personal reflections, not medical observations.",
+    ...(() => {
+      const behaviors = getBehaviorHistory();
+      const withFactors = behaviors.filter((e) => (e.factors || []).length || e.note);
+      if (!withFactors.length) return ["- None recorded."];
+      return withFactors.slice(-15).map((entry) => {
+        const factorText = summarizeBehaviorFactors(entry);
+        const noteText = entry.note ? `; note: "${String(entry.note).slice(0, 200)}"` : "";
+        return `- ${new Date(entry.date).toLocaleDateString()}: ${factorText || "(note only)"}${noteText}`;
+      });
+    })(),
     "",
     "TO SHARE WITH YOUR HEALTHCARE PROFESSIONAL (your notes - not medical advice)",
     "- How you have been feeling and anything you noticed",
@@ -1329,6 +1342,33 @@ function renderBaselineAndTimeline(metrics) {
       note.textContent = `Note: ${String(entry.note).slice(0, 240)}`;
       item.append(note);
     }
+    // Factor history context — show behavior journal entries logged on the same date.
+    // Safe language only: "Daily notes for this day", not causal claims.
+    (getBehaviorHistory()
+      .filter((be) => be.date && String(be.date).slice(0, 10) === entry.date)
+    ).forEach((be) => {
+      const factors = (be.factors || []).filter((f) => behaviorFactorLabels[f]);
+      if (!factors.length && !be.note) return;
+      const row = document.createElement("div");
+      row.className = "fh-row";
+      const rowLabel = document.createElement("span");
+      rowLabel.className = "fh-label";
+      rowLabel.textContent = "Daily notes";
+      row.append(rowLabel);
+      factors.forEach((f) => {
+        const pill = document.createElement("span");
+        pill.className = "fh-pill";
+        pill.textContent = behaviorFactorLabels[f];
+        row.append(pill);
+      });
+      if (be.note) {
+        const noteEl = document.createElement("span");
+        noteEl.className = "fh-note";
+        noteEl.textContent = String(be.note).slice(0, 120);
+        row.append(noteEl);
+      }
+      item.append(row);
+    });
     if (canManage && manageHistory) {
       const entryDate = entry.date;
       const edit = document.createElement("button");
@@ -3072,7 +3112,7 @@ function importShortcutSync() {
     saveMetrics(metrics);
     history.replaceState(null, "", `${location.pathname}${location.search}`);
     dialogLabel.textContent = "Daily sync complete";
-    dialogTitle.textContent = "Today’s Health summary is in BALA";
+    dialogTitle.textContent = "Today's Health summary is in BALA";
     dialogContentNode.innerHTML = `<div class="source-list"><p>The Apple Shortcut values were processed locally. They were not sent to GitHub or an AI provider.</p></div>`;
     dialog.showModal();
   }

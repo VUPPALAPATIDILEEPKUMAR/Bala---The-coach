@@ -293,6 +293,10 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .timeline-heading-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .timeline-heading .timeline-manage { background: var(--canvas); color: var(--ink); border-color: var(--line); }
 .timeline-heading .timeline-manage[hidden] { display: none; }
+.fh-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; margin-top: 9px; padding-top: 9px; border-top: 1px dashed #dce5df; }
+.fh-label { font-size: 8px; font-weight: 760; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; flex-shrink: 0; margin-right: 2px; }
+.fh-pill { padding: 3px 9px; border: 1px solid #dbe5df; border-radius: 999px; color: #46504b; background: #edf5ef; font-size: 9px; font-weight: 700; white-space: nowrap; }
+.fh-note { font-size: 10px; color: var(--muted); font-style: italic; flex-basis: 100%; margin-top: 3px; line-height: 1.45; }
 .timeline-row-actions { display: flex; gap: 8px; }
 .timeline-remove, .timeline-edit { margin-top: 8px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--ink); cursor: pointer; font-size: 9px; font-weight: 700; }
 .form-edit-note { margin: 4px 0 0; font-size: 10px; font-weight: 700; color: var(--muted); }
@@ -838,27 +842,3 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted, #5b6470);
-  list-style: none;
-}
-.score-explainer > summary::-webkit-details-marker { display: none; }
-.score-explainer > summary::before { content: "ⓘ "; opacity: 0.7; }
-.score-explainer[open] > summary { margin-bottom: 6px; }
-.score-confidence-note {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-}
-.score-explainer-dynamic {
-  margin: 0 0 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--canvas);
-}
-.score-explainer-copy {
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--muted, #5b6470);
-  margin: 0;
-}
