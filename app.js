@@ -968,6 +968,122 @@ function renderScoreExplainer(metrics, breakdown) {
   ].join("");
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// B44 — BALA Score Engine wiring (browser IIFE via bala-score-engine.browser.js)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * mapMetricsToEngineInput — translates app.js metrics into the flat key/value
+ * object expected by window.BALAScoreEngine.computeBALAScore().
+ * Lifestyle signals (late_meal, hydration, etc.) are not yet collected by the
+ * app; null values lower confidence but do not crash the engine.
+ */
+function mapMetricsToEngineInput(metrics) {
+  const history = Array.isArray(metrics?.history) ? metrics.history.slice(0, -1).slice(-7) : [];
+  const hrv7 = averageValues(history.map((d) => d.hrv));
+  const rhr7 = averageValues(history.map((d) => d.rhr));
+  const sleep7 = averageValues(history.map((d) => d.sleep));
+  // Symptom text forwarded to engine emergency gate
+  const recentSymptoms = getRecentSymptoms();
+  const symptomText = (recentSymptoms?.symptoms || []).join(' ');
+  return {
+    hrv_today: metrics?.hrv ?? null,
+    hrv_baseline7d: hrv7 ?? null,
+    rhr_today: metrics?.rhr ?? null,
+    rhr_baseline7d: rhr7 ?? null,
+    sleep_hours_today: metrics?.sleep ?? null,
+    sleep_hours_goal: 8,
+    sleep_hours_baseline7d: sleep7 ?? null,
+    spo2_pct: metrics?.spo2 ?? null,
+    steps_today: metrics?.steps ?? null,
+    steps_goal: 10000,
+    // Lifestyle signals — not yet collected; engine handles gracefully
+    late_meal: null,
+    evening_caffeine: null,
+    hydration: null,
+    stress_level: null,
+    alcohol_drinks: null,
+    // Pass symptom text so engine emergency phrase gate can evaluate
+    symptom_text: symptomText || null,
+    symptom_level: null,
+  };
+}
+
+/**
+ * renderBALAExplainability — renders the "What influenced today" panel using
+ * the structured result from window.BALAScoreEngine.computeBALAScore().
+ * Respects emergency gate: hides score and shows urgent-care guidance.
+ * Demo-safe: no health-risk language, warm framing only.
+ */
+function renderBALAExplainability(engineResult) {
+  const host = document.querySelector('#bala-explainability');
+  if (!host) return;
+
+  // If engine not loaded (old browser / script error) — fail silently
+  if (!engineResult) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  // Emergency gate — hide score, show urgent-care text
+  if (engineResult.emergency) {
+    host.hidden = false;
+    host.innerHTML =
+      `<div class="bala-explainability-emergency" role="alert">` +
+      `<strong>Please seek urgent care.</strong> ` +
+      `<span>${_esc(engineResult.emergencyReply)}</span>` +
+      `</div>`;
+    return;
+  }
+
+  const cats = engineResult.categories || {};
+  const missing = Array.isArray(engineResult.missingSignals) ? engineResult.missingSignals : [];
+  const changeCopy = engineResult.changeCopy || null;
+  const conf = engineResult.confidence || 'LOW';
+
+  // Build category pills — only show categories that contributed points
+  const catOrder = ['recovery', 'sleep', 'activity', 'lifestyle', 'symptom'];
+  const catLabels = { recovery: 'Recovery', sleep: 'Sleep', activity: 'Activity', lifestyle: 'Lifestyle', symptom: 'Symptom check' };
+
+  const pills = catOrder
+    .filter((k) => cats[k] && (cats[k].total > 0 || cats[k].pts > 0))
+    .map((k) => {
+      const cat = cats[k];
+      const pts = cat.total ?? cat.pts ?? 0;
+      const possible = cat.possible ?? null;
+      const pct = possible > 0 ? Math.round((pts / possible) * 100) : null;
+      const tier = pct === null ? 'neutral' : pct >= 75 ? 'good' : pct >= 40 ? 'fair' : 'low';
+      return `<span class="bala-cat-pill bala-cat-pill--${tier}" title="${_esc(catLabels[k])}: ${pts}${possible ? ' / ' + possible : ''} pts">${_esc(catLabels[k])}</span>`;
+    })
+    .join('');
+
+  const missingLine = missing.length
+    ? `<p class="bala-missing">Adding <em>${_esc(missing.slice(0, 3).join(', '))}</em>${missing.length > 3 ? ` and ${missing.length - 3} more` : ''} would raise data confidence.</p>`
+    : '';
+
+  const changeLine = changeCopy
+    ? `<p class="bala-change-copy">${_esc(changeCopy)}</p>`
+    : '';
+
+  const confLabel = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low', VERY_LOW: 'Very low' }[conf] || conf;
+
+  host.hidden = false;
+  host.innerHTML =
+    `<div class="bala-explainability-inner">` +
+    `<p class="bala-explainability-heading">What influenced today</p>` +
+    (pills ? `<div class="bala-cat-pills">${pills}</div>` : '') +
+    changeLine +
+    missingLine +
+    `<p class="bala-conf-note">Data confidence: <strong>${_esc(confLabel)}</strong> · BALA is a calm daily awareness guide, not a medical tool.</p>` +
+    `</div>`;
+}
+
+/** Escape HTML for safe injection into innerHTML */
+function _esc(str) {
+  return String(str || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function scoreMetrics(metrics) {
   return scoreBreakdown(metrics).total;
 }
@@ -1885,6 +2001,19 @@ function updateDashboard(metrics) {
     document.querySelector(selector).textContent = checkCopy[index] || "Add another signal for more context";
   });
   renderScoreExplainer(metrics, breakdown);
+
+  // B44: wire BALA Score Engine explainability panel
+  if (typeof window !== 'undefined' && window.BALAScoreEngine) {
+    try {
+      const engineInput = mapMetricsToEngineInput(metrics);
+      const engineResult = window.BALAScoreEngine.computeBALAScore(engineInput);
+      renderBALAExplainability(engineResult);
+    } catch (e) {
+      // Engine failure must never break the main dashboard
+      const host = document.querySelector('#bala-explainability');
+      if (host) { host.hidden = true; host.innerHTML = ''; }
+    }
+  }
 
   if (metrics.sleep) {
     const hours = Math.floor(metrics.sleep);

@@ -842,3 +842,49 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted, #5b6470);
+/* ── B44: BALA Explainability Panel ──────────────────────────────────────── */
+.bala-explainability {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(var(--green-rgb, 46,125,91), 0.06);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.bala-explainability-heading {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 0.83rem;
+  color: var(--fg, #1a2128);
+  letter-spacing: -0.2px;
+}
+.bala-cat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.bala-cat-pill {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: -0.1px;
+}
+.bala-cat-pill--good   { background: rgba(46,125,91,.14); color: #1e5e3a; }
+.bala-cat-pill--fair   { background: rgba(213,151,69,.15); color: #7a4e18; }
+.bala-cat-pill--low    { background: rgba(180,91,71,.13);  color: #7a2f1e; }
+.bala-cat-pill--neutral{ background: rgba(90,100,115,.10); color: #3a4350; }
+.bala-change-copy,
+.bala-missing,
+.bala-conf-note {
+  margin: 5px 0 0;
+  color: var(--muted, #5b6470);
+}
+.bala-conf-note strong { color: var(--fg, #1a2128); }
+.bala-explainability-emergency {
+  padding: 10px;
+  background: rgba(180,91,71,.1);
+  border-radius: 8px;
+  color: #7a2f1e;
+}
