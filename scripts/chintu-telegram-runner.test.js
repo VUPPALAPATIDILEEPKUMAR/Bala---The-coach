@@ -183,8 +183,79 @@ function readAuditLines() {
   assert.doesNotMatch(redacted, /ABCDEFGHIJKLMNOPQRST/);
   assert.doesNotMatch(redacted, /api\.telegram\.org/);
 
+  // ---------------------------------------------------------------------------
+  // Stage 37: bala_ask dispatch tests
+  // ---------------------------------------------------------------------------
+
+  // 1. Dry-run: bala_ask intent produces balaSkillResult with safe_awareness tag.
+  const balaAskDry = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-bala-ask.json', '--dry-run'],
+    baseEnv,
+    makeDeps(),
+  );
+  assert.ok(balaAskDry.ok, 'bala_ask dry-run should succeed');
+  assert.equal(balaAskDry.preview && balaAskDry.preview.intent, 'bala_ask', 'intent should be bala_ask');
+  assert.ok(balaAskDry.balaSkillResult, 'balaSkillResult should be populated');
+  assert.equal(balaAskDry.balaSkillResult.safetyTag, 'safe_awareness');
+  assert.equal(balaAskDry.balaSkillResult.emergency, false);
+  assert.equal(balaAskDry.balaSkillResult.capabilityId, 'bala.askSkill');
+  assert.ok(balaAskDry.balaSkillResult.reply.length > 20, 'reply should be non-empty');
+  assert.ok(balaAskDry.balaSkillResult.footer.length > 20, 'footer should be non-empty');
+  // send should NOT be attempted in dry-run
+  assert.ok(!balaAskDry.balaSkillSent, 'balaSkillSent should not be set in dry-run');
+
+  // 2. Send enabled: bala_ask dispatches reply via Telegram.
+  let balaSendCalled = false;
+  let balaSentToken = null;
+  let balaSentChatId = null;
+  let balaSentText = null;
+  const balaAskSent = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-bala-ask.json', '--send'],
+    {
+      TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+      CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
+      CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
+      CHINTU_TELEGRAM_SEND_ENABLED: '1',
+    },
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        balaSendCalled = true;
+        balaSentToken = token;
+        balaSentChatId = chatId;
+        balaSentText = text;
+        return { message_id: 999 };
+      },
+    }),
+  );
+  assert.ok(balaAskSent.ok, 'bala_ask send should succeed');
+  assert.equal(balaSendCalled, true, 'telegramSendMessage should have been called');
+  assert.equal(balaAskSent.balaSkillSent, true);
+  assert.match(balaSentToken, /^\d{9}:/);
+  assert.equal(balaSentChatId, '710001');
+  // Reply must contain HRV content and the safety footer
+  assert.match(balaSentText, /hrv/i);
+  assert.match(balaSentText, /BALA is a health-awareness companion/i);
+  // 3. Send NOT enabled: balaSkillResult populated but no send attempted.
+  const balaAskNoSend = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-bala-ask.json', '--send'],
+    {
+      TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+      CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
+      CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
+      // CHINTU_TELEGRAM_SEND_ENABLED intentionally absent
+    },
+    makeDeps({
+      telegramSendMessage: async () => {
+        throw new Error('send should not be called when SEND_ENABLED is not 1');
+      },
+    }),
+  );
+  assert.ok(balaAskNoSend.ok, 'run should succeed even without send enabled');
+  assert.ok(balaAskNoSend.balaSkillResult, 'balaSkillResult should still be populated');
+  assert.ok(!balaAskNoSend.balaSkillSent, 'balaSkillSent should not be set');
+
   const auditLines = readAuditLines();
-  assert.ok(auditLines.length >= 7, 'audit log should contain one line per actionable run');
+  assert.ok(auditLines.length >= 10, 'audit log should contain one line per actionable run');
 
   cleanupAudit();
   console.log('PASS chintu-telegram-runner.test.js');

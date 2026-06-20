@@ -35,6 +35,7 @@ const KNOWN_ACTIONS = [
   'action_packet_bala_sprint', 'action_packet_connector_check',
   'agent_orchestrator_dry_run',
   'open_allegro', 'open_bala_local', 'open_bala_public',
+  'bala_ask_skill',
 ];
 
 // Named multi-action sequences the bridge knows how to run. Kept in sync with
@@ -340,6 +341,63 @@ const RULES = [
     }),
   },
 
+  // ---- BALA health-awareness questions (Stage 37)
+  // Handles user queries about their health signals — routed to bala_ask_skill
+  // in the Telegram runner which calls respondToBALAQuery() for a safe reply.
+  // Must come AFTER improve_score / next_sprint / validate_bala so those more
+  // specific routes still win for sprint-planning and validation intents.
+  {
+    name: 'bala_ask',
+    match: (s) => hasAny(s, [
+      // HRV
+      'hrv', 'heart rate variability', 'heart rate var', 'hrv low', 'hrv high',
+      'hrv trend', 'hrv drop', 'low hrv', 'high hrv',
+      // Sleep / Recovery
+      'deep sleep', 'rem sleep', 'light sleep', 'sleep quality', 'sleep score',
+      'how did i sleep', 'poor sleep', 'bad sleep', 'night waking',
+      'tired', 'fatigue', 'exhausted', 'woke up',
+      // Resting HR
+      'resting heart rate', 'resting hr', 'rhr', 'heart rate at rest',
+      'heart rate high', 'heart rate low', 'heart rate trend', 'elevated heart rate',
+      // SpO2
+      'spo2', 'blood oxygen', 'oxygen level', 'oxygen saturation', 'o2 level',
+      // Activity / Steps
+      'step count', 'step goal', 'active minutes', 'daily activity',
+      // Score — awareness queries (not improve/model)
+      'my score', 'what is my score', 'what does my score mean',
+      'score today', 'score meaning', 'score low', 'score high',
+      // BALA Coach
+      'ask bala', 'bala coach', 'what should i do', 'what do i do',
+      'coach advice', 'coach guidance', 'coach tip', 'tip today',
+      'what bala says', 'what does bala say', 'bala recommend', 'bala guide',
+      // Doctor summary
+      'doctor summary', 'doctor report', 'show doctor', 'share with doctor',
+      'doctor ready', 'health summary', 'summary for doctor',
+      // Privacy
+      'privacy', 'my data', 'is my data safe', 'who sees my data',
+      'data stored', 'local only', 'data sent', 'data sharing',
+      // What is BALA
+      'what is bala', 'tell me about bala', 'about bala', 'how does bala work',
+      'bala app', 'bala features', 'what can bala do', 'bala help',
+    ]),
+    build: () => ({
+      intent: 'bala_ask',
+      track: 'bala',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['bala_ask_skill'],
+      reply:
+        'Looking at your BALA signals now. One moment — I\'ll give you a calm, clear awareness ' +
+        'response based on what BALA knows about this topic.',
+      gates: [
+        'Pure-logic BALA skill — no network, no fs, no shell',
+        'All replies carry non-medical safety footer',
+        'Emergency phrases always escalate to urgent-care gate',
+        'No diagnosis, treatment, or medical claims ever',
+      ],
+    }),
+  },
+
   // ---- Agent orchestrator
   {
     name: 'agent_board',
@@ -494,7 +552,7 @@ const RULES = [
 // and NEVER a fake claim that work was done.
 // -----------------------------------------------------------------------------
 function fallback(original) {
-  const snippet = String(original || '').trim().slice(0, 80);
+    const snippet = String(original || '').trim().slice(0, 80);
   return {
     intent: 'unknown',
     track: 'both',

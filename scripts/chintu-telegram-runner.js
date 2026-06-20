@@ -849,6 +849,38 @@ async function runWithArgs(argv, env, deps) {
         result.enqueueError = String(enqueueErr && enqueueErr.message ? enqueueErr.message : enqueueErr);
       }
     }
+
+    // Stage 37: BALA Ask Skill dispatch.
+    // When intent is bala_ask and sender is allowlisted, call respondToBALAQuery
+    // for a calm, safe health-awareness reply. Optionally sends via Telegram if
+    // send is enabled and requested. Pure-logic skill: no network, no fs, no shell.
+    // Emergency phrases are handled inside the skill with urgent-care reply.
+    if (trace.intent === 'bala_ask' && preview.allowlisted && !discoveryMode) {
+      const balaSkill = require('./chintu-bala-skill.js');
+      const queryText = (preview && preview.text) || '';
+      const skillResult = balaSkill.respondToBALAQuery(queryText);
+      result.balaSkillResult = {
+        safetyTag:    skillResult.safetyTag,
+        emergency:    skillResult.emergency,
+        capabilityId: skillResult.capabilityId,
+        reply:        skillResult.reply,
+        footer:       skillResult.footer,
+      };
+      if (sendRequested && sendEnabled) {
+        const replyText = skillResult.reply + '\n\n\u2014 ' + skillResult.footer;
+        const chatId = preview.replyEnvelope && preview.replyEnvelope.chatId;
+        if (chatId) {
+          const balaToken = String(env.TELEGRAM_BOT_TOKEN || '').trim();
+          try {
+            await deps.telegramSendMessage(balaToken, chatId, replyText);
+            result.balaSkillSent = true;
+          } catch (balaErr) {
+            result.balaSkillSent = false;
+            result.balaSkillSendError = String(balaErr && balaErr.message ? balaErr.message : balaErr);
+          }
+        }
+      }
+    }
   }
 
   // Stage 35: Surface pending approval count so the founder knows what's waiting.
