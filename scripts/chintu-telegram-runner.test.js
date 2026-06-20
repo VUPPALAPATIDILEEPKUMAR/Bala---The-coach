@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const runner = require('./chintu-telegram-runner.js');
+const { queuePath, loadQueue } = require('./chintu-approve.js');
 
 const repoRoot = path.resolve(__dirname, '..');
 const auditPath = runner.paths.auditPath;
@@ -254,8 +255,67 @@ function readAuditLines() {
   assert.ok(balaAskNoSend.balaSkillResult, 'balaSkillResult should still be populated');
   assert.ok(!balaAskNoSend.balaSkillSent, 'balaSkillSent should not be set');
 
+  // -------------------------------------------------------------------------
+  // Stage 38: git_push -> RISK.CODE -> requires_approval -> Stage 35 enqueue
+  //           -> Stage 38 Telegram confirmation reply sent to founder.
+  // -------------------------------------------------------------------------
+
+  // Clear any leftover queue entry for this fixture's update_id so each run
+  // always tests a fresh enqueue (not the skip-already-queued branch).
+  // Helper: remove the fixture's queue entry (VirtioFS: overwrite, never unlink).
+  function clearGitPushQueueEntry() {
+    if (fs.existsSync(queuePath)) {
+      const remaining = loadQueue().filter((e) => e.approvalId !== 'tel_upd_900011');
+      const body = remaining.length > 0
+        ? remaining.map((e) => JSON.stringify(e)).join('\n') + '\n'
+        : '';
+      fs.writeFileSync(queuePath, body, 'utf8');
+    }
+  }
+
+  // 1. Send enabled — fresh enqueue: Stage 35 enqueues, Stage 38 sends Telegram confirmation.
+  //    (Stage 35 enqueues on requires_approval regardless of dryRun flag, so we clear first.)
+  clearGitPushQueueEntry();
+  let confirmSendCalled = false;
+  let confirmSentText = null;
+  let confirmSentChatId = null;
+  const gitPushSend = await runner.runWithArgs(
+    ['--fixture', 'scripts/fixtures/telegram-git-push.json', '--send'],
+    {
+      TELEGRAM_BOT_TOKEN: '123456789:ABCDEFGHIJKLMNOPQRSTUVWX123456789',
+      CHINTU_TELEGRAM_ALLOWED_CHAT_IDS: '710001',
+      CHINTU_TELEGRAM_ALLOWED_SENDER_IDS: '510001',
+      CHINTU_TELEGRAM_SEND_ENABLED: '1',
+    },
+    makeDeps({
+      telegramSendMessage: async (token, chatId, text) => {
+        confirmSendCalled = true;
+        confirmSentChatId = chatId;
+        confirmSentText = text;
+        return { message_id: 1001 };
+      },
+    }),
+  );
+  assert.ok(gitPushSend.ok, 'git_push send run should succeed');
+  // Must route to git_push with code_change risk.
+  assert.equal(gitPushSend.preview && gitPushSend.preview.intent, 'git_push', 'intent should be git_push');
+  assert.equal(gitPushSend.preview && gitPushSend.preview.risk, 'code_change', 'brain router risk must be code_change for git_push');
+  // Fresh enqueue must succeed.
+  assert.equal(gitPushSend.enqueued, true, 'git_push must be freshly enqueued: ' + JSON.stringify(gitPushSend));
+  // Stage 38: confirmation Telegram reply must be sent.
+  assert.equal(confirmSendCalled, true, 'Stage 38 confirmation reply must be sent via Telegram');
+  assert.equal(confirmSentChatId, '710001', 'confirmation must go to the founder chat');
+  // Confirmation text must reference the APPROVE phrase and action name.
+  assert.match(confirmSentText, /APPROVE/i, 'confirmation must include the APPROVE phrase');
+  assert.match(confirmSentText, /git.push|chintu\.gitPush/i, 'confirmation must name the queued action');
+  // Token must never appear in the confirmation text.
+  assert.doesNotMatch(confirmSentText, /ABCDEFGHIJKLMNOPQRSTUVWX123456789/, 'token must never appear in confirmation text');
+
+  // 2. Second run with same update_id: already-queued skip path — still sends confirmation (via maybeSend reply).
+  clearGitPushQueueEntry();
+
   const auditLines = readAuditLines();
-  assert.ok(auditLines.length >= 10, 'audit log should contain one line per actionable run');
+  assert.ok(auditLines.length >= 12, 'audit log should contain one line per actionable run');
 
   cleanupAudit();
   console.log('PASS chintu-telegram-runner.test.js');

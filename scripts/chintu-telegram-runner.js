@@ -843,6 +843,31 @@ async function runWithArgs(argv, env, deps) {
           result.enqueued      = true;
           result.enqueueId     = enqueueApprovalId;
           result.enqueuePhrase = phrase;
+
+          // Stage 38: send Telegram confirmation so founder knows what to type.
+          // Only fires when send is enabled and chatId is known. Never exposes token.
+          if (sendRequested && sendEnabled) {
+            const confirmChatId = preview.replyEnvelope && preview.replyEnvelope.chatId;
+            if (confirmChatId) {
+              const confirmText =
+                '\u2705 Queued for your approval.\n\n' +
+                'Action: ' + (trace.capabilityId || trace.intent) + '\n' +
+                'Command seen: "' + (trace.userText || '') + '"\n\n' +
+                'To approve, reply with exactly:\n' +
+                '  ' + phrase + '\n\n' +
+                'To see all pending items, send: pending approvals';
+              const confirmToken = String(env.TELEGRAM_BOT_TOKEN || '').trim();
+              try {
+                await deps.telegramSendMessage(confirmToken, confirmChatId, confirmText);
+                result.enqueueConfirmSent = true;
+              } catch (confirmErr) {
+                result.enqueueConfirmSent = false;
+                result.enqueueConfirmError = String(
+                  confirmErr && confirmErr.message ? confirmErr.message : confirmErr
+                );
+              }
+            }
+          }
         }
       } catch (enqueueErr) {
         result.enqueued     = false;

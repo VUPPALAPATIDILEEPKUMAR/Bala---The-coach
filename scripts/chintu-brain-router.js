@@ -36,6 +36,7 @@ const KNOWN_ACTIONS = [
   'agent_orchestrator_dry_run',
   'open_allegro', 'open_bala_local', 'open_bala_public',
   'bala_ask_skill',
+  'chintu_git_push',
 ];
 
 // Named multi-action sequences the bridge knows how to run. Kept in sync with
@@ -459,6 +460,35 @@ const RULES = [
       actions: ['git_status'],
       reply: 'Pulling git status so you can see what\'s staged and what\'s pending.',
       next: 'git_log',
+    }),
+  },
+  {
+    name: 'git_push',
+    // Exact imperative phrases only. Broad terms like 'push' alone are too ambiguous.
+    // Triggers RISK.CODE -> requires_approval trace -> Stage 35 enqueue
+    // -> Stage 38 Telegram confirmation reply with the exact APPROVE phrase.
+    match: (s) => hasAny(s, [
+      'push now', 'do the push', 'push branch', 'push main', 'push to main',
+      'push origin', 'push to origin', 'push to github', 'push to git',
+      'release now', 'ship it', 'deploy now', 'publish now',
+      'git push now', 'run git push', 'execute push',
+    ]),
+    build: () => ({
+      intent: 'git_push',
+      track: 'chintu',
+      risk: RISK.CODE,
+      type: TYPE.SINGLE,
+      actions: ['chintu_git_push'],
+      reply:
+        'I have queued a git push for your approval. This is irreversible without a revert commit. '
+        + 'Reply with the exact approval phrase shown in your pending-approvals queue to execute. '
+        + 'If this was not intentional, you can safely ignore the queued item.',
+      gates: [
+        'Requires explicit founder approval phrase - never auto-approved',
+        'No timeout-based approval - manual only',
+        'Irreversible without git revert + push',
+        'Push from Windows terminal only - sandbox proxy blocks git push',
+      ],
     }),
   },
   {

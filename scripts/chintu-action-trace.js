@@ -64,6 +64,8 @@ const INTENT_TO_CAPABILITY = {
   'open_bala_public':        'bala.localHealthSummaryReadOnly',
   'open_bala_local':         'bala.localHealthSummaryReadOnly',
   'health_emergency':        'chintu.healthEmergencyAction',
+  'bala_ask':                'bala.askSkill',
+  'git_push':                'chintu.gitPush',
   'unknown':                 'chintu.status',
 };
 

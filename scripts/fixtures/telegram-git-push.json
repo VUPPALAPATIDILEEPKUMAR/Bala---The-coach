@@ -1,0 +1,10 @@
+{
+  "update_id": 900011,
+  "message": {
+    "message_id": 4011,
+    "date": 1781741000,
+    "chat": { "id": 710001, "type": "private" },
+    "from": { "id": 510001, "is_bot": false, "first_name": "Founder" },
+    "text": "push now"
+  }
+}
