@@ -2,7 +2,7 @@
 _Updated by BALA Autopilot after each stage commit_
 
 ## Current HEAD
-- Commit: `221a644` BALA-B48: Symptom Nudge — daily one-tap body signal chips, once/day gate, demo-safe, 78/78 tests
+- Commit: `ab18052` BALA-B49: Doctor-Ready Export Summary — plain-text wellness log, copy+download, 77/77 tests
 - Branch: main
 - Date: 2026-06-21
 
@@ -13,7 +13,7 @@ _Updated by BALA Autopilot after each stage commit_
 Gate: Telegram live phone proof required. Must not be touched autonomously.
 
 ### LANE B — BALA Coach (Autonomous)
-**Status: B48 COMPLETE — ready for B49**
+**Status: B49 COMPLETE — ready for B50**
 
 ## Completed Stages (this autopilot session)
 
@@ -25,17 +25,18 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | B46 | `7ad10f7` | Weekly Focus Loop: one-click accept, try/skip daily log, dismiss, safety gate (79/79) |
 | B47 | `a87b8ed` | First Three Check-ins Journey: onboarding progress card 0→3, dismiss, demo-safe (98/98) |
 | B48 | `221a644` | Symptom Nudge: daily one-tap body signal chips, once/day gate, 6 chips, demo-safe (78/78) |
+| B49 | `ab18052` | Doctor-Ready Export Summary: plain-text wellness log, copy+download, demo-safe (77/77) |
 
-## B48 What Was Built
+## B49 What Was Built
 
-- `scripts/bala-symptom-nudge-engine.js` — CommonJS engine: todayString, hasNudgedToday, recordNudge, getNudgeLog, shouldShowNudge, validateChipId, NUDGE_CHIPS (6), NUDGE_ACK, NUDGE_DATE_KEY, NUDGE_LOG_KEY, NUDGE_MAX_LOG
-- `scripts/bala-b48-symptom-nudge.test.js` — 78/78 tests: todayString, hasNudgedToday, recordNudge (dedup/trim/skip/throw), max-log trim, getNudgeLog, shouldShowNudge, validateChipId, chip structure, copy safety, exports
-- `app.js` — B48 inline block (_ND_KEY/_NL_KEY/_NL_MAX/_CHIPS, _ndToday/_ndDone/_ndRecord, renderSymptomNudge); called from updateDashboard() after renderFirstCheckinsJourney()
-- `index.html` — #symptom-nudge nudge-card with .nudge-question, #nudge-chip-row, #nudge-ack, #nudge-skip
-- `styles.css` — .nudge-card, .nudge-question, .nudge-chip-row, .nudge-chip, .nudge-ack, .nudge-skip
-- `sw.js` — bumped to bala-shell-v48
+- `scripts/bala-doctor-summary-engine.js` — CommonJS engine: average, formatDate, buildMetricsSummary, buildSymptomSection (14-day), buildFocusSection (4-week), generateSummary, DISCLAIMER
+- `scripts/bala-b49-doctor-summary.test.js` — 77/77 tests: average, formatDate, buildMetricsSummary (full/sparse/empty), buildSymptomSection (skip/old/recent), buildFocusSection (tried/skipped markers), generateSummary (disclaimer always present, null-safe), copy safety (16 forbidden phrases), exports
+- `app.js` — B49 inline block (_DS_DISCLAIMER, _dsFormatDate, _dsAvg, _buildDoctorText, renderDoctorSummary); called from updateDashboard() null-metrics and main paths
+- `index.html` — #doctor-summary .ds-card with ds-generate-btn, ds-output (textarea), ds-copy-btn, ds-download-btn, ds-status, ds-disclaimer
+- `styles.css` — .ds-card, .ds-heading, .ds-intro, .ds-generate-btn, .ds-output, .ds-actions, .ds-copy-btn, .ds-download-btn, .ds-status, .ds-disclaimer
+- `sw.js` — bumped to bala-shell-v49
 
-## Test Suite Status (post-B48)
+## Test Suite Status (post-B49)
 
 | Suite | Result |
 |-------|--------|
@@ -47,13 +48,10 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | bala-b46-weekly-focus.test.js | 79/79 |
 | bala-b47-first-checkins.test.js | 98/98 |
 | bala-b48-symptom-nudge.test.js | 78/78 |
-| **Total** | **831/831** |
+| bala-b49-doctor-summary.test.js | 77/77 |
+| **Total** | **908/908** |
 
 ## Git Mechanics Note
 `git commit` and `git update-ref` blocked by stuck NTFS locks (.git/index.lock, .git/HEAD.lock).
 Workaround for all future commits:
-1. `GIT_INDEX_FILE=/tmp/<stage>index git read-tree HEAD`
-2. `GIT_INDEX_FILE=/tmp/<stage>index git add <explicit files>`
-3. `GIT_INDEX_FILE=/tmp/<stage>index git write-tree` → get TREE hash
-4. `git commit-tree <TREE> -p HEAD -m "message"` → get COMMIT hash
-5. `python3 -c "open('.git/refs/heads/main','w').write(
+1. `GIT_INDEX_FILE=/tmp/<stage>index gi
