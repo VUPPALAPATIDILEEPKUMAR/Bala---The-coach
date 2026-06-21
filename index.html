@@ -169,6 +169,17 @@
           <p class="ds-disclaimer">This is a personal wellness log, not a medical record or diagnosis. Share with your doctor as background context only.</p>
         </div>
 
+        <div id="ask-coach" class="ac-card" hidden>
+          <h3 class="ac-heading">Ask BALA</h3>
+          <p class="ac-intro">Ask about your signals — sleep, HRV, resting heart rate, steps, or your BALA score. All responses are awareness-only. For emergencies, contact emergency services.</p>
+          <div class="ac-input-row">
+            <label for="ac-input" class="sr-only">Your question</label>
+            <input type="text" id="ac-input" class="ac-input" placeholder="e.g. What does my HRV mean?" maxlength="300" autocomplete="off" />
+            <button id="ac-submit-btn" class="ac-submit-btn" type="button">Ask</button>
+          </div>
+          <div id="ac-feed" class="ac-feed" aria-live="polite" aria-label="Coach responses"></div>
+        </div>
+
         <section class="trust-strip" aria-label="BALA privacy and safety principles">
           <span><i aria-hidden="true">✓</i> Private by design</span>
           <span><i aria-hidden="true">✓</i> No account needed</span>

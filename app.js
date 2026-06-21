@@ -1179,7 +1179,191 @@ function renderDoctorSummary(isDemoMode) {
       } catch(e) {}
     });
   }
+
 }
+// ── B50: Ask BALA Coach ──────────────────────────────────────────────────────
+// Inline, local-only, zero-network. All responses are static awareness copy.
+// Emergency gate always wins. Input never leaves the device.
+// ─────────────────────────────────────────────────────────────────────────────
+var _AC_EMERGENCY_KEYWORDS = [
+  'chest pain', 'chest pressure', 'chest tightness',
+  "can't breathe", 'cannot breathe', 'trouble breathing', 'difficulty breathing',
+  'shortness of breath',
+  'heart attack', 'cardiac arrest',
+  'stroke', 'face drooping', 'arm weakness', 'speech difficulty',
+  'fainting', 'fainted', 'passed out', 'unconscious',
+  'severe pain', 'severe headache', 'sudden headache',
+  'call 999', 'call 911', 'call 000', 'emergency',
+];
+
+var _AC_EMERGENCY_RESPONSE =
+  'If you are experiencing a medical emergency — such as chest pain, trouble breathing, ' +
+  'fainting, severe pain, or stroke-like symptoms — please contact emergency services ' +
+  'or go to your nearest emergency department immediately.\n\n' +
+  'BALA is a wellness awareness tool. It cannot assess emergencies or call for help on your behalf.';
+
+var _AC_TOPIC_MAP = [
+  {
+    kw: ['hrv', 'heart rate variability'],
+    r: 'HRV (heart-rate variability) reflects the natural variation in time between your heartbeats. ' +
+       'Higher day-to-day HRV is often associated with good recovery and readiness, while a dip ' +
+       'can signal that your body is working harder — from exercise, stress, poor sleep, or illness. ' +
+       'BALA uses your HRV trend as one of several signals, not a standalone measure.',
+  },
+  {
+    kw: ['rhr', 'resting heart rate', 'resting hr', 'heart rate at rest'],
+    r: "Resting heart rate (RHR) is how many times your heart beats per minute when you're still and calm. " +
+       'A sustained rise in RHR over several days can be worth noticing — it may reflect accumulated fatigue, ' +
+       'stress, dehydration, or the early stages of illness. Trends matter more than single readings.',
+  },
+  {
+    kw: ['spo2', 'spo₂', 'blood oxygen', 'oxygen saturation', 'oxygen level'],
+    r: 'Blood oxygen (SpO₂) measures the percentage of haemoglobin carrying oxygen in your blood. ' +
+       'Most wearables measure it at the wrist, which is less accurate than a medical pulse oximeter. ' +
+       'Occasional dips overnight can be normal. Persistent or large drops are worth discussing with a doctor.',
+  },
+  {
+    kw: ['sleep', 'sleeping', 'insomnia', "can't sleep", 'tired', 'fatigue', 'exhausted'],
+    r: 'Sleep is one of the most powerful recovery signals BALA tracks. Consistent low sleep duration ' +
+       'tends to show up across other signals — HRV drops, resting heart rate rises, and recovery scores dip. ' +
+       'Small habits like consistent sleep and wake times often help more than trying to "catch up" at weekends.',
+  },
+  {
+    kw: ['steps', 'walking', 'activity', 'exercise', 'move', 'movement', 'sedentary'],
+    r: 'Daily movement — even a short walk — has a measurable relationship with recovery and stress signals. ' +
+       'BALA tracks your step count as a proxy for general daily activity. ' +
+       "You don't need a high step count every day; consistent gentle movement tends to matter more than occasional peaks.",
+  },
+  {
+    kw: ['stress', 'anxious', 'anxiety', 'worried', 'overwhelmed', 'burnout'],
+    r: 'Stress shows up in body signals before we consciously notice it — HRV often dips and resting heart rate ' +
+       "can rise during stressful periods. BALA doesn't measure stress directly, but your trend data " +
+       'can help you notice patterns. Small rest periods, breathing, and sleep tend to support recovery.',
+  },
+  {
+    kw: ['recovery', 'recover', 'readiness', 'ready'],
+    r: 'Recovery reflects how well your body has bounced back from the demands of the previous day — ' +
+       "exercise, stress, poor sleep, illness. BALA's score combines your recent sleep, HRV, and resting " +
+       "heart rate trends to give you a rough sense of where you are. It's a pattern guide, not a precise measure.",
+  },
+  {
+    kw: ['bala score', 'score', 'what does my score mean', 'what does the score mean'],
+    r: "The BALA score is a rough composite of your recent sleep, HRV, resting heart rate, and step data. " +
+       "It's meant as a daily orientation — a way to notice patterns over time, not a medical measurement. " +
+       "A single day's score matters less than the trend across a week.",
+  },
+  {
+    kw: ['doctor', 'gp', 'physician', 'medical', 'appointment', 'check-up', 'checkup'],
+    r: 'BALA can help you notice patterns worth mentioning at your next appointment. ' +
+       'The "Share with your doctor" section generates a plain-text wellness log you can bring to your GP — ' +
+       'covering your recent signals, symptom check-ins, and focus history. ' +
+       'It is context, not a diagnosis or referral.',
+  },
+  {
+    kw: ['privacy', 'data', 'store', 'stored', 'share', 'cloud', 'sync', 'server'],
+    r: "All your BALA data is stored on this device only — in your browser's local storage. " +
+       'Nothing is sent to a server or shared with anyone. BALA has no account, no cloud sync, and no analytics. ' +
+       'Your health data belongs to you.',
+  },
+  {
+    kw: ['how does bala work', 'how does it work', 'what is bala', 'what does bala do'],
+    r: 'BALA is a calm health-awareness companion. You log daily check-ins with your wearable or phone data ' +
+       '(sleep, HRV, resting heart rate, SpO₂, steps), and BALA helps you notice patterns over time. ' +
+       'It is a personal wellness guide — not a diagnostic tool, not a medical device.',
+  },
+  {
+    kw: ['demo', 'demo mode', 'example data', 'sample data'],
+    r: 'Demo mode shows BALA with example data so you can explore without logging real check-ins. ' +
+       'The BALA score, reflection, and signal cards all use realistic (but fictional) data in demo mode. ' +
+       'Switch to your own data by connecting your wearable or entering check-in details.',
+  },
+];
+
+var _AC_DEFAULT =
+  "I didn't quite recognise that question. BALA can help you understand signals like sleep, " +
+  'HRV, resting heart rate, steps, and your BALA score. ' +
+  'Try asking about one of those, or tap "Generate my wellness log" to create a summary for your doctor.';
+
+var _AC_MAX_LEN = 300;
+var _acHistory = []; // session-only Q&A pairs (last 5, never persisted)
+
+function _acGetResponse(raw) {
+  var input = typeof raw === 'string' ? raw.trim().slice(0, _AC_MAX_LEN) : '';
+  if (!input) return { text: '', type: 'empty' };
+  var lower = input.toLowerCase();
+  // Emergency gate — always first, non-negotiable
+  if (_AC_EMERGENCY_KEYWORDS.some(function(k) { return lower.includes(k); })) {
+    return { text: _AC_EMERGENCY_RESPONSE, type: 'emergency' };
+  }
+  // Topic match
+  for (var i = 0; i < _AC_TOPIC_MAP.length; i++) {
+    var entry = _AC_TOPIC_MAP[i];
+    if (entry.kw.some(function(k) { return lower.includes(k); })) {
+      return { text: entry.r, type: 'topic' };
+    }
+  }
+  return { text: _AC_DEFAULT, type: 'default' };
+}
+
+function renderAskCoach(isDemoMode) {
+  var card = document.getElementById('ask-coach');
+  if (!card) return;
+  card.hidden = false;
+
+  if (card.dataset.bound) return;
+  card.dataset.bound = '1';
+
+  var input = document.getElementById('ac-input');
+  var btn   = document.getElementById('ac-submit-btn');
+  var feed  = document.getElementById('ac-feed');
+
+  if (!input || !btn || !feed) return;
+
+  function _renderFeed() {
+    feed.innerHTML = '';
+    _acHistory.forEach(function(pair) {
+      var qEl = document.createElement('div');
+      qEl.className = 'ac-q';
+      qEl.textContent = pair.q;
+      feed.appendChild(qEl);
+
+      var aEl = document.createElement('div');
+      aEl.className = 'ac-a' + (pair.type === 'emergency' ? ' ac-a--emergency' : '');
+      aEl.textContent = pair.a;
+      feed.appendChild(aEl);
+    });
+    if (_acHistory.length) feed.scrollTop = feed.scrollHeight;
+  }
+
+  function _submit() {
+    var raw = input.value;
+    if (!raw.trim()) return;
+
+    var answer, aType;
+    if (isDemoMode) {
+      answer = 'This is demo mode. In your own session, BALA will answer questions about your signals — try asking about sleep, HRV, or your BALA score.';
+      aType  = 'topic';
+    } else {
+      var result = _acGetResponse(raw);
+      if (result.type === 'empty') return;
+      answer = result.text;
+      aType  = result.type;
+    }
+
+    _acHistory.push({ q: raw.trim(), a: answer, type: aType });
+    if (_acHistory.length > 5) _acHistory = _acHistory.slice(-5);
+    input.value = '';
+    _renderFeed();
+  }
+
+  btn.addEventListener('click', _submit);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _submit(); }
+  });
+
+  _renderFeed();
+}
+
 
 
 function inferDataSource(metrics = getLocalMetrics()) {
@@ -2577,6 +2761,7 @@ function updateDashboard(metrics) {
     renderFirstCheckinsJourney(null, false);
     renderSymptomNudge(false);
     renderDoctorSummary(false);
+    renderAskCoach(false);
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -2673,6 +2858,7 @@ function updateDashboard(metrics) {
   renderFirstCheckinsJourney(metrics, currentSource === 'demo');
   renderSymptomNudge(currentSource === 'demo');
   renderDoctorSummary(currentSource === 'demo');
+  renderAskCoach(currentSource === 'demo');
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);

@@ -583,6 +583,95 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
   border-top: 1px solid var(--line);
   padding-top: 10px;
 }
+/* ── B50: Ask BALA Coach ────────────────────────────────────────────── */
+.ac-card {
+  margin-top: 20px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  background: var(--white);
+}
+.ac-card[hidden] { display: none; }
+.ac-heading {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  color: var(--text);
+}
+.ac-intro {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.ac-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ac-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg, #fafafa);
+  outline: none;
+  transition: border-color .15s;
+}
+.ac-input:focus { border-color: var(--accent, #2a7a5b); }
+.ac-submit-btn {
+  padding: 10px 18px;
+  background: var(--accent, #2a7a5b);
+  color: #fff;
+  border: none;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .15s;
+}
+.ac-submit-btn:hover { opacity: .85; }
+.ac-feed {
+  margin-top: 18px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ac-q {
+  align-self: flex-end;
+  max-width: 85%;
+  background: var(--accent-light, #e8f4ef);
+  color: var(--text);
+  padding: 9px 13px;
+  border-radius: 14px 14px 4px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.ac-a {
+  align-self: flex-start;
+  max-width: 92%;
+  background: var(--surface, #f5f5f5);
+  color: var(--text);
+  padding: 9px 13px;
+  border-radius: 14px 14px 14px 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.ac-a--emergency {
+  background: #fff0f0;
+  border: 1px solid #e8a0a0;
+  color: #7a1a1a;
+  font-weight: 600;
+}
+
   margin-top: 18px;
   padding: 18px 22px;
   border: 1px solid var(--line);
