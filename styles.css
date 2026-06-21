@@ -500,6 +500,89 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
   width: fit-content;
 }
 .nudge-skip:hover { opacity: 0.7; }
+
+/* ── BALA-B49: Doctor-Ready Export Summary ─────────────────────────── */
+.ds-card {
+  margin-top: 18px;
+  padding: 22px 20px 18px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 19px;
+}
+.ds-card[hidden] { display: none; }
+.ds-heading {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+.ds-intro {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.ds-generate-btn {
+  display: inline-block;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 650;
+  background: var(--accent, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.ds-generate-btn:hover { opacity: 0.88; }
+.ds-output {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 14px;
+  padding: 12px 14px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg, #f8f8f8);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  resize: vertical;
+}
+.ds-output[hidden] { display: none; }
+.ds-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.ds-copy-btn, .ds-download-btn {
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 640;
+  border: 1.5px solid var(--line);
+  border-radius: 9px;
+  background: var(--white);
+  color: var(--text);
+  cursor: pointer;
+}
+.ds-copy-btn[hidden], .ds-download-btn[hidden] { display: none; }
+.ds-copy-btn:hover, .ds-download-btn:hover { background: var(--bg, #f4f4f4); }
+.ds-status {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--green, #16a34a);
+  min-height: 16px;
+}
+.ds-disclaimer {
+  margin: 14px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
   margin-top: 18px;
   padding: 18px 22px;
   border: 1px solid var(--line);

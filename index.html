@@ -155,6 +155,20 @@
           <button id="nudge-skip" class="nudge-skip" type="button">Skip for today</button>
         </div>
 
+        <!-- BALA-B49: Doctor-Ready Export Summary -->
+        <div id="doctor-summary" class="ds-card" hidden>
+          <h3 class="ds-heading">Share with your doctor</h3>
+          <p class="ds-intro">Generate a plain-text summary of your recent body signals, symptom check-ins, and weekly focus log — ready to share as context at your next appointment.</p>
+          <button id="ds-generate-btn" class="ds-generate-btn" type="button">Generate my wellness log</button>
+          <textarea id="ds-output" class="ds-output" hidden readonly aria-label="Generated wellness log text" rows="12"></textarea>
+          <div class="ds-actions" id="ds-actions">
+            <button id="ds-copy-btn" class="ds-copy-btn" type="button" hidden>Copy to clipboard</button>
+            <button id="ds-download-btn" class="ds-download-btn" type="button" hidden>Download .txt</button>
+          </div>
+          <p id="ds-status" class="ds-status" aria-live="polite"></p>
+          <p class="ds-disclaimer">This is a personal wellness log, not a medical record or diagnosis. Share with your doctor as background context only.</p>
+        </div>
+
         <section class="trust-strip" aria-label="BALA privacy and safety principles">
           <span><i aria-hidden="true">✓</i> Private by design</span>
           <span><i aria-hidden="true">✓</i> No account needed</span>
