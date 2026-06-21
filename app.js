@@ -753,6 +753,142 @@ function renderWeeklyReflection() {
   if (disclaimerNode) {
     disclaimerNode.textContent = result.disclaimer;
   }
+
+  // B46 — offer the B45 focus text as a one-click weekly focus
+  if (!result.empty && result.focus) {
+    renderWeeklyFocusOffer(result.focus);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// BALA-B46 Weekly Focus Loop — inline browser version (no require).
+// One focus at a time. localStorage only. Optional & dismissible. No guilt.
+// Mirrors bala-weekly-focus-engine.js — same logic, browser-safe.
+// Safe language only: never diagnose, treat, cure, prevent, or give emergency advice.
+// ---------------------------------------------------------------------------
+var _WF_KEY     = 'bala_active_focus';
+var _WF_LOG_KEY = 'bala_focus_log';
+var _WF_MAX     = 90;
+
+function _wfToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+function _wfGet() {
+  try {
+    var raw = localStorage.getItem(_WF_KEY);
+    if (!raw) return null;
+    var f = JSON.parse(raw);
+    if (!f || typeof f.text !== 'string' || !f.text.trim()) return null;
+    return { text: f.text.trim(), acceptedDate: f.acceptedDate || null };
+  } catch (e) { return null; }
+}
+function _wfSet(text) {
+  var clean = String(text || '').trim();
+  if (!clean) return null;
+  var f = { text: clean, acceptedDate: _wfToday() };
+  localStorage.setItem(_WF_KEY, JSON.stringify(f));
+  return f;
+}
+function _wfDismiss() {
+  localStorage.removeItem(_WF_KEY);
+}
+function _wfLog(text, tried) {
+  var date = _wfToday();
+  var log = [];
+  try { log = JSON.parse(localStorage.getItem(_WF_LOG_KEY) || '[]'); } catch (e) {}
+  if (!Array.isArray(log)) log = [];
+  log = log.filter(function(e) { return e.date !== date; });
+  log.push({ date: date, text: String(text || '').trim(), tried: Boolean(tried) });
+  if (log.length > _WF_MAX) log = log.slice(-_WF_MAX);
+  localStorage.setItem(_WF_LOG_KEY, JSON.stringify(log));
+  return log;
+}
+function _wfHasToday() {
+  var today = _wfToday();
+  var log = [];
+  try { log = JSON.parse(localStorage.getItem(_WF_LOG_KEY) || '[]'); } catch (e) {}
+  if (!Array.isArray(log)) return false;
+  return log.some(function(e) { return e.date === today; });
+}
+
+// Render the "accept this focus" offer card inside Weekly Reflection.
+// Called at end of renderWeeklyReflection() with the B45 focus text.
+function renderWeeklyFocusOffer(focusText) {
+  var offerNode = document.querySelector('#weekly-focus-offer');
+  if (!offerNode) return;
+
+  // If already accepted, hide offer
+  if (_wfGet() || !focusText) {
+    offerNode.hidden = true;
+    return;
+  }
+
+  var txt = document.querySelector('#wfo-text');
+  if (txt) txt.textContent = focusText;
+  offerNode.hidden = false;
+
+  // Wire accept button — cloneNode prevents double-binding on re-render
+  var acceptBtn = document.querySelector('#wfo-accept-btn');
+  if (acceptBtn) {
+    var fresh = acceptBtn.cloneNode(true);
+    acceptBtn.parentNode.replaceChild(fresh, acceptBtn);
+    fresh.addEventListener('click', function() {
+      _wfSet(focusText);
+      offerNode.hidden = true;
+      renderTodayFocus();
+    });
+  }
+}
+
+// Render the active focus in Today's Guide aside.
+// Called from updateDashboard() on every render.
+function renderTodayFocus() {
+  var labelNode   = document.querySelector('#weekly-focus-label');
+  var copyNode    = document.querySelector('#weekly-focus-copy');
+  var actionsNode = document.querySelector('#wf-today-actions');
+  var loggedNode  = document.querySelector('#wf-logged');
+  if (!labelNode || !copyNode) return;
+
+  var active = _wfGet();
+  if (!active) {
+    labelNode.textContent = 'Add more check-ins';
+    copyNode.textContent  = 'A few more check-ins will help BALA offer a pattern-aware focus.';
+    if (actionsNode) actionsNode.hidden = true;
+    if (loggedNode)  loggedNode.hidden  = true;
+    return;
+  }
+
+  labelNode.textContent = 'Your focus this week:';
+  copyNode.textContent  = active.text;
+
+  var alreadyLogged = _wfHasToday();
+  if (actionsNode) actionsNode.hidden = alreadyLogged;
+  if (loggedNode)  loggedNode.hidden  = !alreadyLogged;
+
+  // Rebind helper — prevents double-firing on re-render
+  function _rebind(id, fn) {
+    var el = document.querySelector(id);
+    if (!el) return;
+    var fresh2 = el.cloneNode(true);
+    el.parentNode.replaceChild(fresh2, el);
+    fresh2.addEventListener('click', fn);
+  }
+  _rebind('#wf-try-btn', function() {
+    _wfLog(active.text, true);
+    if (loggedNode)  { loggedNode.hidden = false; loggedNode.textContent = 'Logged for today ✓'; }
+    if (actionsNode) actionsNode.hidden = true;
+  });
+  _rebind('#wf-skip-btn', function() {
+    _wfLog(active.text, false);
+    if (loggedNode)  { loggedNode.hidden = false; loggedNode.textContent = 'Noted — no pressure ✓'; }
+    if (actionsNode) actionsNode.hidden = true;
+  });
+  _rebind('#wf-dismiss-btn', function() {
+    _wfDismiss();
+    renderTodayFocus();
+    var offerNode2 = document.querySelector('#weekly-focus-offer');
+    if (offerNode2) offerNode2.hidden = false;
+  });
 }
 
 function inferDataSource(metrics = getLocalMetrics()) {
@@ -2146,6 +2282,7 @@ function updateDashboard(metrics) {
     renderWeeklyPatterns(null);
     renderBehaviorJournal();
     renderWeeklyReflection();
+    renderTodayFocus();
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -2238,6 +2375,7 @@ function updateDashboard(metrics) {
   renderWeeklyPatterns(metrics);
   renderBehaviorJournal();
   renderWeeklyReflection();
+  renderTodayFocus();
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);
@@ -3309,7 +3447,6 @@ coachLanguage.addEventListener("change", () => {
 });
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach((nav) => nav.classList.toggle("active", nav === item));
     if (item.dataset.section === "coach") openCoach();
     if (item.dataset.section === "data") openDialog("data");
     if (item.dataset.section === "trends") document.querySelector("#signals-title").scrollIntoView({ behavior: "smooth" });

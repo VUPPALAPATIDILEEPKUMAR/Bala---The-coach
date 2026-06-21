@@ -359,6 +359,26 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .wr-focus { font-size: 11px; color: #3a5c43; background: #eaf4ec; border-radius: 10px; padding: 10px 14px; line-height: 1.6; }
 .wr-focus[hidden] { display: none; }
 
+/* B46 — Weekly Focus offer card (inside Weekly Reflection) */
+.wf-offer { background: #f0f8f2; border: 1px solid #bfdbca; border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; }
+.wf-offer[hidden] { display: none; }
+.wf-offer-label { margin: 0; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.wf-offer-text { margin: 0; font-size: 12px; color: var(--ink); line-height: 1.6; }
+.wf-accept-btn { align-self: start; padding: 9px 18px; background: var(--action); color: var(--white); border: none; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.wf-accept-btn:hover { opacity: 0.85; }
+
+/* B46 — Today's focus actions (inside aside.weekly-focus) */
+.wf-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.wf-actions[hidden] { display: none; }
+.wf-try-btn  { padding: 8px 14px; background: var(--action); color: var(--white); border: none; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.wf-try-btn:hover { opacity: 0.85; }
+.wf-skip-btn { padding: 8px 14px; background: transparent; color: var(--action); border: 1.5px solid var(--action); border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+.wf-skip-btn:hover { opacity: 0.75; }
+.wf-dismiss  { padding: 6px 10px; background: transparent; color: var(--muted); border: 1px solid #ccc; border-radius: 8px; font-size: 10px; cursor: pointer; transition: opacity 0.15s; }
+.wf-dismiss:hover { opacity: 0.75; }
+.wf-logged   { margin: 6px 0 0; font-size: 11px; color: #3a7a50; font-weight: 600; }
+.wf-logged[hidden] { display: none; }
+
 .source-rail {
   margin-top: 18px;
   padding: 18px 22px;
@@ -821,61 +841,4 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .signal-row { grid-template-columns: 37px 1fr auto; gap: 10px; }
   .signal-row > b { text-align: right; }
   .signal-row > em { grid-column: 2; }
-  .signal-row > .sparkline, .signal-row > .mini-progress { grid-column: 3; grid-row: 2; width: 68px; }
-  .ask-button { display: none; }
-  .metric-form-grid { grid-template-columns: 1fr; }
-  .symptom-grid { grid-template-columns: 1fr; }
-  .behavior-grid { grid-template-columns: 1fr; }
-  .platform-grid { grid-template-columns: 1fr; }
-  .device-grid { grid-template-columns: 1fr 1fr; }
-  .priority-table > div { grid-template-columns: 100px 1fr; }
-}
-
-@media (max-width: 460px) {
-  .device-grid { grid-template-columns: 1fr; }
-  .page-header h1 { font-size: 39px; letter-spacing: -1.9px; }
-  .score-panel { grid-template-columns: 88px 1fr; }
-  .alcohol-calc-grid { grid-template-columns: 1fr; }
-}
-  
-/* Stage 23 — transparent Score explanation disclosure (safe, static) */
-.score-explainer {
-  margin-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  padding-top: 10px;
-}
-.score-explainer > summary {
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--muted, #5b6470);
-/* ── B44: BALA Explainability Panel ──────────────────────────────────────── */
-.bala-explainability {
-  margin-top: 14px;
-  padding: 12px 14px;
-  background: rgba(var(--green-rgb, 46,125,91), 0.06);
-  border-radius: 10px;
-  font-size: 0.82rem;
-  line-height: 1.5;
-}
-.bala-explainability-heading {
-  margin: 0 0 8px;
-  font-weight: 700;
-  font-size: 0.83rem;
-  color: var(--fg, #1a2128);
-  letter-spacing: -0.2px;
-}
-.bala-cat-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-.bala-cat-pill {
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  font-weight: 650;
-  letter-spacing: -0.1px;
-}
-.bala-cat-pill--good   { background: rgba(46,125,91,.1
+  .signal-row > .sparkline, .signal-row > .mini

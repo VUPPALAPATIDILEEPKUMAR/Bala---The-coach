@@ -251,6 +251,12 @@
               <h3 id="weekly-focus-title">Focus for the next 24 hours</h3>
               <strong id="weekly-focus-label">Add more check-ins</strong>
               <p id="weekly-focus-copy">A few more check-ins will help BALA offer a pattern-aware focus.</p>
+              <div id="wf-today-actions" class="wf-actions" hidden>
+                <button id="wf-try-btn"  class="wf-try-btn"  type="button">Tried today</button>
+                <button id="wf-skip-btn" class="wf-skip-btn" type="button">Not today</button>
+                <button id="wf-dismiss-btn" class="wf-dismiss" type="button">Dismiss focus</button>
+              </div>
+              <p id="wf-logged" class="wf-logged" hidden></p>
             </aside>
           </div>
         </section>
@@ -281,6 +287,11 @@
           <ul class="wr-observation-list" id="weekly-reflection-observations" aria-label="Weekly observations" hidden></ul>
           <p class="wr-notes" id="weekly-reflection-notes"></p>
           <div class="wr-focus" id="weekly-reflection-focus" hidden></div>
+          <div class="wf-offer" id="weekly-focus-offer" hidden aria-live="polite">
+            <p class="wf-offer-label">One thing to notice next week:</p>
+            <p id="wfo-text" class="wf-offer-text"></p>
+            <button id="wfo-accept-btn" class="wf-accept-btn" type="button">Set as my weekly focus</button>
+          </div>
           <p class="wr-disclaimer" id="weekly-reflection-disclaimer"></p>
         </section>
 
@@ -878,10 +889,4 @@
             </label>
           </div>
           <div class="alcohol-result" id="alcohol-result" hidden>
-            <p class="alcohol-estimate" id="alcohol-estimate"></p>
-            <p class="alcohol-note">Some people notice changes in sleep quality, HRV, hydration, or resting heart rate after alcohol — this helps you track that pattern for yourself.</p>
-            <p class="alcohol-disclaimer">This is an approximate standard-drink estimate for personal reflection only — not medical advice. One US standard drink = 14 g pure alcohol (e.g. 355 ml of 5% beer, 148 ml of 12% wine, or 44 ml of 40% spirits).</p>
-          </div>
-          <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks (US)</button>
-        </div>
-        <label class="symptom-note">Optional reflection note<textarea name="note" maxlength="240" placeholder="For example: long travel day, 
+            <p class="alcoho
