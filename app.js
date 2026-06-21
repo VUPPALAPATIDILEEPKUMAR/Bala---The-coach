@@ -487,95 +487,269 @@ function renderBehaviorJournal() {
 }
 
 // ---------------------------------------------------------------------------
-// Weekly Reflection — local Daily Factors summary, safe language only.
-// No medical claims. No wearable detection. No network. Local storage only.
+// BALA-B45 Weekly Reflection — 7-day plain-English summary from local history.
+// No network. No AI inference. localStorage/check-in history only.
+// Mirrors bala-weekly-reflection-engine.js (same logic, no require, browser-safe).
+// Safe language only: never diagnose, never predict risk, no causation claims.
 // ---------------------------------------------------------------------------
-function computeWeeklyFactorReflection() {
-  const history = getBehaviorHistory();
-  if (!history.length) return null;
-
-  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const recent = history.filter((entry) => {
-    try { return new Date(entry.date).getTime() >= cutoff; } catch { return false; }
+function _wrAvgOf(arr) {
+  const v = arr.filter(Number.isFinite);
+  return v.length ? v.reduce(function(a, b) { return a + b; }, 0) / v.length : null;
+}
+function _wrStdDev(arr) {
+  const v = arr.filter(Number.isFinite);
+  if (v.length < 2) return null;
+  const mean = v.reduce(function(a, b) { return a + b; }, 0) / v.length;
+  const variance = v.reduce(function(s, x) { return s + (x - mean) * (x - mean); }, 0) / v.length;
+  return Math.sqrt(variance);
+}
+function _wrTrend(values) {
+  const v = values.filter(Number.isFinite);
+  if (v.length < 3) return null;
+  const half  = Math.max(1, Math.floor(v.length / 2));
+  const early = _wrAvgOf(v.slice(0, half));
+  const late  = _wrAvgOf(v.slice(-half));
+  if (early === null || late === null) return null;
+  const delta = late - early;
+  if (Math.abs(delta) < 2) return 'stable';
+  return delta > 0 ? 'up' : 'down';
+}
+function _wrFriendlyDate(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr || '');
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  } catch (e) {
+    return String(dateStr || '');
+  }
+}
+function _wrDayProxy(entry) {
+  const parts = [];
+  if (Number.isFinite(entry.hrv))   parts.push(entry.hrv);
+  if (Number.isFinite(entry.sleep)) parts.push(entry.sleep * 5);
+  if (Number.isFinite(entry.rhr))   parts.push(100 - entry.rhr);
+  return parts.length ? parts.reduce(function(a, b) { return a + b; }, 0) / parts.length : null;
+}
+function _wrFactorPatterns(behaviorHistory, cutoff) {
+  const recent = (behaviorHistory || []).filter(function(entry) {
+    try { return new Date(entry.date).getTime() >= cutoff; } catch (e) { return false; }
   });
-
-  if (!recent.length) return null;
-
   const counts = {};
   let totalEntries = 0;
   for (const entry of recent) {
     if (!(entry.factors || []).length) continue;
     totalEntries++;
-    for (const f of entry.factors) {
-      counts[f] = (counts[f] || 0) + 1;
+    for (const f of entry.factors) counts[f] = (counts[f] || 0) + 1;
+  }
+  if (!totalEntries) return null;
+  const sorted = Object.entries(counts)
+    .sort(function(a, b) { return b[1] - a[1]; })
+    .map(function([key, count]) {
+      return { key, label: behaviorFactorLabels[key] || key, count, days: totalEntries };
+    });
+  const patternNotes = [];
+  for (const item of sorted.slice(0, 3)) {
+    if (item.count >= 5)
+      patternNotes.push(item.label + ' appeared most days this week (' + item.count + ' of ' + item.days + ' logged days).');
+    else if (item.count >= 3)
+      patternNotes.push(item.label + ' was logged ' + item.count + ' times this week.');
+    else
+      patternNotes.push(item.label + ' was noted ' + item.count + (item.count > 1 ? ' times' : ' time') + ' this week.');
+  }
+  return { totalEntries, sorted, patternNotes };
+}
+function _wrFocus(sleepValues, hrvValues, rhrValues) {
+  const sd = _wrStdDev(sleepValues);
+  if (sd !== null && sd >= 1.0)
+    return 'Sleep timing varied this week. If that felt noticeable, a consistent wind-down time is one small thing to try.';
+  const avgHrv = _wrAvgOf(hrvValues);
+  if (avgHrv !== null && avgHrv < 35)
+    return 'HRV averaged on the lower side. Rest and recovery often support body signals over time — worth keeping an eye on.';
+  const avgRhr = _wrAvgOf(rhrValues);
+  if (avgRhr !== null && avgRhr > 70)
+    return 'Resting heart rate averaged a bit elevated this week. Consistent sleep and light activity often support this signal gradually.';
+  return 'You have a baseline to build on. Keep logging daily check-ins — even partial ones — to make this reflection more useful over time.';
+}
+function computeWeeklyReflection(metrics, behaviorHistory) {
+  const nowMs  = Date.now();
+  const cutoff = nowMs - 7 * 24 * 60 * 60 * 1000;
+  const rawHistory = Array.isArray(metrics && metrics.history) ? metrics.history : [];
+  const recent = rawHistory
+    .filter(function(entry) {
+      try { return new Date(entry.date).getTime() >= cutoff; } catch (e) { return false; }
+    })
+    .slice(-7);
+  const count = recent.length;
+
+  if (!count) {
+    return {
+      count: 0, isDemo: false, empty: true, observations: [],
+      factorResult: _wrFactorPatterns(behaviorHistory, cutoff),
+      focus: 'Log your first check-in to start building your weekly reflection.',
+      disclaimer: 'BALA uses the check-ins you log locally. It does not diagnose or replace professional care.',
+    };
+  }
+
+  const isDemo = String((metrics && metrics.source) || '').toLowerCase().includes('demo');
+  const bhMap = {};
+  for (const bh of (behaviorHistory || [])) {
+    if (bh.date) bhMap[String(bh.date).slice(0, 10)] = bh;
+  }
+
+  const sleepValues = recent.map(function(d) { return d.sleep; }).filter(Number.isFinite);
+  const hrvValues   = recent.map(function(d) { return d.hrv; }).filter(Number.isFinite);
+  const rhrValues   = recent.map(function(d) { return d.rhr; }).filter(Number.isFinite);
+  const observations = [];
+
+  // -- Sleep consistency (>=3 readings) --------------------------------------
+  if (sleepValues.length >= 3) {
+    const sd   = _wrStdDev(sleepValues);
+    const mean = _wrAvgOf(sleepValues);
+    const minS = Math.min.apply(null, sleepValues).toFixed(1);
+    const maxS = Math.max.apply(null, sleepValues).toFixed(1);
+    if (sd !== null) {
+      if (sd < 0.5) {
+        observations.push({ key: 'sleep_consistent',
+          text: 'Sleep was fairly consistent this week (around ' + mean.toFixed(1) + 'h average). Consistency is one pattern worth noticing.' });
+      } else if (sd >= 1.0) {
+        observations.push({ key: 'sleep_variable',
+          text: 'Sleep duration ranged from ' + minS + 'h to ' + maxS + 'h this week. Some variation is normal - just worth noticing.' });
+      } else {
+        observations.push({ key: 'sleep_moderate',
+          text: 'Sleep averaged around ' + mean.toFixed(1) + 'h this week with moderate variation (' + minS + '-' + maxS + 'h range).' });
+      }
     }
   }
 
-  if (!totalEntries) return null;
+  // -- HRV trend (>=3 readings) ----------------------------------------------
+  if (hrvValues.length >= 3) {
+    const dir = _wrTrend(hrvValues);
+    if (dir === 'up') {
+      observations.push({ key: 'hrv_rising',
+        text: 'HRV trended upward this week. That can reflect improving recovery - though day-to-day variation is completely normal.' });
+    } else if (dir === 'down') {
+      observations.push({ key: 'hrv_falling',
+        text: 'HRV trended slightly lower this week. This often self-corrects with rest and can shift with sleep, activity, or stress.' });
+    } else if (dir === 'stable') {
+      observations.push({ key: 'hrv_stable',
+        text: 'HRV stayed fairly stable this week. Stable readings often reflect a consistent routine.' });
+    }
+  }
 
-  const sorted = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([key, count]) => ({
-      key,
-      label: behaviorFactorLabels[key] || key,
-      count,
-      days: totalEntries,
-    }));
+  // -- RHR trend (>=3 readings) ----------------------------------------------
+  if (rhrValues.length >= 3) {
+    const dir = _wrTrend(rhrValues);
+    if (dir === 'down') {
+      observations.push({ key: 'rhr_falling',
+        text: 'Resting heart rate trended slightly lower this week, which can reflect consistent recovery pacing.' });
+    } else if (dir === 'up') {
+      observations.push({ key: 'rhr_rising',
+        text: 'Resting heart rate trended a bit higher this week. Sleep, hydration, and activity can all influence this signal.' });
+    }
+    // stable RHR -- skip to conserve observation slots
+  }
 
-  const patternNotes = [];
-  for (const item of sorted.slice(0, 3)) {
-    if (item.count >= 5) {
-      patternNotes.push(item.label + " appeared most days this week (" + item.count + " of " + item.days + " logged days).");
-    } else if (item.count >= 3) {
-      patternNotes.push(item.label + " was logged " + item.count + " times this week.");
-    } else {
-      patternNotes.push(item.label + " was noted " + item.count + (item.count > 1 ? " times" : " time") + " this week.");
+  // -- Best and toughest day (>=2 scored days) -------------------------------
+  const scored = recent
+    .map(function(entry) {
+      return {
+        date:    entry.date,
+        dateKey: String(entry.date || '').slice(0, 10),
+        proxy:   _wrDayProxy(entry),
+        bh:      bhMap[String(entry.date || '').slice(0, 10)] || null,
+      };
+    })
+    .filter(function(d) { return d.proxy !== null; });
+
+  if (scored.length >= 2) {
+    const best     = scored.reduce(function(a, b) { return b.proxy > a.proxy ? b : a; });
+    const toughest = scored.reduce(function(a, b) { return b.proxy < a.proxy ? b : a; });
+    if (best.dateKey !== toughest.dateKey) {
+      let dayText = 'Signals looked strongest around ' + _wrFriendlyDate(best.date) +
+                    ' and lower around ' + _wrFriendlyDate(toughest.date) + '.';
+      const rawNote = toughest.bh && toughest.bh.note;
+      if (rawNote && String(rawNote).trim()) {
+        const note = String(rawNote).trim();
+        const truncated = note.length > 80 ? note.slice(0, 80) + '...' : note;
+        dayText += ' You noted that day: "' + truncated + '"';
+      }
+      observations.push({ key: 'best_toughest_day', text: dayText });
     }
   }
 
   return {
-    entriesThisWeek: totalEntries,
-    factorsSorted: sorted,
-    patternNotes,
-    disclaimer: "These notes may help you notice patterns over time. This is reflection, not medical advice. Patterns are not proof of cause.",
+    count, isDemo, empty: false,
+    observations: observations.slice(0, 5),
+    factorResult: _wrFactorPatterns(behaviorHistory, cutoff),
+    focus: _wrFocus(sleepValues, hrvValues, rhrValues),
+    disclaimer: 'Based on the check-ins available. This is a pattern to notice, not a medical conclusion. More check-ins will make this reflection more useful. BALA does not diagnose or replace professional care.',
   };
 }
 
 function renderWeeklyReflection() {
-  const card = document.querySelector("#weekly-reflection-card");
+  const card = document.querySelector('#weekly-reflection-card');
   if (!card) return;
 
-  const result = computeWeeklyFactorReflection();
-  const countNode = document.querySelector("#weekly-reflection-count");
-  const notesNode = document.querySelector("#weekly-reflection-notes");
-  const pillsNode = document.querySelector("#weekly-reflection-pills");
-  const disclaimerNode = document.querySelector("#weekly-reflection-disclaimer");
+  const result         = computeWeeklyReflection(getLocalMetrics(), getBehaviorHistory());
+  const countNode      = document.querySelector('#weekly-reflection-count');
+  const notesNode      = document.querySelector('#weekly-reflection-notes');
+  const pillsNode      = document.querySelector('#weekly-reflection-pills');
+  const obsNode        = document.querySelector('#weekly-reflection-observations');
+  const focusNode      = document.querySelector('#weekly-reflection-focus');
+  const disclaimerNode = document.querySelector('#weekly-reflection-disclaimer');
 
-  if (!result) {
-    if (countNode) countNode.textContent = "No weekly reflection yet. Log a few daily factors and BALA will summarize only the signals and factors available.";
-    if (notesNode) notesNode.textContent = "What changed this week will appear here once you have a few daily-factor check-ins.";
-    if (pillsNode) pillsNode.replaceChildren();
-    if (disclaimerNode) disclaimerNode.textContent = "BALA uses available signals and reflections only. It does not diagnose or monitor emergencies.";
-    return;
-  }
-
+  // Count line
   if (countNode) {
-    countNode.textContent = result.entriesThisWeek + " day" + (result.entriesThisWeek === 1 ? "" : "s") + " logged in the past 7 days.";
+    countNode.textContent = result.empty
+      ? 'No weekly reflection yet. Log a few daily check-ins and BALA will summarize the signals and patterns available.'
+      : result.count + ' day' + (result.count === 1 ? '' : 's') + ' logged in the past 7 days.';
   }
-  if (notesNode) {
-    notesNode.textContent = result.patternNotes.length
-      ? result.patternNotes.join(" ")
-      : "No strong patterns yet — keep logging daily factors to build a picture.";
+
+  // Observations list
+  if (obsNode) {
+    obsNode.replaceChildren();
+    if (!result.empty && result.observations.length) {
+      result.observations.forEach(function(obs) {
+        const li = document.createElement('li');
+        li.className = 'wr-observation-item';
+        li.textContent = obs.text;
+        obsNode.append(li);
+      });
+    }
+    obsNode.hidden = result.empty || !result.observations.length;
   }
+
+  // Factor pills
   if (pillsNode) {
     pillsNode.replaceChildren();
-    result.factorsSorted.slice(0, 5).forEach(function(item) {
-      const pill = document.createElement("span");
-      pill.className = "wr-pill";
-      pill.textContent = item.label + " x" + item.count;
-      pillsNode.append(pill);
-    });
+    const fr = result.factorResult;
+    if (fr && fr.sorted) {
+      fr.sorted.slice(0, 5).forEach(function(item) {
+        const pill = document.createElement('span');
+        pill.className = 'wr-pill';
+        pill.textContent = item.label + ' x' + item.count;
+        pillsNode.append(pill);
+      });
+    }
   }
+
+  // Factor notes row
+  if (notesNode) {
+    const fr = result.factorResult;
+    notesNode.textContent = (fr && fr.patternNotes && fr.patternNotes.length)
+      ? fr.patternNotes.join(' ')
+      : result.empty
+        ? 'What changed this week will appear here once you have a few daily-factor check-ins.'
+        : 'No strong factor patterns yet - keep logging daily factors to build a picture.';
+  }
+
+  // Next-week focus
+  if (focusNode) {
+    focusNode.textContent = result.empty ? '' : 'One thing to notice next week: ' + result.focus;
+    focusNode.hidden = result.empty;
+  }
+
+  // Disclaimer
   if (disclaimerNode) {
     disclaimerNode.textContent = result.disclaimer;
   }

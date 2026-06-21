@@ -351,6 +351,13 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .wr-pill { padding: 8px 12px; border: 1px solid #dbe5df; border-radius: 999px; color: #46504b; background: #edf5ef; font-size: 9px; font-weight: 760; }
 .wr-notes { font-size: 12px !important; color: var(--ink) !important; line-height: 1.6 !important; }
 .wr-disclaimer { font-size: 9px !important; color: var(--muted) !important; font-style: italic; }
+/* B45 — observations list */
+.wr-observation-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.wr-observation-list[hidden] { display: none; }
+.wr-observation-item { font-size: 12px; color: var(--ink); line-height: 1.6; padding: 10px 14px; background: #f4f9f5; border-left: 3px solid #b6d4bc; border-radius: 8px; }
+/* B45 — next-week focus */
+.wr-focus { font-size: 11px; color: #3a5c43; background: #eaf4ec; border-radius: 10px; padding: 10px 14px; line-height: 1.6; }
+.wr-focus[hidden] { display: none; }
 
 .source-rail {
   margin-top: 18px;
@@ -871,20 +878,4 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   font-weight: 650;
   letter-spacing: -0.1px;
 }
-.bala-cat-pill--good   { background: rgba(46,125,91,.14); color: #1e5e3a; }
-.bala-cat-pill--fair   { background: rgba(213,151,69,.15); color: #7a4e18; }
-.bala-cat-pill--low    { background: rgba(180,91,71,.13);  color: #7a2f1e; }
-.bala-cat-pill--neutral{ background: rgba(90,100,115,.10); color: #3a4350; }
-.bala-change-copy,
-.bala-missing,
-.bala-conf-note {
-  margin: 5px 0 0;
-  color: var(--muted, #5b6470);
-}
-.bala-conf-note strong { color: var(--fg, #1a2128); }
-.bala-explainability-emergency {
-  padding: 10px;
-  background: rgba(180,91,71,.1);
-  border-radius: 8px;
-  color: #7a2f1e;
-}
+.bala-cat-pill--good   { background: rgba(46,125,91,.1
