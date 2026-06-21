@@ -1364,6 +1364,126 @@ function renderAskCoach(isDemoMode) {
   _renderFeed();
 }
 
+// BALA-B51 Sparkline Engine — inline browser version
+var _SP_POLARITY = {
+  hrv: 'up', sleep: 'up', spo2: 'up', steps: 'up', rhr: 'down'
+};
+var _SP_GOOD  = '#2e7d5b';
+var _SP_WATCH = '#b85c00';
+var _SP_FLAT  = '#8a8a8a';
+
+function _spNormalise(vals) {
+  if (!Array.isArray(vals) || vals.length === 0) return [];
+  var fin = vals.filter(function(v) {
+    return typeof v === 'number' && isFinite(v);
+  });
+  if (fin.length < 2) {
+    return vals.map(function(v) {
+      return (typeof v === 'number' && isFinite(v)) ? 0.5 : null;
+    });
+  }
+  var mn = Math.min.apply(null, fin);
+  var mx = Math.max.apply(null, fin);
+  if (mx === mn) {
+    return vals.map(function(v) {
+      return (typeof v === 'number' && isFinite(v)) ? 0.5 : null;
+    });
+  }
+  return vals.map(function(v) {
+    if (typeof v !== 'number' || !isFinite(v)) return null;
+    return (v - mn) / (mx - mn);
+  });
+}
+
+function _spTrend(vals) {
+  if (!Array.isArray(vals)) return 'flat';
+  var fin = vals.filter(function(v) {
+    return typeof v === 'number' && isFinite(v);
+  });
+  if (fin.length < 2) return 'flat';
+  var h = Math.floor(fin.length / 2) || 1;
+  var a1 = fin.slice(0, h).reduce(function(s, v) {
+    return s + v;
+  }, 0) / h;
+  var a2 = fin.slice(h).reduce(function(s, v) {
+    return s + v;
+  }, 0) / (fin.length - h);
+  var mn = Math.min.apply(null, fin);
+  var mx = Math.max.apply(null, fin);
+  var range = mx - mn;
+  if (range === 0) return 'flat';
+  var ch = (a2 - a1) / range;
+  if (ch > 0.05) return 'up';
+  if (ch < -0.05) return 'down';
+  return 'flat';
+}
+
+function _spColor(key, dir) {
+  if (dir === 'flat') return _SP_FLAT;
+  var pol = _SP_POLARITY[key] || 'up';
+  return ((pol === 'up') === (dir === 'up')) ? _SP_GOOD : _SP_WATCH;
+}
+
+function _spBuildSvg(vals, key) {
+  var W = 80, H = 28, SW = 2, PAD = 2;
+  var norm = _spNormalise(vals);
+  var dir  = _spTrend(vals);
+  var col  = _spColor(key, dir);
+  var pairs = [];
+  norm.forEach(function(v, i) {
+    if (v === null) return;
+    var x = norm.length === 1
+      ? W / 2
+      : (i / (norm.length - 1)) * W;
+    var y = PAD + (1 - v) * (H - PAD * 2);
+    pairs.push(
+      Math.round(x * 100) / 100 + ',' +
+      Math.round(y * 100) / 100
+    );
+  });
+  var vb = '0 0 ' + W + ' ' + H;
+  var ns = 'http://www.w3.org/2000/svg';
+  if (!pairs.length) {
+    return '<svg xmlns="' + ns + '"' +
+      ' viewBox="' + vb + '"' +
+      ' width="' + W + '" height="' + H + '"' +
+      ' aria-hidden="true" class="sp-svg">' +
+      '<line x1="0" y1="' + (H / 2) + '"' +
+      ' x2="' + W + '" y2="' + (H / 2) + '"' +
+      ' stroke="' + _SP_FLAT + '"' +
+      ' stroke-width="' + SW + '"' +
+      ' stroke-linecap="round"/></svg>';
+  }
+  return '<svg xmlns="' + ns + '"' +
+    ' viewBox="' + vb + '"' +
+    ' width="' + W + '" height="' + H + '"' +
+    ' aria-hidden="true" class="sp-svg">' +
+    '<polyline points="' + pairs.join(' ') + '"' +
+    ' fill="none"' +
+    ' stroke="' + col + '"' +
+    ' stroke-width="' + SW + '"' +
+    ' stroke-linecap="round"' +
+    ' stroke-linejoin="round"/></svg>';
+}
+
+function renderSparklines(history) {
+  var n = 7;
+  var rows = ['hrv', 'spo2'];
+  rows.forEach(function(key) {
+    var sel = '.signal-row[data-signal="' + key + '"] .sparkline';
+    var el = document.querySelector(sel);
+    if (!el) return;
+    var vals = [];
+    if (Array.isArray(history) && history.length) {
+      vals = history.slice(-n).map(function(e) {
+        var v = e && e[key];
+        return (typeof v === 'number' && isFinite(v)) ? v : null;
+      });
+    }
+    el.innerHTML = _spBuildSvg(vals, key);
+  });
+}
+
 
 
 function inferDataSource(metrics = getLocalMetrics()) {
@@ -2859,6 +2979,7 @@ function updateDashboard(metrics) {
   renderSymptomNudge(currentSource === 'demo');
   renderDoctorSummary(currentSource === 'demo');
   renderAskCoach(currentSource === 'demo');
+  renderSparklines(metrics.history || []);
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);

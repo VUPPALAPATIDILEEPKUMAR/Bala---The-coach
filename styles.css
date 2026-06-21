@@ -814,6 +814,9 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .sparkline { position: relative; width: 82px; height: 30px; justify-self: end; }
 .sparkline::before { content: ""; position: absolute; inset: 10px 0; border-top: 2px solid var(--green); transform: skewY(-7deg); }
 .sparkline.level::before { transform: skewY(2deg); }
+/* B51: suppress CSS placeholder when real SVG sparkline is present */
+.sparkline:has(.sp-svg)::before { display: none; }
+.sp-svg { display: block; overflow: visible; }
 .mini-progress { width: 82px; height: 6px; border-radius: 10px; background: #e8eeeb; overflow: hidden; }
 .mini-progress i { display: block; width: 68%; height: 100%; background: var(--green); }
 
@@ -1130,7 +1133,4 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .panel-heading { align-items: flex-start; flex-direction: column; }
   .tabs { width: 100%; }
   .tabs button { flex: 1; }
-  .signal-row { grid-template-columns: 37px 1fr auto; gap: 10px; }
-  .signal-row > b { text-align: right; }
-  .signal-row > em { grid-column: 2; }
-  .signal-row > .sparkline, .signal-row > .mini
+  .signal-row { grid-temp
