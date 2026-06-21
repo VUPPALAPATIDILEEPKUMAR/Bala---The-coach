@@ -891,6 +891,74 @@ function renderTodayFocus() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// BALA-B47 First Three Check-ins Journey — inline browser version.
+// Shows a calm progress card until the user has 3+ real (non-demo) check-ins.
+// Dismissible, never shown in demo mode, no network calls.
+// ---------------------------------------------------------------------------
+var _JC_KEY = 'bala_journey_dismissed';
+
+function renderFirstCheckinsJourney(metrics, isDemoMode) {
+  var card = document.querySelector('#first-checkins-card');
+  if (!card) return;
+
+  // Never show in demo mode
+  if (isDemoMode) { card.hidden = true; return; }
+
+  // Never show if dismissed
+  try {
+    if (localStorage.getItem(_JC_KEY) === '1') { card.hidden = true; return; }
+  } catch (e) {}
+
+  // Count real (non-demo) check-ins
+  var history = Array.isArray(metrics && metrics.history) ? metrics.history : [];
+  var realCount = history.filter(function(h) {
+    var src = String(h && h.source ? h.source : '').toLowerCase();
+    return !src.includes('demo');
+  }).length;
+
+  // Journey complete → hide card
+  if (realCount >= 3) { card.hidden = true; return; }
+
+  // Messages per state
+  var msgs = {
+    0: { heading: 'Your BALA journey starts here',
+         copy:    'Log your first check-in to start seeing your body\'s patterns. Each check-in is private and stays on this device.',
+         progress: 0 },
+    1: { heading: 'First check-in logged',
+         copy:    'You have 1 of 3 check-ins. One more and BALA can start noticing a pattern from your data.',
+         progress: 1 },
+    2: { heading: 'Almost there',
+         copy:    'You have 2 of 3 check-ins. One more unlocks your first weekly reflection and factor summary.',
+         progress: 2 },
+  };
+  var msg = msgs[realCount];
+
+  // Update text
+  var headingEl = document.querySelector('#journey-heading');
+  var copyEl    = document.querySelector('#journey-copy');
+  var fillEl    = document.querySelector('#journey-progress-fill');
+  var labelEl   = document.querySelector('#journey-progress-label');
+  if (headingEl) headingEl.textContent = msg.heading;
+  if (copyEl)    copyEl.textContent    = msg.copy;
+  if (fillEl)    fillEl.style.width    = Math.round((msg.progress / 3) * 100) + '%';
+  if (labelEl)   labelEl.textContent   = msg.progress + ' / 3';
+
+  // Wire dismiss button — cloneNode prevents double-bind
+  var btn = document.querySelector('#journey-dismiss-btn');
+  if (btn) {
+    var freshBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(freshBtn, btn);
+    freshBtn.addEventListener('click', function() {
+      try { localStorage.setItem(_JC_KEY, '1'); } catch (e) {}
+      card.hidden = true;
+    });
+  }
+
+  card.hidden = false;
+}
+
+
 function inferDataSource(metrics = getLocalMetrics()) {
   const saved = localStorage.getItem(DATA_SOURCE_KEY);
   if (saved && dataSourceLabels[saved]) return saved;
@@ -2283,6 +2351,7 @@ function updateDashboard(metrics) {
     renderBehaviorJournal();
     renderWeeklyReflection();
     renderTodayFocus();
+    renderFirstCheckinsJourney(null, false);
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -2376,6 +2445,7 @@ function updateDashboard(metrics) {
   renderBehaviorJournal();
   renderWeeklyReflection();
   renderTodayFocus();
+  renderFirstCheckinsJourney(metrics, currentSource === 'demo');
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);

@@ -134,6 +134,19 @@
           </button>
         </section>
 
+        <!-- BALA-B47: First Three Check-ins Journey card -->
+        <div id="first-checkins-card" class="journey-card" hidden aria-live="polite">
+          <div class="journey-header">
+            <h3 id="journey-heading" class="journey-heading">Your BALA journey starts here</h3>
+            <button id="journey-dismiss-btn" class="journey-dismiss" type="button" aria-label="Dismiss journey card">✕</button>
+          </div>
+          <p id="journey-copy" class="journey-copy">Log your first check-in to start seeing your body's patterns. Each check-in is private and stays on this device.</p>
+          <div class="journey-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" aria-label="Check-in progress">
+            <div id="journey-progress-fill" class="journey-progress-fill" style="width:0%"></div>
+          </div>
+          <p id="journey-progress-label" class="journey-progress-label">0 / 3 check-ins</p>
+        </div>
+
         <section class="trust-strip" aria-label="BALA privacy and safety principles">
           <span><i aria-hidden="true">✓</i> Private by design</span>
           <span><i aria-hidden="true">✓</i> No account needed</span>

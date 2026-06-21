@@ -379,6 +379,70 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .wf-logged   { margin: 6px 0 0; font-size: 11px; color: #3a7a50; font-weight: 600; }
 .wf-logged[hidden] { display: none; }
 
+
+/* ─── BALA-B47 First Three Check-ins Journey card ────────────────────────── */
+.journey-card {
+  margin: 0 16px 12px;
+  background: linear-gradient(135deg, #f7faf9 0%, #edf6f0 100%);
+  border: 1px solid #c4dccb;
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  display: grid;
+  gap: 10px;
+}
+.journey-card[hidden] { display: none; }
+.journey-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.journey-heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.journey-dismiss {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 10px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.journey-dismiss:hover { opacity: 0.7; }
+.journey-copy {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.6;
+  opacity: 0.85;
+}
+.journey-progress-bar {
+  height: 6px;
+  background: #d4ead9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.journey-progress-fill {
+  height: 100%;
+  background: var(--action);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.journey-progress-label {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 .source-rail {
   margin-top: 18px;
   padding: 18px 22px;
