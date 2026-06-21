@@ -444,6 +444,62 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
   letter-spacing: 0.03em;
 }
 .source-rail {
+
+/* ─── BALA-B48 Symptom Nudge card ───────────────────────────────────────── */
+.nudge-card {
+  margin: 0 16px 12px;
+  background: #f9f7ff;
+  border: 1px solid #d8d0ef;
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 10px;
+}
+.nudge-card[hidden] { display: none; }
+.nudge-question {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.nudge-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nudge-chip {
+  padding: 7px 12px;
+  background: var(--white);
+  color: var(--ink);
+  border: 1.5px solid #c5bde8;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.nudge-chip:hover { background: #ede8fb; border-color: #9d8fd4; }
+.nudge-ack {
+  margin: 0;
+  font-size: 11px;
+  color: #5a4a8a;
+  font-weight: 600;
+}
+.nudge-ack[hidden] { display: none; }
+.nudge-skip {
+  align-self: start;
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 10px;
+  cursor: pointer;
+  width: fit-content;
+}
+.nudge-skip:hover { opacity: 0.7; }
   margin-top: 18px;
   padding: 18px 22px;
   border: 1px solid var(--line);

@@ -957,6 +957,80 @@ function renderFirstCheckinsJourney(metrics, isDemoMode) {
 
   card.hidden = false;
 }
+// ---------------------------------------------------------------------------
+// BALA-B48 Symptom Nudge — inline browser version.
+// A gentle one-tap daily chip: "How is your body feeling today?"
+// Shown once per day, never in demo mode, no medical framing.
+// ---------------------------------------------------------------------------
+var _ND_KEY  = 'bala_nudge_date';
+var _NL_KEY  = 'bala_nudge_log';
+var _NL_MAX  = 90;
+var _CHIPS = [
+  { id: 'tired',     label: 'Tired',            emoji: '😴' },
+  { id: 'stressed',  label: 'Stressed',          emoji: '😤' },
+  { id: 'calm',      label: 'Calm',              emoji: '😌' },
+  { id: 'energised', label: 'Energised',         emoji: '💪' },
+  { id: 'unwell',    label: 'Under the weather', emoji: '🤒' },
+  { id: 'sore',      label: 'Sore or achy',      emoji: '🤕' },
+];
+
+function _ndToday() { return new Date().toISOString().slice(0, 10); }
+
+function _ndDone() {
+  try { return localStorage.getItem(_ND_KEY) === _ndToday(); } catch(e) { return false; }
+}
+
+function _ndRecord(chipId) {
+  var today = _ndToday();
+  try { localStorage.setItem(_ND_KEY, today); } catch(e) {}
+  var raw = null;
+  try { raw = JSON.parse(localStorage.getItem(_NL_KEY)); } catch(e) {}
+  var log = Array.isArray(raw) ? raw : [];
+  log = log.filter(function(e) { return e.date !== today; });
+  log.push({ date: today, chipId: chipId });
+  if (log.length > _NL_MAX) log = log.slice(log.length - _NL_MAX);
+  try { localStorage.setItem(_NL_KEY, JSON.stringify(log)); } catch(e) {}
+}
+
+function renderSymptomNudge(isDemoMode) {
+  var card = document.querySelector('#symptom-nudge');
+  if (!card) return;
+
+  // Hide in demo mode or already responded today
+  if (isDemoMode || _ndDone()) { card.hidden = true; return; }
+
+  // Build chip buttons (only once — dataset.bound guard)
+  var chipRow = document.querySelector('#nudge-chip-row');
+  if (chipRow && !chipRow.dataset.bound) {
+    chipRow.dataset.bound = '1';
+    _CHIPS.forEach(function(chip) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'nudge-chip';
+      btn.dataset.chipId = chip.id;
+      btn.setAttribute('aria-label', chip.label);
+      btn.textContent = chip.emoji + ' ' + chip.label;
+      btn.addEventListener('click', function() {
+        _ndRecord(chip.id);
+        var ackEl = document.querySelector('#nudge-ack');
+        if (ackEl) { ackEl.hidden = false; ackEl.textContent = 'Noted — BALA keeps this on your device only.'; }
+        if (chipRow) chipRow.hidden = true;
+        setTimeout(function() { if (card) card.hidden = true; }, 2000);
+      });
+      chipRow.appendChild(btn);
+    });
+    var skipBtn = document.querySelector('#nudge-skip');
+    if (skipBtn) {
+      skipBtn.addEventListener('click', function() {
+        _ndRecord('skip');
+        card.hidden = true;
+      });
+    }
+  }
+
+  card.hidden = false;
+}
+
 
 
 function inferDataSource(metrics = getLocalMetrics()) {
@@ -2352,6 +2426,7 @@ function updateDashboard(metrics) {
     renderWeeklyReflection();
     renderTodayFocus();
     renderFirstCheckinsJourney(null, false);
+    renderSymptomNudge(false);
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -2446,6 +2521,7 @@ function updateDashboard(metrics) {
   renderWeeklyReflection();
   renderTodayFocus();
   renderFirstCheckinsJourney(metrics, currentSource === 'demo');
+  renderSymptomNudge(currentSource === 'demo');
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);

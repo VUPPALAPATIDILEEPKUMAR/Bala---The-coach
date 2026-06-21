@@ -147,6 +147,14 @@
           <p id="journey-progress-label" class="journey-progress-label">0 / 3 check-ins</p>
         </div>
 
+        <!-- BALA-B48: Symptom Nudge — gentle daily body signal chip -->
+        <div id="symptom-nudge" class="nudge-card" hidden aria-live="polite">
+          <p class="nudge-question">How is your body feeling today?</p>
+          <div id="nudge-chip-row" class="nudge-chip-row" aria-label="Select how you feel"></div>
+          <p id="nudge-ack" class="nudge-ack" hidden></p>
+          <button id="nudge-skip" class="nudge-skip" type="button">Skip for today</button>
+        </div>
+
         <section class="trust-strip" aria-label="BALA privacy and safety principles">
           <span><i aria-hidden="true">✓</i> Private by design</span>
           <span><i aria-hidden="true">✓</i> No account needed</span>
