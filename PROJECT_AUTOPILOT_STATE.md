@@ -2,7 +2,7 @@
 _Updated by BALA Autopilot after each stage commit_
 
 ## Current HEAD
-- Commit: `9f50e98` BALA-B53: Readiness Score History Panel — 93/93 tests
+- Commit: `c3b961a` BALA-B54: Weekly Trend Summary Card — 89/89 tests
 - Branch: main
 - Date: 2026-06-22
 
@@ -13,7 +13,7 @@ _Updated by BALA Autopilot after each stage commit_
 Gate: Telegram live phone proof required. Must not be touched autonomously.
 
 ### LANE B — BALA Coach (Autonomous)
-**Status: B53 COMPLETE — ready for B54**
+**Status: B54 COMPLETE — ready for B55**
 
 ## Completed Stages (this autopilot session)
 
@@ -30,6 +30,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | B51 | `ad7c12b` | Signal Trend Sparklines: inline SVG per signal card, polarity-aware colour, 188/188 tests |
 | B52 | `dfa9fac` | Signal History Detail Panel: 7-day table in every signal dialog, 106/106 tests |
 | B53 | `9f50e98` | Readiness Score History Panel: 7-day computed score bars in readiness detail dialog, 93/93 tests |
+| B54 | `c3b961a` | Weekly Trend Summary Card: 5-signal direction+avg card on dashboard, 89/89 tests |
 
 ## B52 What Was Built
 
@@ -38,6 +39,15 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `app.js` — DEMO_METRICS history entries extended with breathing (brpm) and temperature (°F variation); _SP_POLARITY +breathing:'flat', +temperature:'flat'; _spColor now returns _SP_FLAT when polarity==='flat' (enables grey sparklines for stability signals); renderSparklines rows extended to ['hrv','spo2','breathing','temperature']; B52 inline block (_HK, _HP, _b52Esc, _b52Fmt, _b52Date, _b52Extract, _b52Trend, _b52Table, _b52RenderHistory); openSignalDetail now calls _b52RenderHistory(key, metrics) before dialog.showModal(), appending the history panel to .signal-detail
 - `styles.css` — hist-block (margin-top, border-top separator), hist-header (flex row label+trend), hist-label (small caps secondary), hist-trend (bold icon), hist-good (#2e7d5b), hist-watch (#b85c00), hist-flat (#8a8a8a), hist-table (full-width, collapse), hist-date (secondary colour, fixed 56px), hist-val (right-aligned, tabular-nums, semibold)
 - `sw.js` — bumped to bala-shell-v52
+
+## B54 What Was Built
+
+- `scripts/bala-b54-trend-card-engine.js` — CommonJS engine: TREND_SIGNALS config (sleep/hrv/rhr/steps/exercise with polarity/unit/decimals); computeSignalAvg(historyArr, key, n) → number|null; computeSignalDir(historyArr, key, n) → 'up'/'down'/'flat' using first-half vs second-half 5% threshold; computeTrendRow(historyArr, cfg) → {key,label,avg,formattedAvg,dir,cls,icon,trendLabel}|null (null when <2 valid readings); buildTrendCardHTML(historyArr) → HTML string with trend-card div, tc-table, 5 signal rows, note; polarity-aware colour (tc-good/tc-watch/tc-flat); steps formatted with toLocaleString()
+- `scripts/bala-b54-trend-card-engine.test.js` — 89/89 tests across 8 suites: computeSignalAvg (9), computeSignalDir (9), computeTrendRow (16), buildTrendCardHTML structure (12), content (10), empty/invalid (8), TREND_SIGNALS config (8), exports (6)
+- `index.html` — added `<section id="weekly-trend-card">` between score-panel and first-checkins-card
+- `app.js` — B54 inline block (_B54_SIGS, _B54_THR, _b54Avg, _b54Dir, _b54Html, renderWeeklyTrendCard); renderWeeklyTrendCard(metrics) called in updateDashboard after renderSparklines; null-metrics branch hides the card
+- `styles.css` — #weekly-trend-card margin, .trend-card (card background/border/radius), .trend-card-header, .trend-card-title (caps label), .tc-table (full-width), .tc-label/.tc-avg/.tc-trend (column widths), .tc-good/#2e7d5b, .tc-watch/#b85c00, .tc-flat/#8a8a8a, .trend-card-note (small disclaimer)
+- `sw.js` — bumped to bala-shell-v54
 
 ## B53 What Was Built
 
@@ -64,7 +74,8 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | bala-b51-sparkline.test.js | 188/188 |
 | bala-b52-history-engine.test.js | 106/106 |
 | bala-b53-score-history.test.js | 93/93 |
-| **Total** | **1531/1531** |
+| bala-b54-trend-card-engine.test.js | 89/89 |
+| **Total** | **1620/1620** |
 
 ## Git Mechanics Note
 `git commit` and `git update-ref` blocked by stuck NTFS locks (.git/index.lock, .git/HEAD.lock).
@@ -77,15 +88,13 @@ Workaround for all future commits:
 
 ## User Action Required
 `git push origin main` from Windows PowerShell/CMD in `C:\Users\Chintu\Desktop\test`
-to push B52, B52 state, B53 (and any pending commits) to GitHub.
+to push B52–B54 (and any pending commits) to GitHub.
 
-## Next: BALA-B54 Candidates
+## Next: BALA-B55 Candidates
 
-- **Weekly trend summary card** — compact 7-day snapshot card on the dashboard
-  showing direction arrows + 7-day avg per signal (sleep, hrv, rhr, steps, cardio)
-- **Cardio / exercise tracking panel** — workout logging view, weekly goal
-  progress bar, streak indicator
-- **Sleep quality breakdown** — if ring/watch exports light/deep/REM data,
-  surface it in the sleep detail panel
-- **Personal baseline calibration** — let the user set their personal normal
-  range per signal so trend colours are relative to *their* baseline
+- **Cardio / exercise tracking panel** — dedicated workout logging view,
+  weekly goal progress bar, streak indicator, Zone 2 vs intensity split
+- **Sleep quality breakdown** — light/deep/REM stage view in sleep detail panel
+- **Personal baseline calibration** — let user set personal normal range per
+  signal so trend colours are relative to their own baseline
+- **Check-in streak tracker** — consecutive-day logging streak with milestone badges
