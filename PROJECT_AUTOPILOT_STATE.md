@@ -2,7 +2,7 @@
 _Updated by BALA Autopilot after each stage commit_
 
 ## Current HEAD
-- Commit: `d952594` BALA-B55: Check-in Streak Tracker — 109/109 tests
+- Commit: `6fe762d` BALA-B56: Daily Coach Tip Card — 85/85 tests
 - Branch: main
 - Date: 2026-06-22
 
@@ -13,7 +13,7 @@ _Updated by BALA Autopilot after each stage commit_
 Gate: Telegram live phone proof required. Must not be touched autonomously.
 
 ### LANE B — BALA Coach (Autonomous)
-**Status: B55 COMPLETE — ready for B56**
+**Status: B56 COMPLETE — ready for B57**
 
 ## Completed Stages (this autopilot session)
 
@@ -32,6 +32,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | B53 | `9f50e98` | Readiness Score History Panel: 7-day computed score bars in readiness detail dialog, 93/93 tests |
 | B54 | `c3b961a` | Weekly Trend Summary Card: 5-signal direction+avg card on dashboard, 89/89 tests |
 | B55 | `d952594` | Check-in Streak Tracker: consecutive-day streak, 4 milestones, 109/109 tests |
+| B56 | `6fe762d` | Daily Coach Tip Card: 18 contextual tips, date-deterministic rotation, 85/85 tests |
 
 ## B52 What Was Built
 
@@ -40,6 +41,15 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `app.js` — DEMO_METRICS history entries extended with breathing (brpm) and temperature (°F variation); _SP_POLARITY +breathing:'flat', +temperature:'flat'; _spColor now returns _SP_FLAT when polarity==='flat' (enables grey sparklines for stability signals); renderSparklines rows extended to ['hrv','spo2','breathing','temperature']; B52 inline block (_HK, _HP, _b52Esc, _b52Fmt, _b52Date, _b52Extract, _b52Trend, _b52Table, _b52RenderHistory); openSignalDetail now calls _b52RenderHistory(key, metrics) before dialog.showModal(), appending the history panel to .signal-detail
 - `styles.css` — hist-block (margin-top, border-top separator), hist-header (flex row label+trend), hist-label (small caps secondary), hist-trend (bold icon), hist-good (#2e7d5b), hist-watch (#b85c00), hist-flat (#8a8a8a), hist-table (full-width, collapse), hist-date (secondary colour, fixed 56px), hist-val (right-aligned, tabular-nums, semibold)
 - `sw.js` — bumped to bala-shell-v52
+
+## B56 What Was Built
+
+- `scripts/bala-b56-tip-engine.js` — CommonJS engine: TIPS array (18 tips across 6 categories: sleep/recovery/activity/rhr/spo2/general); _CAT_LABEL map; _dateHash(dateStr)→deterministic non-negative int via polynomial hash; _isRelevant(tip,metrics)→bool (sleep<7h, hrv<45ms, steps<7000, rhr>65bpm, spo2/general always relevant); selectTip(metrics,dateStr)→filters TIPS to relevant pool, picks by dateHash%pool.length (falls back to full TIPS when pool empty); buildTipCardHTML(metrics,dateStr)→HTML with tip-card, DAILY TIP header, category chip (colour-coded per cat), tip-text, disclaimer note; XSS-escaped; never diagnoses, treats, predicts, or guarantees
+- `scripts/bala-b56-tip-engine.test.js` — 85/85 tests across 9 suites: _dateHash (9), _isRelevant (12), selectTip (12), buildTipCardHTML structure (12), content (10), TIPS config (11), empty/invalid (8), XSS safety (7), exports (6)
+- `index.html` — added `<section id="daily-tip-card" hidden>` before weekly-trend-card section
+- `app.js` — B56 inline block (_B56_TIPS, _B56_CAT, _b56Hash, _b56Rel, _b56Esc, _b56Html, renderDailyTipCard); renderDailyTipCard(metrics) called in updateDashboard after renderStreakCard; null-metrics branch hides daily-tip-card
+- `styles.css` — #daily-tip-card margin, .tip-card (card bg/border/radius), .tip-card-header (flex space-between), .tip-card-title (caps label), .tip-cat-chip (pill), .tip-cat-sleep/#1a4a74, .tip-cat-recovery/#2e7d5b, .tip-cat-activity/#b85c00, .tip-cat-rhr/#b82e2e, .tip-cat-spo2/#4a1a74, .tip-cat-general (neutral), .tip-text (0.9rem 1.55 lh), .tip-note (0.68rem disclaimer)
+- `sw.js` — bumped to bala-shell-v56
 
 ## B55 What Was Built
 
@@ -67,7 +77,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `styles.css` — .score-bar (6px grey track, border-radius, overflow hidden, min-width 80px), .score-fill (height 100%, 0.3s transition), .score-fill.hist-good (#2e7d5b), .score-fill.hist-watch (#b85c00), .score-fill.hist-low (#b82e2e), .hist-val.hist-low (#b82e2e)
 - `sw.js` — bumped to bala-shell-v53
 
-## Test Suite Status (post-B55)
+## Test Suite Status (post-B56)
 
 | Suite | Result |
 |-------|--------|
@@ -86,7 +96,8 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | bala-b53-score-history.test.js | 93/93 |
 | bala-b54-trend-card-engine.test.js | 89/89 |
 | bala-b55-streak-engine.test.js | 109/109 |
-| **Total** | **1729/1729** |
+| bala-b56-tip-engine.test.js | 85/85 |
+| **Total** | **1814/1814** |
 
 ## Git Mechanics Note
 `git commit` and `git update-ref` blocked by stuck NTFS locks (.git/index.lock, .git/HEAD.lock).
@@ -99,14 +110,14 @@ Workaround for all future commits:
 
 ## User Action Required
 `git push origin main` from Windows PowerShell/CMD in `C:\Users\Chintu\Desktop\test`
-to push B52–B55 (and any pending commits) to GitHub.
+to push B52–B56 (and any pending commits) to GitHub.
 
-## Next: BALA-B56 Candidates
+## Next: BALA-B57 Candidates
 
 - **Cardio / exercise tracking panel** — dedicated workout logging view,
   weekly goal progress bar, streak indicator, Zone 2 vs intensity split
 - **Sleep quality breakdown** — light/deep/REM stage view in sleep detail panel
 - **Personal baseline calibration** — let user set personal normal range per
   signal so trend colours are relative to their own baseline
-- **Daily coach tip card** — single rotating insight/tip on the dashboard,
-  contextualised to the user's current signals
+- **Personal baseline calibration** — let user set personal normal ranges so
+  trend colours reflect their own history, not fixed thresholds
