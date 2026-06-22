@@ -2,7 +2,7 @@
 _Updated by BALA Autopilot after each stage commit_
 
 ## Current HEAD
-- Commit: `6fe762d` BALA-B56: Daily Coach Tip Card — 85/85 tests
+- Commit: `a82814c` BALA-B57: Cardio/Exercise Tracking Panel — 105/105 tests
 - Branch: main
 - Date: 2026-06-22
 
@@ -13,7 +13,7 @@ _Updated by BALA Autopilot after each stage commit_
 Gate: Telegram live phone proof required. Must not be touched autonomously.
 
 ### LANE B — BALA Coach (Autonomous)
-**Status: B56 COMPLETE — ready for B57**
+**Status: B57 COMPLETE — ready for B58**
 
 ## Completed Stages (this autopilot session)
 
@@ -33,6 +33,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | B54 | `c3b961a` | Weekly Trend Summary Card: 5-signal direction+avg card on dashboard, 89/89 tests |
 | B55 | `d952594` | Check-in Streak Tracker: consecutive-day streak, 4 milestones, 109/109 tests |
 | B56 | `6fe762d` | Daily Coach Tip Card: 18 contextual tips, date-deterministic rotation, 85/85 tests |
+| B57 | `a82814c` | Cardio/Exercise Tracking Panel: weekly goal bar, active days, week-over-week delta, 105/105 tests |
 
 ## B52 What Was Built
 
@@ -41,6 +42,14 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `app.js` — DEMO_METRICS history entries extended with breathing (brpm) and temperature (°F variation); _SP_POLARITY +breathing:'flat', +temperature:'flat'; _spColor now returns _SP_FLAT when polarity==='flat' (enables grey sparklines for stability signals); renderSparklines rows extended to ['hrv','spo2','breathing','temperature']; B52 inline block (_HK, _HP, _b52Esc, _b52Fmt, _b52Date, _b52Extract, _b52Trend, _b52Table, _b52RenderHistory); openSignalDetail now calls _b52RenderHistory(key, metrics) before dialog.showModal(), appending the history panel to .signal-detail
 - `styles.css` — hist-block (margin-top, border-top separator), hist-header (flex row label+trend), hist-label (small caps secondary), hist-trend (bold icon), hist-good (#2e7d5b), hist-watch (#b85c00), hist-flat (#8a8a8a), hist-table (full-width, collapse), hist-date (secondary colour, fixed 56px), hist-val (right-aligned, tabular-nums, semibold)
 - `sw.js` — bumped to bala-shell-v52
+
+## B57 What Was Built
+
+- `scripts/bala-b57-exercise-panel.js` — CommonJS engine: WEEKLY_GOAL=150 (WHO guideline); _extractExercise(hist,offsetFromEnd,n) slices sorted history, coerces invalid exercise values to 0; computeWeekSummary(historyArr) → {total,activeDays,totalDays,goalPct,goalMet,goalTier('met'/'close'/'low'),dots('●'/'○' per day),deltAvg(null when <14 entries),hasData}; goalTier: met≥150, close≥floor(150×0.67)=100, else low; buildExercisePanelHTML(historyArr) → HTML with ex-panel, goal-bar (progressbar ARIA), goal-status, active-days dots, vs-last week delta (↑/↓/→), disclaimer; returns '' when no data or all-zero; XSS-escaped throughout
+- `scripts/bala-b57-exercise-panel.test.js` — 105/105 tests across 15 suites: WEEKLY_GOAL (3), _extractExercise basic (9), _extractExercise two-week (7), _extractExercise invalid values (8), computeWeekSummary empty guards (6), computeWeekSummary all-zero (5), computeWeekSummary totals/dots (8), computeWeekSummary goalTier (8), computeWeekSummary deltAvg (6), buildExercisePanelHTML empty guards (4), buildExercisePanelHTML structure (12), buildExercisePanelHTML content (8), buildExercisePanelHTML delta row (10), buildExercisePanelHTML XSS (5), exports (4)
+- `app.js` — B57 inline block (_B57_GOAL, _b57Esc, _b57Ext, _b57Sum, _b57Html, _b57RenderExercise); _b57RenderExercise(key,metrics) returns early unless key==='cardio', appends exercise panel HTML to .signal-detail via insertAdjacentHTML; called from openSignalDetail after _b53RenderScoreHistory
+- `styles.css` — .ex-panel (margin-top/border-top separator), .ex-panel-header/title (caps label), .ex-goal-label/.ex-goal-bar/.ex-goal-fill (8px progress track, border-radius, transition), .ex-goal-fill.ex-goal-met/#2e7d5b, .ex-goal-fill.ex-goal-close/#b85c00, .ex-goal-fill.ex-goal-low/#8a8a8a, .ex-goal-status (colour-matched), .ex-active-row/.ex-dots (●/○ dots in green), .ex-vs-last/.ex-delta-up/.ex-delta-down/.ex-delta-flat, .ex-note (disclaimer)
+- `sw.js` — bumped to bala-shell-v57
 
 ## B56 What Was Built
 
@@ -97,7 +106,8 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | bala-b54-trend-card-engine.test.js | 89/89 |
 | bala-b55-streak-engine.test.js | 109/109 |
 | bala-b56-tip-engine.test.js | 85/85 |
-| **Total** | **1814/1814** |
+| bala-b57-exercise-panel.test.js | 105/105 |
+| **Total** | **1919/1919** |
 
 ## Git Mechanics Note
 `git commit` and `git update-ref` blocked by stuck NTFS locks (.git/index.lock, .git/HEAD.lock).
@@ -112,10 +122,9 @@ Workaround for all future commits:
 `git push origin main` from Windows PowerShell/CMD in `C:\Users\Chintu\Desktop\test`
 to push B52–B56 (and any pending commits) to GitHub.
 
-## Next: BALA-B57 Candidates
+## Next: BALA-B58 Candidates
 
-- **Cardio / exercise tracking panel** — dedicated workout logging view,
-  weekly goal progress bar, streak indicator, Zone 2 vs intensity split
+- ~~**Cardio / exercise tracking panel**~~ — shipped as B57
 - **Sleep quality breakdown** — light/deep/REM stage view in sleep detail panel
 - **Personal baseline calibration** — let user set personal normal range per
   signal so trend colours are relative to their own baseline
