@@ -4529,3 +4529,225 @@ const launchAction = new URLSearchParams(window.location.search).get("action");
 if (launchAction === "capture") captureDialog.showModal();
 if (launchAction === "coach") openCoach();
 importShortcutSync();
+
+// =============================================================================
+// B58 — Founder Demo Journey
+// One-click guided 7-step tour of BALA using safe demo data.
+// Self-contained: no network, no health data, pure safe awareness copy.
+// =============================================================================
+(function() {
+  'use strict';
+
+  // --- Journey data (mirrors scripts/bala-b58-demo-journey.js, inlined for browser) ---
+  const JOURNEY_STEPS = [
+    {
+      id: 'score',
+      emoji: '💚',
+      title: 'Your BALA Score',
+      subtitle: 'A calm daily signal — not a clinical label.',
+      body: 'The BALA Score reflects patterns from your recent check-ins. A higher score may suggest your body signals are in balance. A lower score may suggest a day to rest or pay attention to recovery.',
+      safeNote: 'This is a guide, not a medical measurement. It cannot diagnose any condition.',
+    },
+    {
+      id: 'signals',
+      emoji: '📊',
+      title: 'What Influenced Today',
+      subtitle: 'Signals BALA noticed from your check-in.',
+      body: 'BALA uses sleep, heart rate variability, resting heart rate, blood oxygen, steps, and activity — signals you can observe. Missing signals are shown clearly so you always know what was used.',
+      safeNote: 'BALA works only with what you share. For concerns about missing signals, speak with your doctor.',
+    },
+    {
+      id: 'detail',
+      emoji: '🔍',
+      title: 'Signal History',
+      subtitle: 'See a signal’s trend across your recent check-ins.',
+      body: 'Tap any signal card to see its recent history. Trends may help you notice patterns — for example, whether your sleep has been consistent, or when your HRV tends to dip.',
+      safeNote: 'Trends are observations, not predictions. Involve your doctor for any health decisions.',
+    },
+    {
+      id: 'reflection',
+      emoji: '🌿',
+      title: 'Weekly Reflection',
+      subtitle: 'A gentle look at how your week has gone.',
+      body: 'Once you have a week of check-ins, BALA shows a reflection: which days felt strong, which may need attention, and a plain-language summary of your signal patterns.',
+      safeNote: 'Reflections are based on your own data only. For any patterns of concern, speak with your doctor.',
+    },
+    {
+      id: 'coach',
+      emoji: '🤝',
+      title: 'Ask BALA Coach',
+      subtitle: 'Get calm, plain-English guidance about a signal.',
+      body: 'Ask BALA about sleep quality, HRV trends, resting heart rate, steps, or recovery. BALA responds with educational context about what that signal may mean — not a clinical opinion.',
+      safeNote: 'BALA Coach does not replace a doctor. For medical decisions, always speak with a qualified healthcare professional.',
+    },
+    {
+      id: 'summary',
+      emoji: '📋',
+      title: 'Doctor-Ready Summary',
+      subtitle: 'A plain-English summary you can share with your doctor.',
+      body: 'BALA can generate a short document showing your recent signals, trends, and any patterns you’ve noticed — designed to support, not replace, a conversation with your doctor.',
+      safeNote: 'This summary is for awareness only. It is not a medical record. Share as background context only.',
+    },
+    {
+      id: 'closing',
+      emoji: '🌱',
+      title: 'BALA is Your Guide',
+      subtitle: 'Health awareness starts with listening to your own body.',
+      body: 'BALA helps you notice signals earlier and take small steps toward better awareness. Your data stays on your device. No account needed. Always free.\n\nBuilt in memory of Balaji — whose name inspired BALA.',
+      safeNote: 'BALA is not a medical device. For urgent symptoms — chest pain, difficulty breathing, or sudden weakness — seek emergency care immediately.',
+    },
+  ];
+
+  // --- State ---
+  let _journeyStep = 0;
+  let _journeyActive = false;
+
+  // --- DOM refs (lazy, set when modal first opened) ---
+  let _modal, _stepBody, _prevBtn, _nextBtn, _indicator, _progressBar, _safeNoteEl;
+
+  function _initRefs() {
+    _modal       = document.querySelector('#journey-modal');
+    _stepBody    = document.querySelector('#journey-step-body');
+    _prevBtn     = document.querySelector('#journey-prev-btn');
+    _nextBtn     = document.querySelector('#journey-next-btn');
+    _indicator   = document.querySelector('#journey-step-indicator');
+    _progressBar = document.querySelector('#journey-modal-progress');
+    _safeNoteEl  = document.querySelector('#journey-safe-note');
+  }
+
+  function _renderStep() {
+    if (!_stepBody) return;
+    const step = JOURNEY_STEPS[_journeyStep];
+    const total = JOURNEY_STEPS.length;
+    const isLast = _journeyStep === total - 1;
+    const pct = Math.round(((_journeyStep + 1) / total) * 100);
+
+    // Indicator
+    if (_indicator) _indicator.textContent = 'Step ' + (_journeyStep + 1) + ' of ' + total;
+
+    // Progress bar
+    if (_progressBar) _progressBar.style.width = pct + '%';
+
+    // Safe note in footer
+    if (_safeNoteEl) _safeNoteEl.textContent = step.safeNote;
+
+    // Step content
+    _stepBody.innerHTML =
+      '<p class="journey-step-emoji" aria-hidden="true">' + step.emoji + '</p>' +
+      '<h2 class="journey-step-title">' + _esc(step.title) + '</h2>' +
+      '<p class="journey-step-subtitle">' + _esc(step.subtitle) + '</p>' +
+      '<hr class="journey-step-divider" />' +
+      '<p class="journey-step-text">' + _esc(step.body).replace(/\n/g, '<br>') + '</p>' +
+      '<p class="journey-safe-note-box">' + _esc(step.safeNote) + '</p>';
+
+    // Back button
+    if (_prevBtn) _prevBtn.hidden = (_journeyStep === 0);
+
+    // Next / Finish button
+    if (_nextBtn) {
+      _nextBtn.textContent = isLast ? 'Start BALA →' : 'Next →';
+      _nextBtn.classList.toggle('journey-finish', isLast);
+    }
+
+    // Scroll step body to top on each step change
+    _stepBody.scrollTop = 0;
+  }
+
+  function _esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function _openJourneyModal() {
+    if (!_modal) _initRefs();
+    if (!_modal) return;
+    _journeyStep = 0;
+    _journeyActive = true;
+    _renderStep();
+    _modal.showModal();
+  }
+
+  function _closeJourneyModal() {
+    _journeyActive = false;
+    if (_modal) _modal.close();
+  }
+
+  function _journeyNext() {
+    const isLast = _journeyStep === JOURNEY_STEPS.length - 1;
+    if (isLast) {
+      _closeJourneyModal();
+      // Hand off: load demo data and show the score panel
+      setCurrentDataSource('demo');
+      saveMetrics(DEMO_METRICS);
+      renderDoctorSummary(false); // show Doctor Summary in journey mode
+      document.querySelector('.score-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      _journeyStep = Math.min(_journeyStep + 1, JOURNEY_STEPS.length - 1);
+      _renderStep();
+    }
+  }
+
+  function _journeyPrev() {
+    _journeyStep = Math.max(_journeyStep - 1, 0);
+    _renderStep();
+  }
+
+  // --- Wire events (deferred until DOM ready) ---
+  function _wireJourneyEvents() {
+    // Close button
+    const closeBtn = document.querySelector('#journey-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', _closeJourneyModal);
+
+    // Next / Finish
+    if (_nextBtn) _nextBtn.addEventListener('click', _journeyNext);
+    else {
+      const nb = document.querySelector('#journey-next-btn');
+      if (nb) nb.addEventListener('click', _journeyNext);
+    }
+
+    // Back
+    if (_prevBtn) _prevBtn.addEventListener('click', _journeyPrev);
+    else {
+      const pb = document.querySelector('#journey-prev-btn');
+      if (pb) pb.addEventListener('click', _journeyPrev);
+    }
+
+    // Close on backdrop click
+    const modal = document.querySelector('#journey-modal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) _closeJourneyModal();
+      });
+      modal.addEventListener('cancel', function(e) {
+        e.preventDefault(); // prevent ESC from closing immediately without cleanup
+        _closeJourneyModal();
+      });
+    }
+  }
+
+  // --- Upgrade the "Try Demo" button to open journey ---
+  function _upgradeHeroDemoButton() {
+    const btn = document.querySelector('#demo-button');
+    if (!btn) return;
+    // Remove existing listener by replacing the element
+    const newBtn = btn.cloneNode(true);
+    newBtn.innerHTML = '<span aria-hidden="true">&#9654;</span> Take the Tour';
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', function() {
+      _initRefs();
+      _openJourneyModal();
+    });
+  }
+
+  // Expose for manual call from console
+  window.startFounderDemoJourney = _openJourneyModal;
+
+  // Boot
+  _initRefs();
+  _wireJourneyEvents();
+  _upgradeHeroDemoButton();
+
+})();
