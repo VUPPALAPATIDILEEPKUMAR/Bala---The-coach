@@ -1134,3 +1134,50 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .tabs { width: 100%; }
   .tabs button { flex: 1; }
   .signal-row { grid-temp
+/* B52: signal history detail panel */
+.hist-block {
+  margin-top: 18px;
+  border-top: 1px solid var(--border, #e5e5e5);
+  padding-top: 14px;
+}
+.hist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.hist-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #666);
+}
+.hist-trend {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.hist-good  { color: #2e7d5b; }
+.hist-watch { color: #b85c00; }
+.hist-flat  { color: #8a8a8a; }
+.hist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.hist-table td {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border, #f0f0f0);
+  vertical-align: middle;
+}
+.hist-table tr:last-child td { border-bottom: none; }
+.hist-date {
+  color: var(--text-secondary, #666);
+  width: 56px;
+}
+.hist-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}

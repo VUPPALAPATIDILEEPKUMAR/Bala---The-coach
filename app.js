@@ -133,13 +133,13 @@ const DEMO_METRICS = {
   steps: 6842,
   exercise: 32,
   history: [
-    { date: "2026-06-08", sleep: 6.8, rhr: 65, hrv: 40, spo2: 97, steps: 5900, exercise: 18 },
-    { date: "2026-06-09", sleep: 7.1, rhr: 64, hrv: 42, spo2: 97, steps: 7600, exercise: 27 },
-    { date: "2026-06-10", sleep: 6.6, rhr: 66, hrv: 39, spo2: 96, steps: 5100, exercise: 14 },
-    { date: "2026-06-11", sleep: 7.3, rhr: 62, hrv: 45, spo2: 97, steps: 8900, exercise: 36 },
-    { date: "2026-06-12", sleep: 7.6, rhr: 61, hrv: 48, spo2: 98, steps: 9400, exercise: 41 },
-    { date: "2026-06-13", sleep: 7.2, rhr: 62, hrv: 44, spo2: 97, steps: 7200, exercise: 29 },
-    { date: "2026-06-14", sleep: 7.4, rhr: 61, hrv: 46, spo2: 97, steps: 6842, exercise: 32 },
+    { date: "2026-06-08", sleep: 6.8, rhr: 65, hrv: 40, spo2: 97, steps: 5900, exercise: 18, breathing: 13.2, temperature: 0.1 },
+    { date: "2026-06-09", sleep: 7.1, rhr: 64, hrv: 42, spo2: 97, steps: 7600, exercise: 27, breathing: 13.0, temperature: 0.2 },
+    { date: "2026-06-10", sleep: 6.6, rhr: 66, hrv: 39, spo2: 96, steps: 5100, exercise: 14, breathing: 13.5, temperature: -0.1 },
+    { date: "2026-06-11", sleep: 7.3, rhr: 62, hrv: 45, spo2: 97, steps: 8900, exercise: 36, breathing: 12.8, temperature: 0.0 },
+    { date: "2026-06-12", sleep: 7.6, rhr: 61, hrv: 48, spo2: 98, steps: 9400, exercise: 41, breathing: 12.5, temperature: 0.1 },
+    { date: "2026-06-13", sleep: 7.2, rhr: 62, hrv: 44, spo2: 97, steps: 7200, exercise: 29, breathing: 13.0, temperature: 0.1 },
+    { date: "2026-06-14", sleep: 7.4, rhr: 61, hrv: 46, spo2: 97, steps: 6842, exercise: 32, breathing: 13.1, temperature: 0.1 },
   ],
 };
 
@@ -1366,7 +1366,9 @@ function renderAskCoach(isDemoMode) {
 
 // BALA-B51 Sparkline Engine — inline browser version
 var _SP_POLARITY = {
-  hrv: 'up', sleep: 'up', spo2: 'up', steps: 'up', rhr: 'down'
+  hrv: 'up', sleep: 'up', spo2: 'up',
+  steps: 'up', rhr: 'down',
+  breathing: 'flat', temperature: 'flat'
 };
 var _SP_GOOD  = '#2e7d5b';
 var _SP_WATCH = '#b85c00';
@@ -1421,6 +1423,7 @@ function _spTrend(vals) {
 function _spColor(key, dir) {
   if (dir === 'flat') return _SP_FLAT;
   var pol = _SP_POLARITY[key] || 'up';
+  if (pol === 'flat') return _SP_FLAT;
   return ((pol === 'up') === (dir === 'up')) ? _SP_GOOD : _SP_WATCH;
 }
 
@@ -1468,7 +1471,7 @@ function _spBuildSvg(vals, key) {
 
 function renderSparklines(history) {
   var n = 7;
-  var rows = ['hrv', 'spo2'];
+  var rows = ['hrv','spo2','breathing','temperature'];
   rows.forEach(function(key) {
     var sel = '.signal-row[data-signal="' + key + '"] .sparkline';
     var el = document.querySelector(sel);
@@ -1482,6 +1485,151 @@ function renderSparklines(history) {
     }
     el.innerHTML = _spBuildSvg(vals, key);
   });
+}
+// BALA-B52 History Detail Engine — inline browser version
+var _HK = {
+  sleep: 'sleep', heart: 'rhr',
+  hrv: 'hrv', spo2: 'spo2',
+  steps: 'steps', cardio: 'exercise',
+  breathing: 'breathing',
+  temperature: 'temperature'
+};
+var _HP = {
+  sleep: 'up', heart: 'down',
+  hrv: 'up', spo2: 'up',
+  steps: 'up', cardio: 'up',
+  breathing: 'flat', temperature: 'flat'
+};
+
+function _b52Esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function _b52Fmt(key, val) {
+  if (typeof val !== 'number' || !isFinite(val))
+    return '—';
+  if (key === 'sleep') return val.toFixed(1) + ' h';
+  if (key === 'heart')
+    return Math.round(val) + ' bpm';
+  if (key === 'hrv') return Math.round(val) + ' ms';
+  if (key === 'spo2') return Math.round(val) + '%';
+  if (key === 'steps')
+    return Math.round(val).toLocaleString();
+  if (key === 'cardio')
+    return Math.round(val) + ' min';
+  if (key === 'breathing')
+    return val.toFixed(1) + ' brpm';
+  if (key === 'temperature') {
+    var s52 = val >= 0 ? '+' : '';
+    return s52 + val.toFixed(1) + '°F';
+  }
+  return String(Math.round(val));
+}
+
+function _b52Date(d) {
+  if (!d || typeof d !== 'string') return '';
+  var p = d.split('-');
+  if (p.length !== 3) return _b52Esc(d);
+  var ms = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec'
+  ];
+  var m = parseInt(p[1], 10) - 1;
+  var dy = parseInt(p[2], 10);
+  if (isNaN(m) || isNaN(dy) || m < 0 || m > 11)
+    return _b52Esc(d);
+  return ms[m] + ' ' + dy;
+}
+
+function _b52Extract(hist, key, n) {
+  n = n || 7;
+  if (!Array.isArray(hist) || !hist.length)
+    return [];
+  var hk = _HK[key];
+  if (!hk) return [];
+  return hist.slice(-n).map(function(entry) {
+    var v = entry && entry[hk];
+    var num =
+      (typeof v === 'number' && isFinite(v)) ? v : null;
+    return {
+      date: (entry && typeof entry.date === 'string')
+        ? entry.date : '',
+      value: num
+    };
+  });
+}
+
+function _b52Trend(key, entries) {
+  var vals = entries.map(function(e) {
+    return e.value;
+  }).filter(function(v) { return v !== null; });
+  if (vals.length < 2)
+    return { icon: '—', cls: 'hist-flat' };
+  var prev = vals[vals.length - 2];
+  var last = vals[vals.length - 1];
+  var mx = Math.max.apply(null, vals);
+  var mn = Math.min.apply(null, vals);
+  var rng = mx - mn;
+  if (rng === 0)
+    return { icon: '→', cls: 'hist-flat' };
+  var ch = (last - prev) / rng;
+  var pol = _HP[key] || 'up';
+  if (Math.abs(ch) < 0.05)
+    return { icon: '→', cls: 'hist-flat' };
+  var up = ch > 0;
+  if (pol === 'flat') {
+    return {
+      icon: up ? '↑' : '↓',
+      cls: 'hist-flat'
+    };
+  }
+  var good = (pol === 'up') === up;
+  return {
+    icon: up ? '↑' : '↓',
+    cls: good ? 'hist-good' : 'hist-watch'
+  };
+}
+
+function _b52Table(hist, key) {
+  var en = _b52Extract(hist, key, 7);
+  if (!en.length) return '';
+  var hasVal = en.some(function(e) {
+    return e.value !== null;
+  });
+  if (!hasVal) return '';
+  var tr = _b52Trend(key, en);
+  var rows = en.map(function(e) {
+    return '<tr>' +
+      '<td class="hist-date">' +
+      _b52Date(e.date) + '</td>' +
+      '<td class="hist-val">' +
+      _b52Fmt(key, e.value) + '</td>' +
+      '</tr>';
+  }).join('');
+  return '<div class="hist-block">' +
+    '<div class="hist-header">' +
+    '<span class="hist-label">' +
+    '7-day history</span>' +
+    '<span class="hist-trend ' +
+    tr.cls + '">' + tr.icon + '</span>' +
+    '</div>' +
+    '<table class="hist-table">' +
+    '<tbody>' + rows + '</tbody>' +
+    '</table></div>';
+}
+
+function _b52RenderHistory(key, metrics) {
+  var hist =
+    (metrics && Array.isArray(metrics.history))
+    ? metrics.history : [];
+  var html = _b52Table(hist, key);
+  if (!html) return;
+  var det =
+    dialogContentNode.querySelector('.signal-detail');
+  if (det) det.insertAdjacentHTML('beforeend', html);
 }
 
 
@@ -3403,6 +3551,7 @@ function openSignalDetail(key) {
       <p>${copy}</p>
       <small>${metrics?.source || "Demo value"} · personal patterns become more useful with consistent wear.</small>
     </div>`;
+  _b52RenderHistory(key, metrics);
   dialog.showModal();
 }
 
