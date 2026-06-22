@@ -1634,6 +1634,99 @@ function _b52RenderHistory(key, metrics) {
 
 
 
+// BALA-B54 Weekly Trend Summary Card — inline browser version
+var _B54_SIGS = [
+  {key:'sleep',    lbl:'Sleep',      unit:'h',   pol:'up',   dp:1},
+  {key:'hrv',      lbl:'HRV',        unit:'ms',  pol:'up',   dp:0},
+  {key:'rhr',      lbl:'Resting HR', unit:'bpm', pol:'down', dp:0},
+  {key:'steps',    lbl:'Steps',      unit:'',    pol:'up',   dp:0},
+  {key:'exercise', lbl:'Cardio',     unit:'min', pol:'up',   dp:0},
+];
+var _B54_THR = 0.05;
+function _b54Avg(rows, key) {
+  var f = rows.map(function(e){return e[key];})
+    .filter(function(v){return Number.isFinite(v);});
+  return f.length
+    ? f.reduce(function(s,v){return s+v;},0)/f.length
+    : null;
+}
+function _b54Dir(rows, key) {
+  var vals = rows.map(function(e){
+    return Number.isFinite(e[key]) ? e[key] : null;
+  });
+  var valid = vals.filter(function(v){return v!==null;});
+  if (valid.length < 2) return 'flat';
+  var h = Math.floor(rows.length / 2);
+  var f1 = vals.slice(0,h).filter(function(v){return v!==null;});
+  var f2 = vals.slice(h).filter(function(v){return v!==null;});
+  var a1 = f1.length
+    ? f1.reduce(function(s,v){return s+v;},0)/f1.length
+    : null;
+  var a2 = f2.length
+    ? f2.reduce(function(s,v){return s+v;},0)/f2.length
+    : null;
+  if (!Number.isFinite(a1)||!Number.isFinite(a2)||a1===0)
+    return 'flat';
+  var ratio = (a2-a1)/Math.abs(a1);
+  if (ratio > _B54_THR) return 'up';
+  if (ratio < -_B54_THR) return 'down';
+  return 'flat';
+}
+function _b54Html(historyArr) {
+  if (!Array.isArray(historyArr)||
+      historyArr.length < 2) return '';
+  var rows = historyArr.slice(-7);
+  var rowsHtml = '';
+  _B54_SIGS.forEach(function(sig) {
+    var vals = rows.map(function(e){
+      return Number.isFinite(e[sig.key]) ? e[sig.key] : null;
+    });
+    var vc = vals.filter(function(v){return v!==null;}).length;
+    if (vc < 2) return;
+    var avg = _b54Avg(rows, sig.key);
+    var dir = _b54Dir(rows, sig.key);
+    var pol = sig.pol;
+    var cls = dir === 'flat' ? 'tc-flat'
+      : ((dir==='up'&&pol==='up')||
+         (dir==='down'&&pol==='down'))
+        ? 'tc-good' : 'tc-watch';
+    var icon = dir==='up'?'&#8593;'
+             : dir==='down'?'&#8595;':'&#8594;';
+    var tl = dir==='flat'?'steady'
+           : cls==='tc-good'?'improving':'elevated';
+    var fv = sig.key==='steps'
+      ? Math.round(avg).toLocaleString()
+      : (sig.dp===0 ? Math.round(avg) : avg.toFixed(sig.dp));
+    var unit = sig.unit ? ' ' + sig.unit : '';
+    rowsHtml += '<tr class="tc-row">'
+      +'<td class="tc-label">'+sig.lbl+'</td>'
+      +'<td class="tc-avg">'+fv+unit+'</td>'
+      +'<td class="tc-trend '+cls+'">'+ icon
+      +' '+tl+'</td></tr>';
+  });
+  if (!rowsHtml) return '';
+  return '<div class="trend-card">'
+    +'<div class="trend-card-header">'
+    +'<span class="trend-card-title">7-day signals</span>'
+    +'</div>'
+    +'<table class="tc-table">'+rowsHtml+'</table>'
+    +'<p class="trend-card-note">Trends compare the first '
+    +'and second half of your last 7 check-ins. '
+    +'Day-to-day variation is normal.</p>'
+    +'</div>';
+}
+function renderWeeklyTrendCard(metrics) {
+  var el = document.querySelector('#weekly-trend-card');
+  if (!el) return;
+  var hist = metrics && Array.isArray(metrics.history)
+    ? metrics.history : [];
+  var html = _b54Html(hist);
+  if (!html) { el.hidden = true; el.innerHTML = ''; return; }
+  el.innerHTML = html;
+  el.hidden = false;
+}
+
+
 // BALA-B53 Readiness Score History — inline browser version
 function _b53ScoreForEntry(entry, prior) {
   var synth = {
@@ -3089,6 +3182,8 @@ function updateDashboard(metrics) {
     renderSymptomNudge(false);
     renderDoctorSummary(false);
     renderAskCoach(false);
+    var _wtc = document.querySelector('#weekly-trend-card');
+    if (_wtc) { _wtc.hidden = true; _wtc.innerHTML = ''; }
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -3187,6 +3282,7 @@ function updateDashboard(metrics) {
   renderDoctorSummary(currentSource === 'demo');
   renderAskCoach(currentSource === 'demo');
   renderSparklines(metrics.history || []);
+  renderWeeklyTrendCard(metrics);
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);

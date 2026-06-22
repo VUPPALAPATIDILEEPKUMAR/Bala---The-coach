@@ -1199,3 +1199,57 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .score-fill.hist-watch { background: #b85c00; }
 .score-fill.hist-low   { background: #b82e2e; }
 .hist-val.hist-low     { color: #b82e2e; }
+
+/* BALA-B54 Weekly Trend Summary Card */
+#weekly-trend-card { margin: 0 var(--page-pad, 1rem); }
+.trend-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.trend-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.trend-card-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #666);
+}
+.tc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.tc-table td {
+  padding: 0.3rem 0;
+  vertical-align: middle;
+}
+.tc-label {
+  color: var(--text-primary, #1a1a1a);
+  width: 40%;
+}
+.tc-avg {
+  color: var(--text-secondary, #666);
+  width: 30%;
+  font-variant-numeric: tabular-nums;
+}
+.tc-trend {
+  width: 30%;
+  font-weight: 600;
+  font-size: 0.84rem;
+}
+.tc-good  { color: #2e7d5b; }
+.tc-watch { color: #b85c00; }
+.tc-flat  { color: #8a8a8a; }
+.trend-card-note {
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary, #666);
+  line-height: 1.4;
+}
