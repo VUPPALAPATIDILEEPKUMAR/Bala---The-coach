@@ -2,7 +2,7 @@
 _Updated by BALA Autopilot after each stage commit_
 
 ## Current HEAD
-- Commit: `c3b961a` BALA-B54: Weekly Trend Summary Card — 89/89 tests
+- Commit: `d952594` BALA-B55: Check-in Streak Tracker — 109/109 tests
 - Branch: main
 - Date: 2026-06-22
 
@@ -13,7 +13,7 @@ _Updated by BALA Autopilot after each stage commit_
 Gate: Telegram live phone proof required. Must not be touched autonomously.
 
 ### LANE B — BALA Coach (Autonomous)
-**Status: B54 COMPLETE — ready for B55**
+**Status: B55 COMPLETE — ready for B56**
 
 ## Completed Stages (this autopilot session)
 
@@ -31,6 +31,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | B52 | `dfa9fac` | Signal History Detail Panel: 7-day table in every signal dialog, 106/106 tests |
 | B53 | `9f50e98` | Readiness Score History Panel: 7-day computed score bars in readiness detail dialog, 93/93 tests |
 | B54 | `c3b961a` | Weekly Trend Summary Card: 5-signal direction+avg card on dashboard, 89/89 tests |
+| B55 | `d952594` | Check-in Streak Tracker: consecutive-day streak, 4 milestones, 109/109 tests |
 
 ## B52 What Was Built
 
@@ -39,6 +40,15 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `app.js` — DEMO_METRICS history entries extended with breathing (brpm) and temperature (°F variation); _SP_POLARITY +breathing:'flat', +temperature:'flat'; _spColor now returns _SP_FLAT when polarity==='flat' (enables grey sparklines for stability signals); renderSparklines rows extended to ['hrv','spo2','breathing','temperature']; B52 inline block (_HK, _HP, _b52Esc, _b52Fmt, _b52Date, _b52Extract, _b52Trend, _b52Table, _b52RenderHistory); openSignalDetail now calls _b52RenderHistory(key, metrics) before dialog.showModal(), appending the history panel to .signal-detail
 - `styles.css` — hist-block (margin-top, border-top separator), hist-header (flex row label+trend), hist-label (small caps secondary), hist-trend (bold icon), hist-good (#2e7d5b), hist-watch (#b85c00), hist-flat (#8a8a8a), hist-table (full-width, collapse), hist-date (secondary colour, fixed 56px), hist-val (right-aligned, tabular-nums, semibold)
 - `sw.js` — bumped to bala-shell-v52
+
+## B55 What Was Built
+
+- `scripts/bala-b55-streak-engine.js` — CommonJS engine: MILESTONES config (3d/7d/14d/30d); _daysBetween(d1,d2)→days; _offsetDay(d,n)→YYYY-MM-DD; _uniqueSortedDesc(historyArr)→unique dates newest-first, filtered/deduped; _computeCurrentStreak(sortedDesc, today)→int (active if newest=today or yesterday, counts back while consecutive); _computeBestStreak(sortedDesc)→int (scans ascending, tracks longest run); computeStreak(historyArr)→{current,best,todayLogged,earnedMilestones,nextMilestone}; buildStreakCardHTML(historyArr)→HTML string with flame, count, best, milestone badges (earned=green ✓), next-milestone prompt, today-logged status; XSS-escaped; returns '' when current=0; _setTestToday for injectable date in tests
+- `scripts/bala-b55-streak-engine.test.js` — 109/109 tests across 13 suites: _daysBetween (9), _offsetDay (6), _uniqueSortedDesc (8), _computeCurrentStreak (10), _computeBestStreak (8), computeStreak (12), earnedMilestones/nextMilestone (10), buildStreakCardHTML structure (12), content (10), single-day/edge (5), adversarial/XSS (7), MILESTONES config (9), exports (6)
+- `index.html` — added `<section id="streak-card" hidden>` between weekly-trend-card and first-checkins-card
+- `app.js` — B55 inline block (_B55_MS, _b55Today, _b55Dbw, _b55Off, _b55Uniq, _b55Cur, _b55Best, _b55Esc, _b55Html, renderStreakCard); renderStreakCard(metrics) called in updateDashboard after renderWeeklyTrendCard; null-metrics branch hides streak-card
+- `styles.css` — #streak-card margin, .streak-card (card bg/border/radius), .streak-header/title (caps label), .streak-main (flex baseline), .streak-flame (1.4rem), .streak-count (2rem bold), .streak-count-good/#2e7d5b, .streak-count-watch/#b85c00, .streak-count-flat, .streak-unit, .streak-best, .streak-badges (flex wrap), .streak-badge (pill), .streak-badge-earned (green), .streak-next/.streak-next-max, .streak-today/.streak-today-done, .streak-note
+- `sw.js` — bumped to bala-shell-v55
 
 ## B54 What Was Built
 
@@ -57,7 +67,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `styles.css` — .score-bar (6px grey track, border-radius, overflow hidden, min-width 80px), .score-fill (height 100%, 0.3s transition), .score-fill.hist-good (#2e7d5b), .score-fill.hist-watch (#b85c00), .score-fill.hist-low (#b82e2e), .hist-val.hist-low (#b82e2e)
 - `sw.js` — bumped to bala-shell-v53
 
-## Test Suite Status (post-B53)
+## Test Suite Status (post-B55)
 
 | Suite | Result |
 |-------|--------|
@@ -75,7 +85,8 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | bala-b52-history-engine.test.js | 106/106 |
 | bala-b53-score-history.test.js | 93/93 |
 | bala-b54-trend-card-engine.test.js | 89/89 |
-| **Total** | **1620/1620** |
+| bala-b55-streak-engine.test.js | 109/109 |
+| **Total** | **1729/1729** |
 
 ## Git Mechanics Note
 `git commit` and `git update-ref` blocked by stuck NTFS locks (.git/index.lock, .git/HEAD.lock).
@@ -88,13 +99,14 @@ Workaround for all future commits:
 
 ## User Action Required
 `git push origin main` from Windows PowerShell/CMD in `C:\Users\Chintu\Desktop\test`
-to push B52–B54 (and any pending commits) to GitHub.
+to push B52–B55 (and any pending commits) to GitHub.
 
-## Next: BALA-B55 Candidates
+## Next: BALA-B56 Candidates
 
 - **Cardio / exercise tracking panel** — dedicated workout logging view,
   weekly goal progress bar, streak indicator, Zone 2 vs intensity split
 - **Sleep quality breakdown** — light/deep/REM stage view in sleep detail panel
 - **Personal baseline calibration** — let user set personal normal range per
   signal so trend colours are relative to their own baseline
-- **Check-in streak tracker** — consecutive-day logging streak with milestone badges
+- **Daily coach tip card** — single rotating insight/tip on the dashboard,
+  contextualised to the user's current signals
