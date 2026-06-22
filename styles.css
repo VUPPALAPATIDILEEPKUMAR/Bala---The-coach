@@ -1181,3 +1181,21 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
+
+/* BALA-B53 Score History bar */
+.score-bar {
+  height: 6px;
+  background: var(--border, #e5e5e5);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 80px;
+}
+.score-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.score-fill.hist-good  { background: #2e7d5b; }
+.score-fill.hist-watch { background: #b85c00; }
+.score-fill.hist-low   { background: #b82e2e; }
+.hist-val.hist-low     { color: #b82e2e; }

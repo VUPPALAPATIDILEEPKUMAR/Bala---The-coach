@@ -1634,6 +1634,65 @@ function _b52RenderHistory(key, metrics) {
 
 
 
+// BALA-B53 Readiness Score History — inline browser version
+function _b53ScoreForEntry(entry, prior) {
+  var synth = {
+    sleep:    entry.sleep,
+    rhr:      entry.rhr,
+    hrv:      entry.hrv,
+    spo2:     entry.spo2,
+    steps:    entry.steps,
+    exercise: entry.exercise,
+    history:  (prior || []).concat([entry])
+  };
+  return scoreBreakdown(synth).total;
+}
+function _b53Tier(score) {
+  return score >= 80 ? 'good'
+       : score >= 65 ? 'watch' : 'low';
+}
+function _b53ScoreHtml(historyArr) {
+  if (!Array.isArray(historyArr) || !historyArr.length)
+    return '';
+  var rows = historyArr.slice(-7);
+  var html = '<div class="hist-block">'
+    + '<div class="hist-header">'
+    + '<span class="hist-label">READINESS HISTORY</span>'
+    + '</div>'
+    + '<table class="hist-table">';
+  rows.forEach(function(e, i) {
+    var fi = historyArr.indexOf(e);
+    var prior = fi > 0
+      ? historyArr.slice(0, fi) : [];
+    var score = _b53ScoreForEntry(e, prior);
+    var tier = _b53Tier(score);
+    var cls = tier === 'good' ? 'hist-good'
+      : tier === 'low' ? 'hist-low' : 'hist-watch';
+    var dateStr = _b52Date(e.date);
+    var pct = Math.round((score / 100) * 100);
+    html += '<tr>'
+      + '<td class="hist-date">' + dateStr + '</td>'
+      + '<td><div class="score-bar">'
+      + '<div class="score-fill ' + cls
+      + '" style="width:' + pct + '%"></div>'
+      + '</div></td>'
+      + '<td class="hist-val ' + cls + '">'+ score +'</td>'
+      + '</tr>';
+  });
+  html += '</table></div>';
+  return html;
+}
+function _b53RenderScoreHistory(metrics) {
+  var hist = (metrics && Array.isArray(metrics.history))
+    ? metrics.history : [];
+  var html = _b53ScoreHtml(hist);
+  if (!html) return;
+  var det =
+    dialogContentNode.querySelector('.signal-detail');
+  if (det) det.insertAdjacentHTML('beforeend', html);
+}
+
+
 function inferDataSource(metrics = getLocalMetrics()) {
   const saved = localStorage.getItem(DATA_SOURCE_KEY);
   if (saved && dataSourceLabels[saved]) return saved;
@@ -3552,6 +3611,7 @@ function openSignalDetail(key) {
       <small>${metrics?.source || "Demo value"} · personal patterns become more useful with consistent wear.</small>
     </div>`;
   _b52RenderHistory(key, metrics);
+  if (key === 'readiness') _b53RenderScoreHistory(metrics);
   dialog.showModal();
 }
 
