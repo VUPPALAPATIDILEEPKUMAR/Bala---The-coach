@@ -1253,3 +1253,25 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   color: var(--text-secondary, #666);
   line-height: 1.4;
 }
+
+/* ── BALA-B55 Check-in Streak Tracker ─────────────────────────────────────── */
+#streak-card { margin-bottom: 16px; }
+.streak-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.streak-header { margin-bottom: 8px; }
+.streak-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary); }
+.streak-main { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.streak-flame { font-size: 1.4rem; line-height: 1; }
+.streak-count { font-size: 2rem; font-weight: 800; line-height: 1; }
+.streak-count-good { color: #2e7d5b; }
+.streak-count-watch { color: #b85c00; }
+.streak-count-flat { color: var(--secondary); }
+.streak-unit { font-size: 0.85rem; color: var(--secondary); }
+.streak-best { font-size: 0.75rem; color: var(--secondary); margin-bottom: 10px; }
+.streak-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.streak-badge { font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: 12px; background: var(--surface, #f5f5f5); border: 1px solid var(--border); color: var(--secondary); }
+.streak-badge-earned { background: #2e7d5b22; border-color: #2e7d5b; color: #2e7d5b; }
+.streak-next { font-size: 0.78rem; color: var(--secondary); margin-bottom: 4px; }
+.streak-next-max { color: #2e7d5b; font-weight: 600; }
+.streak-today { font-size: 0.78rem; color: var(--secondary); margin-bottom: 8px; }
+.streak-today-done { color: #2e7d5b; font-weight: 600; }
+.streak-note { font-size: 0.7rem; color: var(--secondary); margin: 0; opacity: 0.8; }

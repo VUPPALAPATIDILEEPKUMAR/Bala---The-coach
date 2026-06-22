@@ -1634,6 +1634,20 @@ function _b52RenderHistory(key, metrics) {
 
 
 
+
+// BALA-B55 Check-in Streak Tracker — inline browser version
+var _B55_MS=[{days:3,label:'3-Day',badge:'3d'},{days:7,label:'7-Day',badge:'7d'},{days:14,label:'2-Week',badge:'14d'},{days:30,label:'Monthly',badge:'30d'}];
+function _b55Today(){return new Date().toISOString().slice(0,10);}
+function _b55Dbw(d1,d2){var t1=new Date(d1+'T00:00:00Z').getTime(),t2=new Date(d2+'T00:00:00Z').getTime();return isNaN(t1)||isNaN(t2)?NaN:Math.round((t2-t1)/86400000);}
+function _b55Off(d,n){var dt=new Date(d+'T00:00:00Z');if(isNaN(dt.getTime()))return '';dt.setUTCDate(dt.getUTCDate()+n);return dt.toISOString().slice(0,10);}
+function _b55Uniq(hist){if(!Array.isArray(hist))return [];var seen={},out=[];hist.forEach(function(e){if(e&&typeof e.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&!seen[e.date]){seen[e.date]=true;out.push(e.date);}});return out.sort().reverse();}
+function _b55Cur(dates,today){if(!dates.length)return 0;var y=_b55Off(today,-1);if(dates[0]!==today&&dates[0]!==y)return 0;var s=1;for(var i=1;i<dates.length;i++){if(_b55Dbw(dates[i],dates[i-1])===1)s++;else break;}return s;}
+function _b55Best(dates){if(!dates.length)return 0;var asc=dates.slice().reverse(),best=1,cur=1;for(var i=1;i<asc.length;i++){if(_b55Dbw(asc[i-1],asc[i])===1){cur++;if(cur>best)best=cur;}else cur=1;}return best;}
+function _b55Esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _b55Html(hist){var dates=_b55Uniq(Array.isArray(hist)?hist:[]);if(!dates.length)return '';var today=_b55Today(),cur=_b55Cur(dates,today),best=_b55Best(dates);if(cur>best)best=cur;if(cur===0)return '';var tl=dates[0]===today;var cc=cur>=7?'streak-count-good':cur>=3?'streak-count-watch':'streak-count-flat';var next=_B55_MS.find(function(m){return cur<m.days;})||null;var badges=_B55_MS.map(function(m){var e=cur>=m.days;return '<span class="streak-badge'+(e?' streak-badge-earned':'')+'">'+_b55Esc(m.badge)+(e?' ✓':'')+'</span>';}).join('');var nx=next?'<div class="streak-next">Next: '+_b55Esc(next.label)+' badge in '+_b55Esc(String(next.days-cur))+' '+(next.days-cur===1?'day':'days')+'</div>':'<div class="streak-next streak-next-max">All milestones reached! 🏆</div>';var st=tl?'<div class="streak-today streak-today-done">Logged today ✓</div>':'<div class="streak-today">Log today to continue your streak</div>';return '<div class="streak-card" role="region" aria-label="Check-in streak"><div class="streak-header"><span class="streak-title">CHECK-IN STREAK</span></div><div class="streak-main"><span class="streak-flame" aria-hidden="true">🔥</span><span class="streak-count '+_b55Esc(cc)+'">'+_b55Esc(String(cur))+'</span><span class="streak-unit">'+(cur===1?'day':'days')+'</span></div>'+(best>0?'<div class="streak-best">Best: '+_b55Esc(String(best))+' '+(best===1?'day':'days')+'</div>':'')+'<div class="streak-badges" aria-label="Milestone badges">'+badges+'</div>'+nx+st+'<p class="streak-note">Log your signals daily to build your streak.</p></div>';}
+function renderStreakCard(metrics){var el=document.querySelector('#streak-card');if(!el)return;var hist=metrics&&Array.isArray(metrics.history)?metrics.history:[];var html=_b55Html(hist);if(!html){el.hidden=true;el.innerHTML='';return;}el.innerHTML=html;el.hidden=false;}
+// END BALA-B55
+
 // BALA-B54 Weekly Trend Summary Card — inline browser version
 var _B54_SIGS = [
   {key:'sleep',    lbl:'Sleep',      unit:'h',   pol:'up',   dp:1},
@@ -3184,6 +3198,8 @@ function updateDashboard(metrics) {
     renderAskCoach(false);
     var _wtc = document.querySelector('#weekly-trend-card');
     if (_wtc) { _wtc.hidden = true; _wtc.innerHTML = ''; }
+    var _sc = document.querySelector('#streak-card');
+    if (_sc) { _sc.hidden = true; _sc.innerHTML = ''; }
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -3283,6 +3299,7 @@ function updateDashboard(metrics) {
   renderAskCoach(currentSource === 'demo');
   renderSparklines(metrics.history || []);
   renderWeeklyTrendCard(metrics);
+  renderStreakCard(metrics);
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);
