@@ -1275,3 +1275,18 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .streak-today { font-size: 0.78rem; color: var(--secondary); margin-bottom: 8px; }
 .streak-today-done { color: #2e7d5b; font-weight: 600; }
 .streak-note { font-size: 0.7rem; color: var(--secondary); margin: 0; opacity: 0.8; }
+
+/* ── BALA-B56 Daily Coach Tip Card ────────────────────────────────────────── */
+#daily-tip-card { margin-bottom: 16px; }
+.tip-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.tip-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.tip-card-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary); }
+.tip-cat-chip { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--surface, #f0f0f0); border: 1px solid var(--border); color: var(--secondary); }
+.tip-cat-sleep    { background: #1a4a7422; border-color: #1a4a74; color: #1a4a74; }
+.tip-cat-recovery { background: #2e7d5b22; border-color: #2e7d5b; color: #2e7d5b; }
+.tip-cat-activity { background: #b85c0022; border-color: #b85c00; color: #b85c00; }
+.tip-cat-rhr      { background: #b82e2e22; border-color: #b82e2e; color: #b82e2e; }
+.tip-cat-spo2     { background: #4a1a7422; border-color: #4a1a74; color: #4a1a74; }
+.tip-cat-general  { background: var(--surface, #f0f0f0); border-color: var(--border); color: var(--secondary); }
+.tip-text { font-size: 0.9rem; line-height: 1.55; color: var(--text); margin: 0 0 10px; }
+.tip-note { font-size: 0.68rem; color: var(--secondary); margin: 0; opacity: 0.75; }

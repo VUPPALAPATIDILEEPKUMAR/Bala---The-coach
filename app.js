@@ -1635,6 +1635,36 @@ function _b52RenderHistory(key, metrics) {
 
 
 
+
+// BALA-B56 Daily Coach Tip Card — inline browser version
+var _B56_TIPS=[
+  {id:'slp01',cat:'sleep',    text:'Keeping a consistent bedtime — even on weekends — helps synchronise your body clock and may improve how rested you feel.'},
+  {id:'slp02',cat:'sleep',    text:'A cool, dark room (around 16–19°C / 60–67°F) supports deeper sleep stages for many people.'},
+  {id:'slp03',cat:'sleep',    text:'Limiting bright screens in the hour before bed allows melatonin to rise more naturally.'},
+  {id:'rec01',cat:'recovery', text:'HRV tends to improve alongside consistent sleep timing, steady hydration, and lower daily stress.'},
+  {id:'rec02',cat:'recovery', text:'Slow, paced breathing — around 4–6 breaths per minute — can support a calmer nervous system state.'},
+  {id:'rec03',cat:'recovery', text:'On days when your body signals suggest fatigue, lighter activity often serves recovery better than pushing through.'},
+  {id:'act01',cat:'activity', text:'Short movement breaks spread across the day add up to meaningful totals without requiring a dedicated workout.'},
+  {id:'act02',cat:'activity', text:'A 10-minute walk after meals is one of the simplest habits linked to steadier energy levels.'},
+  {id:'act03',cat:'activity', text:'Zone 2 cardio — a pace where you can hold a conversation — builds aerobic base without over-stressing recovery.'},
+  {id:'rhr01',cat:'rhr',      text:'Resting heart rate varies naturally day to day. Weekly trends reveal more than any single reading.'},
+  {id:'rhr02',cat:'rhr',      text:'An elevated resting HR can reflect dehydration, early illness, or accumulated stress — check in with how you feel overall.'},
+  {id:'spo01',cat:'spo2',     text:'Consumer blood-oxygen readings can vary with device placement and movement. Look for trends rather than absolute numbers.'},
+  {id:'gen01',cat:'general',  text:'Hydration supports nearly every body system. Steady intake throughout the day tends to work better than large amounts at once.'},
+  {id:'gen02',cat:'general',  text:'Your signals reflect a moment in time, not your identity. Week-over-week trends reveal far more than any single day.'},
+  {id:'gen03',cat:'general',  text:'Sleep, movement, and stress management interact. Improving one often creates a lift in the others.'},
+  {id:'gen04',cat:'general',  text:'Stress and recovery exist on a continuum. Small daily habits compound quietly into meaningful long-term change.'},
+  {id:'gen05',cat:'general',  text:'Logging your signals regularly — even imperfectly — gives BALA Coach more context to surface useful patterns.'},
+  {id:'gen06',cat:'general',  text:"Everyone's baseline is different. Tracking your own trends over time is more useful than comparing to population averages."},
+];
+var _B56_CAT={sleep:'Sleep',recovery:'Recovery',activity:'Activity',rhr:'Resting HR',spo2:'Oxygen',general:'Wellness'};
+function _b56Hash(s){if(typeof s!=='string'||!s.length)return 0;var h=0;for(var i=0;i<s.length;i++)h=(Math.imul(h,31)+s.charCodeAt(i))|0;return Math.abs(h);}
+function _b56Rel(tip,m){var mm=m&&typeof m==='object'&&!Array.isArray(m)?m:{};switch(tip.cat){case 'sleep': return typeof mm.sleep==='number'&&isFinite(mm.sleep)&&mm.sleep<7;case 'recovery':return typeof mm.hrv==='number'&&isFinite(mm.hrv)&&mm.hrv<45;case 'activity':return typeof mm.steps==='number'&&isFinite(mm.steps)&&mm.steps<7000;case 'rhr':return typeof mm.rhr==='number'&&isFinite(mm.rhr)&&mm.rhr>65;default:return true;}}
+function _b56Esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _b56Html(metrics,dateStr){var date=typeof dateStr==='string'&&dateStr.length>=8?dateStr:'2026-01-01';var pool=_B56_TIPS.filter(function(t){return _b56Rel(t,metrics);});if(!pool.length)pool=_B56_TIPS;var tip=pool[_b56Hash(date)%pool.length];if(!tip)return '';var cat=_b56Esc(_B56_CAT[tip.cat]||'Wellness');var catCls=_b56Esc(tip.cat||'general');return '<div class="tip-card" role="region" aria-label="Daily wellness tip"><div class="tip-card-header"><span class="tip-card-title">DAILY TIP</span><span class="tip-cat-chip tip-cat-'+catCls+'">'+cat+'</span></div><p class="tip-text">'+_b56Esc(tip.text)+'</p><p class="tip-note">General wellness information — not medical advice. Speak with a healthcare provider for personal guidance.</p></div>';}
+function renderDailyTipCard(metrics){var el=document.querySelector('#daily-tip-card');if(!el)return;var dateStr=new Date().toISOString().slice(0,10);var html=_b56Html(metrics,dateStr);if(!html){el.hidden=true;el.innerHTML='';return;}el.innerHTML=html;el.hidden=false;}
+// END BALA-B56
+
 // BALA-B55 Check-in Streak Tracker — inline browser version
 var _B55_MS=[{days:3,label:'3-Day',badge:'3d'},{days:7,label:'7-Day',badge:'7d'},{days:14,label:'2-Week',badge:'14d'},{days:30,label:'Monthly',badge:'30d'}];
 function _b55Today(){return new Date().toISOString().slice(0,10);}
@@ -3200,6 +3230,8 @@ function updateDashboard(metrics) {
     if (_wtc) { _wtc.hidden = true; _wtc.innerHTML = ''; }
     var _sc = document.querySelector('#streak-card');
     if (_sc) { _sc.hidden = true; _sc.innerHTML = ''; }
+    var _dtc = document.querySelector('#daily-tip-card');
+    if (_dtc) { _dtc.hidden = true; _dtc.innerHTML = ''; }
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -3300,6 +3332,7 @@ function updateDashboard(metrics) {
   renderSparklines(metrics.history || []);
   renderWeeklyTrendCard(metrics);
   renderStreakCard(metrics);
+  renderDailyTipCard(metrics);
   if (metrics.history?.length) {
     const recent = metrics.history.slice(-7);
     chartData.recovery.values = recent.map(scoreMetrics);
