@@ -1636,6 +1636,13 @@ function _b52RenderHistory(key, metrics) {
 
 
 
+// BALA-B57 Cardio/Exercise Tracking Panel — inline browser version
+var _B57_GOAL=150;
+function _b57Esc(s){if(typeof s!=='string')s=String(s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function _b57Ext(hist,off,n){if(!Array.isArray(hist)||!hist.length)return [];var v=hist.filter(function(e){return e&&typeof e.date==='string'&&e.date.length>=8;});v.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});var end=v.length-off;if(end<=0)return [];var s=Math.max(0,end-n);return v.slice(s,end).map(function(e){var x=typeof e.exercise==='number'&&isFinite(e.exercise)&&e.exercise>=0?e.exercise:0;return x;});}
+function _b57Sum(hist){var empty={total:0,activeDays:0,totalDays:0,goalPct:0,goalMet:false,goalTier:'low',dots:'',deltAvg:null,hasData:false};if(!Array.isArray(hist)||!hist.length)return empty;var tw=_b57Ext(hist,0,7),lw=_b57Ext(hist,7,7);if(!tw.length)return empty;var tot=tw.reduce(function(s,v){return s+v;},0),act=tw.filter(function(v){return v>0;}).length,hasD=tw.some(function(v){return v>0;});var delt=null;if(lw.length){var lTot=lw.reduce(function(s,v){return s+v;},0);delt=Math.round(tot/tw.length-lTot/lw.length);}var pct=Math.min(100,Math.round(tot/_B57_GOAL*100)),met=tot>=_B57_GOAL,tier=met?'met':tot>=Math.floor(_B57_GOAL*0.67)?'close':'low',dots=tw.map(function(v){return v>0?'\u25cf':'\u25cb';}).join('');return {total:Math.round(tot),activeDays:act,totalDays:tw.length,goalPct:pct,goalMet:met,goalTier:tier,dots:dots,deltAvg:delt,hasData:hasD};}
+function _b57Html(hist){if(!Array.isArray(hist)||!hist.length)return '';var s=_b57Sum(hist);if(!s.hasData)return '';var gc=_b57Esc('ex-goal-'+s.goalTier),gs=s.goalMet?'Goal met \u2713':(_b57Esc(String(s.goalPct))+'% of goal'),dH='';if(s.deltAvg!==null){var sg=s.deltAvg>=0?'+':'',ar=s.deltAvg>0?'\u2191':s.deltAvg<0?'\u2193':'\u2192',dc=s.deltAvg>0?'ex-delta-up':s.deltAvg<0?'ex-delta-down':'ex-delta-flat';dH='<div class="ex-vs-last '+_b57Esc(dc)+'">vs last 7 days: '+_b57Esc(sg+String(s.deltAvg))+' min/day avg '+ar+'</div>';}return '<div class="ex-panel"><div class="ex-panel-header"><span class="ex-panel-title">7-DAY EXERCISE SUMMARY</span></div><div class="ex-goal-label">Weekly total: <strong>'+_b57Esc(String(s.total))+' min</strong> \u00b7 goal 150 min</div><div class="ex-goal-bar" role="progressbar" aria-valuenow="'+_b57Esc(String(s.goalPct))+'" aria-valuemin="0" aria-valuemax="100"><div class="ex-goal-fill '+gc+'" style="width:'+_b57Esc(String(s.goalPct))+'%"></div></div><div class="ex-goal-status '+gc+'">'+gs+'</div><div class="ex-active-row">Active days: <strong>'+_b57Esc(String(s.activeDays))+' of '+_b57Esc(String(s.totalDays))+'</strong> <span class="ex-dots">'+_b57Esc(s.dots)+'</span></div>'+dH+'<p class="ex-note">150 min/week is a general wellness guideline \u2014 not personalised advice. Speak with a healthcare provider about exercise goals.</p></div>';}
+function _b57RenderExercise(key,metrics){if(key!=='cardio')return;var el=document.querySelector('.signal-detail');if(!el)return;var hist=Array.isArray(metrics&&metrics.history)?metrics.history:[];var h=_b57Html(hist);if(h)el.insertAdjacentHTML('beforeend',h);}
 // BALA-B56 Daily Coach Tip Card — inline browser version
 var _B56_TIPS=[
   {id:'slp01',cat:'sleep',    text:'Keeping a consistent bedtime — even on weekends — helps synchronise your body clock and may improve how rested you feel.'},
@@ -3758,6 +3765,7 @@ function openSignalDetail(key) {
     </div>`;
   _b52RenderHistory(key, metrics);
   if (key === 'readiness') _b53RenderScoreHistory(metrics);
+  if (key === 'cardio') _b57RenderExercise(key, metrics);
   dialog.showModal();
 }
 

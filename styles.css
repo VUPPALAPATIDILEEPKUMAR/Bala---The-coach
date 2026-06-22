@@ -1290,3 +1290,27 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .tip-cat-general  { background: var(--surface, #f0f0f0); border-color: var(--border); color: var(--secondary); }
 .tip-text { font-size: 0.9rem; line-height: 1.55; color: var(--text); margin: 0 0 10px; }
 .tip-note { font-size: 0.68rem; color: var(--secondary); margin: 0; opacity: 0.75; }
+
+/* ── BALA-B57 Cardio/Exercise Tracking Panel ───────────────────────────────── */
+.ex-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.ex-panel-header { margin-bottom: 10px; }
+.ex-panel-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary); }
+.ex-goal-label { font-size: 0.82rem; color: var(--secondary); margin-bottom: 6px; }
+.ex-goal-label strong { color: var(--text); }
+.ex-goal-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+.ex-goal-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.ex-goal-fill.ex-goal-met   { background: #2e7d5b; }
+.ex-goal-fill.ex-goal-close { background: #b85c00; }
+.ex-goal-fill.ex-goal-low   { background: #8a8a8a; }
+.ex-goal-status { font-size: 0.78rem; font-weight: 600; margin-bottom: 10px; }
+.ex-goal-status.ex-goal-met   { color: #2e7d5b; }
+.ex-goal-status.ex-goal-close { color: #b85c00; }
+.ex-goal-status.ex-goal-low   { color: var(--secondary); }
+.ex-active-row { font-size: 0.82rem; color: var(--secondary); margin-bottom: 6px; }
+.ex-active-row strong { color: var(--text); }
+.ex-dots { font-size: 0.75rem; letter-spacing: 0.06em; color: #2e7d5b; }
+.ex-vs-last { font-size: 0.78rem; margin-bottom: 10px; }
+.ex-delta-up   { color: #2e7d5b; }
+.ex-delta-down { color: #b85c00; }
+.ex-delta-flat { color: var(--secondary); }
+.ex-note { font-size: 0.68rem; color: var(--secondary); margin: 0; opacity: 0.75; }
