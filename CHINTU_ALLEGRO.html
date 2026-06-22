@@ -481,10 +481,10 @@
   <div class="logo">CA</div>
   <div>
     <span class="topbar-title">Chintu Allegro</span>
-    <span class="topbar-sub">local operator shell - brain runtime active</span>
+    <span class="topbar-sub">Founder Command Center · brain + bridge · C42.2</span>
   </div>
   <div class="topbar-badges">
-    <span class="badge badge-stage">Stage 24</span>
+    <span class="badge badge-stage">C42.2 · Operator</span>
     <span class="badge badge-local">LOCAL-FIRST</span>
     <span class="badge badge-safe">SAFE BY DESIGN</span>
     <button class="install-hint" onclick="openInstall()">⬇ Install as app</button>
@@ -637,7 +637,7 @@
       <div class="section-label">Quick Actions</div>
       <div class="qa-grid">
         <button class="qa-btn" onclick="quickChat('what can you do')">💬 What can you do?</button>
-        <button class="qa-btn" onclick="quickChat('check everything')">✅ Check everything</button>
+        <button class="qa-btn" onclick="liveSequence('check_everything')">✅ Check everything</button>
         <button class="qa-btn" onclick="quickChat('bro whats next')">➡️ Bro what's next?</button>
         <button class="qa-btn" onclick="quickAction('Build next BALA sprint')">🏃 Build BALA sprint</button>
         <button class="qa-btn" onclick="quickAction('Generate Claude prompt')">✦ Claude prompt</button>
@@ -671,6 +671,18 @@
         <button class="qa-btn" onclick="liveAction('git_log')">🕑 Git Log</button>
         <button class="qa-btn qa-wide" onclick="liveAction('open_bala_public')">🌐 Open BALA Public Link</button>
       </div>
+    </div>
+
+    <!-- Founder Command Center — Sequences (C42.2) -->
+    <div id="founder-command-center">
+      <div class="section-label">Founder Sequences <span id="seqModeTag" style="font-size:0.62rem;color:var(--muted)">(bridge offline)</span></div>
+      <div class="qa-grid">
+        <button class="qa-btn qa-wide" onclick="liveSequence('check_everything')">✅ Check Everything</button>
+        <button class="qa-btn" onclick="liveSequence('bala_health_check')">💚 BALA Health Check</button>
+        <button class="qa-btn" onclick="liveSequence('chintu_health_check')">🤖 Chintu Health Check</button>
+        <button class="qa-btn" onclick="liveSequence('next_sprint')">🏃 Next Sprint Packet</button>
+      </div>
+      <div id="seqResultMini" style="margin-top:8px;font-size:0.68rem;color:var(--muted);line-height:1.5;display:none"></div>
     </div>
 
   </aside>
@@ -773,7 +785,7 @@
         </div>
         <div class="reality-proof-actions">
           <button class="qa-btn" onclick="quickChat('hi')">Proof: hi</button>
-          <button class="qa-btn" onclick="quickChat('check everything')">Proof: check everything</button>
+          <button class="qa-btn" onclick="liveSequence('check_everything')">Proof: check everything</button>
           <button class="qa-btn" onclick="quickChat('chest pain')">Proof: chest pain</button>
         </div>
       </div>
@@ -1188,7 +1200,7 @@ You are a senior product engineer and safety reviewer for BALA, a mobile-first h
 <context>
 BALA helps users understand daily body signals from sleep, HRV, resting heart rate, SpO₂, steps, activity, recovery, and symptoms.
 It is NOT a medical device. It is a local-first health-awareness companion.
-Current stage: Stage 24. Last confirmed commit: feat: add Chintu brain router and live action sequences.
+Current stage: C42.2 — Founder Command Center. Last confirmed commit: feat: add Chintu brain router and live action sequences.
 </context>
 <task>
 Plan the next BALA sprint. Identify the top 3-5 features from the backlog that are:
@@ -1960,6 +1972,68 @@ async function liveAction(name) {
   }
 }
 
+async function liveSequence(name) {
+  const SEQ_LABELS = {
+    check_everything: 'Check Everything',
+    bala_health_check: 'BALA Health Check',
+    chintu_health_check: 'Chintu Health Check',
+    next_sprint: 'Next Sprint Packet',
+  };
+  const label = SEQ_LABELS[name] || name;
+  if (!BRIDGE.online) { await refreshBridge(); }
+  if (!BRIDGE.online) { renderLiveOffline('git_status', label); return; }
+  liveBusy(label);
+  try {
+    const r = await fetch(BRIDGE.base + '/api/sequence', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sequence: name })
+    });
+    const j = await r.json();
+    renderSequenceResult(name, label, j);
+  } catch (e) {
+    BRIDGE.online = false; setBridgeCard(); renderLiveOffline('git_status', label);
+  }
+}
+
+function renderSequenceResult(name, label, j) {
+  lastLiveResult = j;
+  const overallOk = j.ok !== false;
+  const badge = overallOk
+    ? '<span class="risk-low">✅ All steps OK</span>'
+    : '<span class="risk-high">⚠ One or more steps failed</span>';
+  document.getElementById('responseTitle').textContent = '✦ ' + label;
+  let html = '';
+  html += section('lane', '🔁 Sequence', '<strong>' + escHtml(label) + '</strong> · ' + badge);
+  if (Array.isArray(j.results) && j.results.length) {
+    let stepsHtml = '';
+    let miniLines = [];
+    for (const res of j.results) {
+      const code = (res.exitCode === 0) ? 'exit 0 · OK' : 'exit ' + escHtml(String(res.exitCode));
+      const codeClass = (res.exitCode === 0) ? 'risk-low' : 'risk-high';
+      stepsHtml += '<div style="margin-bottom:10px">';
+      stepsHtml += '<strong>' + escHtml(res.label || res.action || 'step') + '</strong> · <span class="' + codeClass + '">' + code + '</span>';
+      stepsHtml += ' · ' + escHtml(String(res.durationMs || 0)) + ' ms';
+      if (res.stdout && res.stdout.trim()) stepsHtml += codeBlock(res.stdout.slice(0, 800));
+      if (res.stderr && res.stderr.trim()) stepsHtml += codeBlock(res.stderr.slice(0, 400));
+      stepsHtml += '</div>';
+      miniLines.push((res.exitCode === 0 ? '✅' : '❌') + ' ' + (res.label || res.action));
+    }
+    html += section('prompt', '⚡ Step results', stepsHtml);
+    // Mini status in sidebar
+    const mini = document.getElementById('seqResultMini');
+    if (mini) { mini.style.display = 'block'; mini.innerHTML = miniLines.join('<br>'); }
+  }
+  if (j.error) html += section('safety', '⚠ Sequence error', escHtml(j.error));
+  html += section('understood', '📎 Result', '<button class="copy-all-btn" onclick="copyLiveResult()">Copy sequence JSON</button>');
+  document.getElementById('responseBody').innerHTML = html;
+  const lastEl = document.getElementById('sc-bridge-last');
+  if (lastEl) lastEl.textContent = 'Last seq: ' + label + ' (' + (overallOk ? 'ok' : 'fail') + ')';
+  const seqTag = document.getElementById('seqModeTag');
+  if (seqTag) seqTag.textContent = '(bridge online)';
+  refreshReality(false);
+  speak(label + '. ' + (overallOk ? 'All steps completed.' : 'One or more steps failed.'));
+}
+
 function renderLiveResult(name, label, j) {
   lastLiveResult = j;
   const code = (j.exitCode === 0)
@@ -2007,7 +2081,7 @@ function copyLiveResult() {
 }
 
 // ============================================================
-// Stage 24 — Brain chat (/api/chat) + provider status
+// C42.2 — Brain chat (/api/chat) + provider status
 // The browser sends only the founder's message. The local
 // bridge routes it through the deterministic brain router and
 // runs ONLY allowlisted actions. The browser executes nothing.
