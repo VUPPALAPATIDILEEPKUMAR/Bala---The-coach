@@ -2,7 +2,7 @@
 _Updated by BALA Autopilot after each stage commit_
 
 ## Current HEAD
-- Commit: `dfa9fac` BALA-B52: Signal History Detail Panel — 106/106 tests
+- Commit: `9f50e98` BALA-B53: Readiness Score History Panel — 93/93 tests
 - Branch: main
 - Date: 2026-06-22
 
@@ -13,7 +13,7 @@ _Updated by BALA Autopilot after each stage commit_
 Gate: Telegram live phone proof required. Must not be touched autonomously.
 
 ### LANE B — BALA Coach (Autonomous)
-**Status: B52 COMPLETE — ready for B53**
+**Status: B53 COMPLETE — ready for B54**
 
 ## Completed Stages (this autopilot session)
 
@@ -29,6 +29,7 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | B50 | `1322a71` | Ask BALA Coach: conversational Q&A UI, emergency gate, 12 topics, 236/236 tests |
 | B51 | `ad7c12b` | Signal Trend Sparklines: inline SVG per signal card, polarity-aware colour, 188/188 tests |
 | B52 | `dfa9fac` | Signal History Detail Panel: 7-day table in every signal dialog, 106/106 tests |
+| B53 | `9f50e98` | Readiness Score History Panel: 7-day computed score bars in readiness detail dialog, 93/93 tests |
 
 ## B52 What Was Built
 
@@ -38,7 +39,15 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 - `styles.css` — hist-block (margin-top, border-top separator), hist-header (flex row label+trend), hist-label (small caps secondary), hist-trend (bold icon), hist-good (#2e7d5b), hist-watch (#b85c00), hist-flat (#8a8a8a), hist-table (full-width, collapse), hist-date (secondary colour, fixed 56px), hist-val (right-aligned, tabular-nums, semibold)
 - `sw.js` — bumped to bala-shell-v52
 
-## Test Suite Status (post-B52)
+## B53 What Was Built
+
+- `scripts/bala-b53-score-history.js` — CommonJS engine: scoreForEntry(entry, priorEntries) computes readiness score for any history entry using the same weights as scoreBreakdown (sleep 32, hrv 23, rhr 20, activity 20, spo2 5) with HRV/RHR baseline derived from prior entries; scoreTier(score) → 'good'/'watch'/'low' (80/65 thresholds); buildScoreHistoryHTML(historyArr) generates hist-block with score-bar per row; escHtml/formatShortDate copied from B52 engine for XSS safety
+- `scripts/bala-b53-score-history.test.js` — 93/93 tests across 12 suites: escHtml (8), formatShortDate (9), scoreForEntry basic (9), scoreForEntry edge (8), scoreTier (9), buildScoreHistoryHTML structure (12), rows (5), tier colors (4), empty/invalid (5), adversarial safety (7), score trajectory (9), exports (3)
+- `app.js` — B53 inline block: _b53ScoreForEntry (calls existing scoreBreakdown with synthetic metrics+history), _b53Tier, _b53ScoreHtml (score-bar table, 7 rows max), _b53RenderScoreHistory (queries .signal-detail, appends via insertAdjacentHTML); openSignalDetail now calls _b53RenderScoreHistory(metrics) when key==='readiness'
+- `styles.css` — .score-bar (6px grey track, border-radius, overflow hidden, min-width 80px), .score-fill (height 100%, 0.3s transition), .score-fill.hist-good (#2e7d5b), .score-fill.hist-watch (#b85c00), .score-fill.hist-low (#b82e2e), .hist-val.hist-low (#b82e2e)
+- `sw.js` — bumped to bala-shell-v53
+
+## Test Suite Status (post-B53)
 
 | Suite | Result |
 |-------|--------|
@@ -54,7 +63,8 @@ Gate: Telegram live phone proof required. Must not be touched autonomously.
 | bala-b50-ask-coach.test.js | 236/236 |
 | bala-b51-sparkline.test.js | 188/188 |
 | bala-b52-history-engine.test.js | 106/106 |
-| **Total** | **1438/1438** |
+| bala-b53-score-history.test.js | 93/93 |
+| **Total** | **1531/1531** |
 
 ## Git Mechanics Note
 `git commit` and `git update-ref` blocked by stuck NTFS locks (.git/index.lock, .git/HEAD.lock).
@@ -67,17 +77,15 @@ Workaround for all future commits:
 
 ## User Action Required
 `git push origin main` from Windows PowerShell/CMD in `C:\Users\Chintu\Desktop\test`
-to push B52 (and any pending commits) to GitHub.
+to push B52, B52 state, B53 (and any pending commits) to GitHub.
 
-## Next: BALA-B53 Candidates
+## Next: BALA-B54 Candidates
 
-- **Readiness score history** — extend B52 panel to readiness key by computing
-  score for each history entry (requires calling scoreBreakdown per entry)
 - **Weekly trend summary card** — compact 7-day snapshot card on the dashboard
-  showing direction arrows per signal (complements the detail panel)
-- **Cardio / exercise tracking panel** — dedicated workout logging view,
-  weekly goal progress bar, streak indicator
+  showing direction arrows + 7-day avg per signal (sleep, hrv, rhr, steps, cardio)
+- **Cardio / exercise tracking panel** — workout logging view, weekly goal
+  progress bar, streak indicator
 - **Sleep quality breakdown** — if ring/watch exports light/deep/REM data,
   surface it in the sleep detail panel
-- **Personal baseline calibration** — let the user lock their normal range
-  per signal so trend colours are relative to *their* baseline not raw direction
+- **Personal baseline calibration** — let the user set their personal normal
+  range per signal so trend colours are relative to *their* baseline
