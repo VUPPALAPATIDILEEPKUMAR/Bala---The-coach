@@ -209,6 +209,24 @@ const SKILL_CONTRACTS = [
     capabilitiesUsed: ['chintu.status', 'connector.runtimeMap'],
     localOnly: true,
   },
+  {
+    id: 'ntfy_alert_push',
+    name: 'ntfy.sh Alert Push (Level 3)',
+    description:
+      'Sends a push notification to ntfy.sh via chintu-ntfy-push.js. ' +
+      'Dry-run by default - no network call without explicit env vars. ' +
+      'Live only when CHINTU_CONNECTOR_APPROVAL_PHRASE=go and CHINTU_NTFY_TOPIC is set. ' +
+      'No health values in message body.',
+    triggers: ['ntfy push', 'send ntfy alert', 'test ntfy', 'push notification', 'level 3 alert', 'ntfy alert'],
+    inputContract: 'env: CHINTU_NTFY_TOPIC (required for live), CHINTU_CONNECTOR_APPROVAL_PHRASE=go (required for live)',
+    outputContract: '{ mode: "dry-run"|"live", topic: string, sent: boolean, httpStatus?: number }',
+    safetyClass: 'allowlisted_write',
+    routeType: 'direct',
+    routeTarget: 'bridge action: ntfy_push -> node scripts/chintu-ntfy-push.js',
+    capabilitiesUsed: ['chintu.notify'],
+    proofPanelId: 'sc-alert',
+    localOnly: false,
+  },
 ];
 
 // ── Validation ────────────────────────────────────────────────────────────────

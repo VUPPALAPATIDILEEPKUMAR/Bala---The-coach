@@ -59,6 +59,9 @@ const scannerAllowlist = new Set([
   // C44: morning digest sends to ntfy.sh ONLY when CHINTU_CONNECTOR_APPROVAL_PHRASE
   // is set and CHINTU_NTFY_TOPIC is configured. Dry-run by default (no env vars needed).
   'chintu-bala-morning-digest.js',
+  // C47: ntfy.sh Level 3 push -- sends to ntfy.sh ONLY when CHINTU_CONNECTOR_APPROVAL_PHRASE=go
+  // AND CHINTU_NTFY_TOPIC is set. Dry-run by default. No health values in payload.
+  'chintu-ntfy-push.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {

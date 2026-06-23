@@ -790,16 +790,18 @@
           <div class="status-card-note" id="sc-alert-failed" style="margin-top:3px">Last failed: —</div>
         </div>
       </div>
-      <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center" id="alertTestBtn" onclick="testBrowserNotification()">🔔 Test Browser Notification</button>
+      <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center" id="alertTestBtn" onclick="testBrowserNotification()">🔔 Test Browser Notification (Level 2)</button>
+      <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center;background:var(--surface);border:1px solid var(--border)" onclick="liveAction('ntfy_push')">📲 Test ntfy Push (Level 3)</button>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;padding:0 2px;line-height:1.5">
         Level 2: browser only · No health values in alerts<br>
-        Level 3 (ntfy.sh) = C47 · Level 4 (Telegram) = not this sprint
+        Level 3 (ntfy.sh) = C47 ACTIVE · dry-run default · set CHINTU_NTFY_TOPIC to go live<br>
+        Level 4 (Telegram) = not this sprint
       </div>
     </div>
 
     <!-- ── Skill Contracts C46 ─────────────────────────────────────── -->
     <div>
-      <div class="section-label">📋 Skill Contracts <span style="font-size:0.62rem;color:var(--muted);font-weight:400">C46 · 11 skills · local only</span></div>
+      <div class="section-label">📋 Skill Contracts <span style="font-size:0.62rem;color:var(--muted);font-weight:400">C46/C47 · 12 skills · 1 external-gated</span></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:0.68rem;line-height:1.5">
           <thead>
@@ -2137,7 +2139,8 @@ const LIVE_LABELS = {
   prompt_xml_bala: 'XML Prompt (BALA)', prompt_xml_chintu: 'XML Prompt (Chintu)',
   prompt_costar_both: 'COSTAR Prompt', prompt_acr_both: 'ACR Prompt',
   open_allegro: 'Open Allegro', open_bala_local: 'Open BALA (local)',
-  open_bala_public: 'Open BALA public link', status: 'Status'
+  open_bala_public: 'Open BALA public link', status: 'Status',
+  ntfy_push: 'ntfy Push (Level 3)'
 };
 
 const LIVE_CLI = {
@@ -2157,6 +2160,7 @@ const LIVE_CLI = {
   prompt_acr_both: 'node scripts/chintu-prompt-engine.js --framework acr --track both --task "Plan next safe stage"',
   open_allegro: 'start CHINTU_ALLEGRO.html', open_bala_local: 'start index.html',
   open_bala_public: 'start https://vuppalapatidileepkumar.github.io/Bala---The-coach/',
+  ntfy_push: 'node scripts/chintu-ntfy-push.js',
   status: 'git status --short'
 };
 

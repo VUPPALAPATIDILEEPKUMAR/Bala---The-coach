@@ -191,6 +191,13 @@ const ACTIONS = {
     build: () => openTarget(BALA_PUBLIC_URL),
     next: 'status',
   },
+  // C47: ntfy.sh Level 3 push -- dry-run default, live only with env vars
+  ntfy_push: {
+    label: 'node scripts/chintu-ntfy-push.js',
+    kind: 'notify',
+    build: () => ({ cmd: process.execPath, args: ['scripts/chintu-ntfy-push.js'] }),
+    next: 'status',
+  },
 };
 
 // -----------------------------------------------------------------------------
