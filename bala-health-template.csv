@@ -1,0 +1,8 @@
+# BALA Health Template — paste your data here
+# Columns: date (YYYY-MM-DD), sleep (hours), rhr (resting heart rate), hrv, spo2 (%), steps, exercise (active minutes)
+# Leave any cell empty if you don't have that data. Lines starting with # are ignored.
+date,sleep,rhr,hrv,spo2,steps,exercise
+2026-06-20,7.5,58,45,98,8420,32
+2026-06-21,6.8,60,42,97,6200,15
+2026-06-22,8.1,56,50,99,10100,45
+2026-06-23,,,,,, 

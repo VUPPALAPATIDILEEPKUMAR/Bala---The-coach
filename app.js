@@ -181,8 +181,10 @@ const dataSourceLabels = {
   "health-connect": "Android Health Connect Import",
   samsung: "Samsung Health Import",
   fitbit: "Fitbit Import",
+  googlefit: "Google Fit Import",
   garmin: "Garmin Import",
   oura: "Oura Import",
+  csv: "BALA CSV Template Import",
   "manual-csv": "Manual CSV Import",
   "manual-json": "Manual JSON Import",
   manual: "Manual Entry",
@@ -232,11 +234,29 @@ const healthSourceGuides = {
   fitbit: {
     title: "Fitbit",
     steps: [
-      "Open your Fitbit account settings and choose Data Export.",
-      "Request or download your data as ZIP, CSV, or JSON where offered.",
-      "Save the file, open BALA, and tap Import file.",
+      "Go to fitbit.com → Settings → Data Export.",
+      "Request your personal data and download the ZIP file when ready.",
+      "Open BALA, choose Fitbit, and tap Import file — BALA reads sleep + heart rate automatically.",
     ],
-    files: "BALA reads only simple CSV or JSON records with supported daily fields. Fitbit archives are not fully parsed yet.",
+    files: "Supported now: Fitbit personal data export ZIP (sleep JSON + heart_rate JSON).",
+  },
+  googlefit: {
+    title: "Google Fit",
+    steps: [
+      "Go to takeout.google.com and sign in.",
+      "Click 'Deselect all', then tick only 'Fit' and export.",
+      "Open the downloaded ZIP, find 'Takeout/Fit/Daily activity metrics.csv', and import it into BALA.",
+    ],
+    files: "Supported now: Daily activity metrics.csv from Google Fit Takeout (steps, resting heart rate).",
+  },
+  csv: {
+    title: "BALA Universal CSV Template",
+    steps: [
+      "Download the BALA CSV template from the import dialog.",
+      "Fill in your data: date, sleep, rhr, hrv, spo2, steps, exercise.",
+      "Save and import — works with any device, app, or spreadsheet.",
+    ],
+    files: "Supported now: BALA CSV template (any device — Garmin, Galaxy Watch, Xiaomi, manual tracking).",
   },
   garmin: {
     title: "Garmin Connect",
@@ -1877,7 +1897,7 @@ function renderImportSource(source = importSource.value) {
 }
 
 function openHealthImport(source = inferDataSource()) {
-  const selected = ["apple", "health-connect", "samsung", "fitbit", "garmin", "oura", "manual-csv", "manual-json"].includes(source)
+  const selected = ["apple", "health-connect", "samsung", "fitbit", "googlefit", "csv", "garmin", "oura", "manual-csv", "manual-json"].includes(source)
     ? source
     : "manual-csv";
   importSource.value = selected;
@@ -3997,6 +4017,15 @@ document.querySelector("[data-source-action='demo']").addEventListener("click", 
 });
 document.querySelectorAll("[data-download-sample-csv]").forEach((button) => {
   button.addEventListener("click", downloadSampleCsv);
+});
+// B59: Download BALA CSV Template (any device)
+document.querySelectorAll("[data-download-bala-csv]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = "bala-health-template.csv";
+    a.download = "bala-health-template.csv";
+    a.click();
+  });
 });
 document.querySelector("#copy-timeline-button").addEventListener("click", copyTimelineSummary);
 document.querySelector("#download-timeline-button").addEventListener("click", downloadTimelineSummary);

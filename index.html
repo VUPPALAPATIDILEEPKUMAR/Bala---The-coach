@@ -380,9 +380,21 @@
             </article>
 
             <article class="connection-card source-card">
-              <header><span class="connection-mark fitbit">F</span><div><h3>Fitbit</h3><span class="connection-status planned">Manual import</span></div></header>
-              <p>Download your account data, then import a supported CSV or JSON file.</p>
+              <header><span class="connection-mark fitbit">F</span><div><h3>Fitbit</h3><span class="connection-status ready">Free ZIP import</span></div></header>
+              <p>Export your Fitbit data (fitbit.com → Settings → Data Export). BALA reads sleep + heart rate from the ZIP automatically — no account needed inside BALA.</p>
               <div class="source-card-actions"><button type="button" data-health-source="fitbit">View setup steps</button><button type="button" data-source-import="fitbit">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card available">
+              <header><span class="connection-mark local">G</span><div><h3>Google Fit</h3><span class="connection-status ready">Free Takeout import</span></div></header>
+              <p>Export from takeout.google.com → Fit. BALA reads 'Daily activity metrics.csv' for steps and resting heart rate. 100% free, no API key.</p>
+              <div class="source-card-actions"><button type="button" data-health-source="googlefit">View setup steps</button><button type="button" data-source-import="googlefit">Import file</button></div>
+            </article>
+
+            <article class="connection-card source-card available">
+              <header><span class="connection-mark local">🗂</span><div><h3>BALA CSV Template</h3><span class="connection-status ready">Any device — free</span></div></header>
+              <p>Works with Garmin, Samsung, Xiaomi, manual tracking — any device. Download the template, fill in your data, import. Sleep, HRV, SpO₂, steps, exercise.</p>
+              <div class="source-card-actions"><button type="button" data-source-import="csv">Import file</button><button type="button" data-download-bala-csv>Download Template</button></div>
             </article>
 
             <article class="connection-card source-card">
@@ -782,6 +794,8 @@
             <option value="health-connect">Android Health Connect</option>
             <option value="samsung">Samsung Health</option>
             <option value="fitbit">Fitbit</option>
+            <option value="googlefit">Google Fit (free export)</option>
+            <option value="csv">BALA CSV Template (any device)</option>
             <option value="garmin">Garmin</option>
             <option value="oura">Oura</option>
             <option value="manual-csv">Manual CSV</option>
@@ -917,66 +931,4 @@
         </div>
         <div class="alcohol-calc-panel" id="alcohol-calc-panel" hidden>
           <p class="alcohol-calc-title">Alcohol reflection — optional check-in</p>
-          <p class="alcohol-calc-subtitle">Estimate the standard-drink equivalent from what you had. This is only for pattern reflection with sleep or recovery signals, not for BAC, safety-to-drive, or medical decisions.</p>
-          <div class="alcohol-calc-grid">
-            <label class="alcohol-label">Drink type
-              <select name="alcohol_type" id="alcohol-type">
-                <option value="beer">Beer</option>
-                <option value="wine">Wine</option>
-                <option value="spirits">Spirits / Whiskey / Vodka</option>
-                <option value="cocktail">Cocktail / Mixed drink</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
-            <label class="alcohol-label">Amount
-              <input type="number" name="alcohol_amount" id="alcohol-amount" min="0" max="2000" step="0.5" placeholder="e.g. 330" />
-            </label>
-            <label class="alcohol-label">Unit
-              <select name="alcohol_unit" id="alcohol-unit">
-                <option value="ml">ml</option>
-                <option value="oz">fl oz</option>
-                <option value="shot">shot(s)</option>
-                <option value="can">can / bottle</option>
-              </select>
-            </label>
-            <label class="alcohol-label">ABV %
-              <input type="number" name="alcohol_abv" id="alcohol-abv" min="0" max="100" step="0.1" placeholder="e.g. 5" />
-            </label>
-          </div>
-          <div class="alcohol-result" id="alcohol-result" hidden>
-            <p class="alcohol-estimate" id="alcohol-estimate"></p>
-            <p class="alcohol-note">Some people notice changes in sleep quality, HRV, hydration, or resting heart rate after alcohol — this helps you track that pattern for yourself.</p>
-            <p class="alcohol-disclaimer">This is an approximate standard-drink estimate for personal reflection only — not medical advice. One US standard drink = 14 g pure alcohol (e.g. 355 ml of 5% beer, 148 ml of 12% wine, or 44 ml of 40% spirits).</p>
-          </div>
-          <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks (US)</button>
-        </div>
-        <label class="symptom-note">Optional reflection note<textarea name="note" maxlength="240" placeholder="e.g. long travel day, stress, illness…"></textarea></label>
-        <button class="dialog-primary" type="submit">Save daily factors</button>
-      </form>
-    </dialog>
-
-    <!-- B58: Founder Demo Journey Modal -->
-    <dialog id="journey-modal" class="journey-modal" aria-label="BALA Founder Demo Journey" aria-modal="true">
-      <div class="journey-modal-inner">
-        <div class="journey-modal-header">
-          <div class="journey-step-indicator" id="journey-step-indicator">Step 1 of 7</div>
-          <button class="journey-modal-close" id="journey-modal-close" type="button" aria-label="Close journey">×</button>
-        </div>
-        <div class="journey-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Journey progress">
-          <div class="journey-progress-bar-inner" id="journey-modal-progress" style="width:0%"></div>
-        </div>
-        <div class="journey-step-body" id="journey-step-body" aria-live="polite"></div>
-        <div class="journey-modal-footer">
-          <button class="journey-nav-btn journey-back" id="journey-prev-btn" type="button" hidden>← Back</button>
-          <div class="journey-footer-center">
-            <span class="journey-safe-note" id="journey-safe-note"></span>
-          </div>
-          <button class="journey-nav-btn journey-forward" id="journey-next-btn" type="button">Next →</button>
-        </div>
-      </div>
-    </dialog>
-
-    <script src="./vendor/fflate.min.js"></script>
-    <script src="./app.js"></script>
-  </body>
-</html>
+          <p class="alcohol-calc-subtitle">Estimate the standard-drink equivalent from what you ha
