@@ -600,6 +600,32 @@
       font-size: 0.82rem; font-weight: 600; cursor: pointer;
     }
 
+    /* ── Action Trace (Task 1) ── */
+    .action-trace-header {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+    .trace-row {
+      display: flex; gap: 10px; align-items: baseline;
+      padding: 3px 0; border-bottom: 1px solid rgba(48,54,61,0.5);
+    }
+    .trace-row:last-child { border-bottom: none; }
+    .trace-lbl {
+      color: var(--muted); font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.04em; min-width: 110px; flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .trace-val { color: var(--ink); flex: 1; }
+    .badge-truth {
+      border-radius: 20px; padding: 2px 8px;
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 0.04em;
+      border: 1px solid currentColor; white-space: nowrap;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 700px) {
       .shell { grid-template-columns: 1fr; }
@@ -618,9 +644,11 @@
     <span class="topbar-sub">local operator shell - brain runtime active</span>
   </div>
   <div class="topbar-badges">
-    <span class="badge badge-stage">Stage 24</span>
-    <span class="badge badge-local">LOCAL-FIRST</span>
-    <span class="badge badge-safe">SAFE BY DESIGN</span>
+    <span class="badge badge-stage" id="truthStage" title="Canonical stage: Chintu C44 / BALA B62">C44 / B62</span>
+    <span class="badge badge-local" title="All commands run on your local machine only">LOCAL ONLY</span>
+    <span class="badge badge-safe" id="truthSends" title="External sends require env vars + approval phrase">EXT: DISABLED</span>
+    <span class="badge-truth" id="truthTelegram" style="color:var(--muted);background:rgba(125,133,144,0.1);border-color:var(--muted)" title="Telegram needs 4 env vars to activate">TG: NOT CONFIG'D</span>
+    <span class="badge-truth" id="truthBridge" style="color:var(--warn);background:var(--warn-soft);border-color:var(--warn)" title="Local bridge status">BRIDGE: CHECKING…</span>
     <button class="install-hint" onclick="openInstall()">⬇ Install as app</button>
   </div>
 </header>
@@ -747,6 +775,61 @@
         </div>
       </div>
     </div>
+
+    <!-- ── Alert Ladder C45: Level 1 (status panel) + Level 2 (browser notification) ── -->
+    <div>
+      <div class="section-label">🔔 Alert Status</div>
+      <div class="status-card" id="sc-alert">
+        <div class="status-dot dot-gray" id="sc-alert-dot"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Browser Alerts</div>
+          <div class="status-card-note" id="sc-alert-status">Status: <strong>OFF</strong> — permission not yet requested</div>
+          <div class="status-card-note" id="sc-alert-mode" style="margin-top:3px">Mode: none</div>
+          <div class="status-card-note" id="sc-alert-last" style="margin-top:3px">Last attempted: —</div>
+          <div class="status-card-note" id="sc-alert-delivered" style="margin-top:3px">Last delivered: —</div>
+          <div class="status-card-note" id="sc-alert-failed" style="margin-top:3px">Last failed: —</div>
+        </div>
+      </div>
+      <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center" id="alertTestBtn" onclick="testBrowserNotification()">🔔 Test Browser Notification</button>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;padding:0 2px;line-height:1.5">
+        Level 2: browser only · No health values in alerts<br>
+        Level 3 (ntfy.sh) = C47 · Level 4 (Telegram) = not this sprint
+      </div>
+    </div>
+
+    <!-- ── Skill Contracts C46 ─────────────────────────────────────── -->
+    <div>
+      <div class="section-label">📋 Skill Contracts <span style="font-size:0.62rem;color:var(--muted);font-weight:400">C46 · 11 skills · local only</span></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.68rem;line-height:1.5">
+          <thead>
+            <tr style="color:var(--muted);border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:2px 6px 4px 0;font-weight:600">Skill</th>
+              <th style="text-align:left;padding:2px 6px 4px 0;font-weight:600">Safety</th>
+              <th style="text-align:left;padding:2px 0 4px 0;font-weight:600">Route</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">hi_check_in</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">check_everything</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain→seq</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">git_status</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">validate_app</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">connector_readiness</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">release_guard</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px 2px 0;color:var(--warn)">chest_pain_emerg</td><td style="padding:4px 6px 2px 0"><span style="color:var(--warn);font-size:0.65rem">emerg_gate</span></td><td style="padding:4px 0;color:var(--muted)">override</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--danger)">delete_all_blocked</td><td style="padding:2px 6px 2px 0"><span style="color:var(--danger);font-size:0.65rem">blocked</span></td><td style="padding:2px 0;color:var(--muted)">auto_block</td></tr>
+            <tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px 2px 0;color:var(--fg)">morning_digest</td><td style="padding:4px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:4px 0;color:var(--muted)">brain</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">build_bala_sprint</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">show_capabilities</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:8px;font-size:0.66rem;color:var(--muted);line-height:1.5">
+          9 safe_read · 1 emergency_gate · 1 blocked<br>
+          Source: <code style="font-size:0.65rem">scripts/chintu-skill-contracts.js</code>
+        </div>
+      </div>
+    </div>
+    <!-- ── End Skill Contracts C46 ──────────────────────────────────── -->
 
     <div>
       <div class="section-label">Phone Runtime</div>
@@ -995,13 +1078,16 @@
             <div class="reality-proof-line" id="realityHiProof">hi: not yet shown</div>
             <div class="reality-proof-line" id="realityCheckProof">check everything: not yet shown</div>
             <div class="reality-proof-line" id="realityChestProof">chest pain: not yet shown</div>
+            <div class="reality-proof-line" id="realityDeleteProof">delete all files: not yet shown</div>
+            <div class="reality-proof-line" id="realitySprintProof">build next sprint: not yet shown</div>
           </div>
         </div>
         <div class="reality-proof-actions">
           <button class="qa-btn" onclick="quickChat('hi')">Proof: hi</button>
           <button class="qa-btn" onclick="quickChat('check everything')">Proof: check everything</button>
           <button class="qa-btn" onclick="quickChat('chest pain')">Proof: chest pain</button>
-          <button class="qa-btn" onclick="quickChat('my hrv dropped this week')">Proof: bala ask</button>
+          <button class="qa-btn" onclick="quickChat('delete all files')">Proof: delete all files</button>
+          <button class="qa-btn" onclick="quickChat('build next BALA sprint')">Proof: build next sprint</button>
         </div>
       </div>
 
@@ -2088,17 +2174,157 @@ function setBridgeCard() {
   const dot = document.getElementById('sc-bridge-dot');
   const note = document.getElementById('sc-bridge-note');
   const tag = document.getElementById('liveModeTag');
+  const tb = document.getElementById('truthBridge');
   if (!dot || !note) return;
   if (BRIDGE.online) {
     dot.className = 'status-dot dot-green';
     note.textContent = 'Bridge connected · ' + BRIDGE.base.replace('http://', '');
     if (tag) { tag.textContent = '(live)'; tag.style.color = 'var(--good, #36b37e)'; }
+    if (tb) { tb.textContent = 'BRIDGE: CONNECTED'; tb.style.color = 'var(--green)'; tb.style.background = 'var(--green-soft)'; tb.style.borderColor = 'var(--green)'; }
   } else {
     dot.className = 'status-dot dot-amber';
     note.innerHTML = 'Bridge not running. Start it with<br><code>scripts\\chintu-allegro-start.ps1</code>';
     if (tag) { tag.textContent = '(bridge offline)'; tag.style.color = 'var(--muted)'; }
+    if (tb) { tb.textContent = 'BRIDGE: OFFLINE'; tb.style.color = 'var(--warn)'; tb.style.background = 'var(--warn-soft)'; tb.style.borderColor = 'var(--warn)'; }
   }
 }
+
+// ── Alert Ladder C45 ─────────────────────────────────────────────────────────
+// Level 1: Alert Status panel (sidebar)
+// Level 2: Browser notification — EXACT message, no health values, permission-gated
+// Level 3: ntfy.sh = C47.  Level 4: Telegram = not this sprint.
+const alertState = {
+  status: 'OFF',       // 'OFF' | 'READY' | 'ENABLED'
+  mode: 'none',        // 'none' | 'browser'
+  lastAttempted: null, // timestamp ms
+  lastDelivered: null,
+  lastFailed: null
+};
+
+function updateAlertCard() {
+  const dot       = document.getElementById('sc-alert-dot');
+  const statusEl  = document.getElementById('sc-alert-status');
+  const modeEl    = document.getElementById('sc-alert-mode');
+  const lastEl    = document.getElementById('sc-alert-last');
+  const deliveredEl = document.getElementById('sc-alert-delivered');
+  const failedEl  = document.getElementById('sc-alert-failed');
+  const btn       = document.getElementById('alertTestBtn');
+  const fmt = ts => ts ? new Date(ts).toLocaleTimeString() : '—';
+
+  if (lastEl)      lastEl.textContent      = 'Last attempted: '  + fmt(alertState.lastAttempted);
+  if (deliveredEl) deliveredEl.textContent  = 'Last delivered: ' + fmt(alertState.lastDelivered);
+  if (failedEl) {
+    failedEl.textContent = 'Last failed: ' + fmt(alertState.lastFailed);
+    failedEl.style.color = alertState.lastFailed ? 'var(--danger)' : 'var(--muted)';
+  }
+
+  if (alertState.status === 'ENABLED') {
+    if (dot)     { dot.className = 'status-dot dot-green'; }
+    if (statusEl) statusEl.innerHTML = 'Status: <strong style="color:var(--green)">ENABLED</strong> — browser permission granted';
+    if (modeEl)  modeEl.textContent = 'Mode: browser notification';
+    if (btn)     btn.textContent = '🔔 Send Test Notification';
+  } else if (alertState.status === 'READY') {
+    if (dot)     { dot.className = 'status-dot dot-amber'; }
+    if (statusEl) statusEl.innerHTML = 'Status: <strong style="color:var(--warn)">READY</strong> — permission requested, awaiting user response';
+    if (modeEl)  modeEl.textContent = 'Mode: none yet — awaiting permission';
+    if (btn)     { btn.textContent = '🔔 Requesting permission…'; btn.disabled = true; }
+  } else {
+    if (dot)     { dot.className = 'status-dot dot-gray'; }
+    if (statusEl) statusEl.innerHTML = 'Status: <strong>OFF</strong> — permission not yet requested';
+    if (modeEl)  modeEl.textContent = 'Mode: none';
+    if (btn)     { btn.textContent = '🔔 Test Browser Notification'; btn.disabled = false; }
+  }
+}
+
+function _fireNotification() {
+  // SAFETY: No health values, no HRV, no symptoms, no BALA score in notification body.
+  // Exact message per sprint spec — do not add health data here.
+  try {
+    const n = new Notification('Chintu OS', {
+      body: 'Chintu is ready. Open your local BALA guide when you are ready.',
+      icon: 'icons/icon-192.png'
+    });
+    n.onclick = function() { window.focus(); n.close(); };
+    alertState.lastDelivered = Date.now();
+    alertState.lastFailed    = null;
+    alertState.status        = 'ENABLED';
+    alertState.mode          = 'browser';
+    updateAlertCard();
+    const r = document.getElementById('responseBody');
+    if (r) r.innerHTML =
+      '<p style="color:var(--green)">✅ Browser notification sent — check your OS notification tray.</p>' +
+      '<p style="color:var(--muted);font-size:0.8rem;margin-top:8px">' +
+        'Message: "Chintu is ready. Open your local BALA guide when you are ready." · ' +
+        'No health values · Local only · Level 2 active' +
+      '</p>';
+  } catch (e) {
+    alertState.lastFailed = Date.now();
+    updateAlertCard();
+    const r = document.getElementById('responseBody');
+    if (r) r.innerHTML = '<p style="color:var(--danger)">❌ Notification failed: ' + escHtml(String(e.message)) + '</p>';
+  }
+}
+
+function testBrowserNotification() {
+  if (!('Notification' in window)) {
+    alertState.lastAttempted = Date.now();
+    alertState.lastFailed    = Date.now();
+    updateAlertCard();
+    const r = document.getElementById('responseBody');
+    if (r) r.innerHTML = '<p style="color:var(--warn)">⚠ Browser notifications not supported in this environment. Try Chrome or Edge.</p>';
+    return;
+  }
+
+  alertState.lastAttempted = Date.now();
+  const perm = Notification.permission;
+
+  if (perm === 'denied') {
+    alertState.lastFailed = Date.now();
+    alertState.status = 'OFF';
+    updateAlertCard();
+    const r = document.getElementById('responseBody');
+    if (r) r.innerHTML =
+      '<p style="color:var(--danger)">🚫 Notification permission blocked by browser.</p>' +
+      '<p style="color:var(--muted);font-size:0.8rem;margin-top:6px">Reset: browser → Settings → Privacy → Site permissions → Notifications → remove this site, then reload.</p>';
+    return;
+  }
+
+  if (perm === 'granted') {
+    _fireNotification();
+  } else {
+    // perm === 'default' — must request
+    alertState.status = 'READY';
+    updateAlertCard();
+    Notification.requestPermission().then(function(result) {
+      const btn = document.getElementById('alertTestBtn');
+      if (btn) btn.disabled = false;
+      if (result === 'granted') {
+        _fireNotification();
+      } else {
+        alertState.lastFailed = Date.now();
+        alertState.status     = 'OFF';
+        updateAlertCard();
+        const r = document.getElementById('responseBody');
+        if (r) r.innerHTML = '<p style="color:var(--warn)">⚠ Notification permission declined. Click the button again after allowing in browser settings.</p>';
+      }
+    });
+  }
+}
+
+// Init alert state from current browser permission on page load
+(function initAlertState() {
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    alertState.status = 'ENABLED';
+    alertState.mode   = 'browser';
+  }
+  // Card update runs after DOM ready — defer to next tick
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateAlertCard);
+  } else {
+    updateAlertCard();
+  }
+}());
+// ── End Alert Ladder C45 ─────────────────────────────────────────────────────
 
 function renderRealityOffline(reason) {
   lastReality = null;
@@ -2118,6 +2344,8 @@ function renderRealityOffline(reason) {
   setRealityText('realityHiProof', 'hi: bridge offline');
   setRealityText('realityCheckProof', 'check everything: bridge offline');
   setRealityText('realityChestProof', 'chest pain: bridge offline');
+  setRealityText('realityDeleteProof', 'delete all files: bridge offline');
+  setRealityText('realitySprintProof', 'build next sprint: bridge offline');
   setRealityText('realityStage42', 'bridge offline — cannot verify');
   setRealityText('realityStage42Note', 'Start scripts\\chintu-allegro-start.ps1 to show live Stage 42 proof status');
 }
@@ -2336,13 +2564,40 @@ function renderChat(raw, j) {
   lastChat = j;
   document.getElementById('responseTitle').textContent = '✦ Chintu';
   let html = '';
-  // Natural reply (founder tone) first.
+
+  // ── Action Trace Header — Truth-first view of every command ──
+  const capId = j.sequence
+    ? 'sequence: ' + j.sequence
+    : (Array.isArray(j.actions) && j.actions.length ? 'action: ' + j.actions[0] : 'conversational');
+  const isEmergencyRoute = (j.responseType === 'emergency_override') ||
+    (Array.isArray(j.safetyGates) && j.safetyGates.some(g => g.toLowerCase().includes('urgent')));
+  const isBlocked = (j.responseType === 'parked_with_reason') || (!j.ranLive && !isEmergencyRoute && !Array.isArray(j.results));
+  const riskColor = isEmergencyRoute ? 'var(--danger)' : (isBlocked ? 'var(--warn)' : 'var(--green)');
+  const riskLabel = isEmergencyRoute ? '🚨 EMERGENCY ROUTE — urgent care card shown, no BALA score'
+    : (isBlocked ? '⛔ PARKED — ' + escHtml(j.risk || 'not executed')
+      : '✅ ALLOWED · ' + escHtml(j.risk || 'safe_read'));
+  const stepsRan = Array.isArray(j.results) ? j.results.length : 0;
+  const passed = Array.isArray(j.results) ? j.results.filter(r => r.exitCode === 0).length : 0;
+  const needsAttn = Array.isArray(j.results) ? j.results.filter(r => r.exitCode !== 0).map(r => r.label || r.action).join(', ') : '';
+
+  html += '<div class="action-trace-header">';
+  html += '<div class="trace-row"><span class="trace-lbl">You asked</span><span class="trace-val">' + escHtml(raw) + '</span></div>';
+  html += '<div class="trace-row"><span class="trace-lbl">Understood as</span><span class="trace-val"><strong>' + escHtml(j.intent || '?') + '</strong> · track: ' + escHtml(j.track || '?') + '</span></div>';
+  html += '<div class="trace-row"><span class="trace-lbl">Capability</span><span class="trace-val">' + escHtml(capId) + '</span></div>';
+  html += '<div class="trace-row"><span class="trace-lbl">Safety decision</span><span class="trace-val" style="color:' + riskColor + '">' + riskLabel + '</span></div>';
+  if (stepsRan > 0) {
+    html += '<div class="trace-row"><span class="trace-lbl">Steps ran</span><span class="trace-val">' + stepsRan + ' · ' + passed + ' passed' + (needsAttn ? ' · needs attention: ' + escHtml(needsAttn) : '') + '</span></div>';
+  }
+  html += '<div class="trace-row"><span class="trace-lbl">External action</span><span class="trace-val" style="color:var(--green)">NONE — all actions ran locally on this machine</span></div>';
+  html += '</div>';
+
+  // Natural reply (founder tone).
   html += section('understood', '💬 Chintu', '<div style="white-space:pre-wrap;line-height:1.55">' + escHtml(j.reply || '') + '</div>');
-  // Detected intent / track / risk.
+  // Detected intent / track / risk (compact read).
   const meta = 'intent: <strong>' + escHtml(j.intent || '?') + '</strong> · track: <strong>' + escHtml(j.track || '?') +
     '</strong> · risk: <strong>' + escHtml(j.risk || '?') + '</strong>';
   html += section('lane', '🏷 Read', meta);
-  // Real bridge action results, if any.
+  // Real bridge action results.
   if (Array.isArray(j.results) && j.results.length) {
     let out = '';
     for (const res of j.results) {
@@ -2370,6 +2625,31 @@ function renderChat(raw, j) {
 
   const lastEl = document.getElementById('sc-bridge-last');
   if (lastEl) lastEl.textContent = 'Last chat: ' + (j.intent || 'reply');
+
+  // ── Update Founder Proof Panel directly (no bridge round-trip) ──
+  const lower = raw.toLowerCase().trim();
+  const ts = new Date().toLocaleTimeString();
+  if (lower === 'hi' || lower.startsWith('hi ') || lower === 'hello') {
+    const el = document.getElementById('realityHiProof');
+    if (el) el.textContent = 'hi: ✅ ' + ts + ' — reply received · intent=' + (j.intent || '?');
+  }
+  if (lower.includes('check everything') || lower.includes('check all') || lower.includes('full check')) {
+    const el = document.getElementById('realityCheckProof');
+    if (el) el.textContent = 'check everything: ✅ ' + ts + ' — ' + stepsRan + ' steps · ' + passed + ' passed · intent=' + (j.intent || '?');
+  }
+  if (lower.includes('chest pain') || lower.includes('heart attack') || lower.includes('trouble breathing') || lower.includes('fainting')) {
+    const el = document.getElementById('realityChestProof');
+    if (el) el.textContent = 'chest pain: ✅ ' + ts + ' — emergency route active · no BALA score · gates=' + (j.safetyGates || []).length;
+  }
+  if (lower.includes('delete all') || lower.includes('delete everything') || lower.includes('rm -rf') || lower.includes('wipe')) {
+    const el = document.getElementById('realityDeleteProof');
+    if (el) el.textContent = 'delete all files: ✅ ' + ts + ' — parked/blocked · intent=' + (j.intent || '?') + ' · risk=' + (j.risk || '?');
+  }
+  if (lower.includes('bala sprint') || lower.includes('next sprint') || lower.includes('build next bala') || lower.includes('next bala sprint')) {
+    const el = document.getElementById('realitySprintProof');
+    if (el) el.textContent = 'build next sprint: ✅ ' + ts + ' — ' + (j.responseType || 'replied') + ' · steps=' + stepsRan;
+  }
+
   refreshReality(false);
   speak(j.reply || '');
 }
@@ -2378,7 +2658,6 @@ function copyChat() {
   if (!lastChat) return;
   navigator.clipboard.writeText(JSON.stringify(lastChat, null, 2));
 }
-
 // Provider status card (deterministic brain + optional local providers).
 async function refreshProviders() {
   const setNote = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };

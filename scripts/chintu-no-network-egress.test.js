@@ -56,6 +56,9 @@ const scannerAllowlist = new Set([
   'chintu-connector-send.js',
   'chintu-local-bridge.js',
   'chintu-telegram-runner.js',
+  // C44: morning digest sends to ntfy.sh ONLY when CHINTU_CONNECTOR_APPROVAL_PHRASE
+  // is set and CHINTU_NTFY_TOPIC is configured. Dry-run by default (no env vars needed).
+  'chintu-bala-morning-digest.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {

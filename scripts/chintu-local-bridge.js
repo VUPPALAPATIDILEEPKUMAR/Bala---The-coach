@@ -297,7 +297,6 @@ function sanitizeTraceForRuntime(trace) {
   return {
     timestamp: trace.timestamp || new Date().toISOString(),
     source: trace.source || 'bridge',
-    userText: summarize(trace.userText || '', 120),
     intent: trace.intent || 'unknown',
     risk: trace.risk || 'safe_read',
     allowed: trace.allowed === true,
@@ -341,75 +340,32 @@ function recordRuntimeEvent(endpoint, resultSummary, blockedReason) {
   };
 }
 
-function traceTimestampMs(trace) {
-  const value = Date.parse(trace && trace.timestamp ? trace.timestamp : '');
-  return Number.isFinite(value) ? value : 0;
-}
-
-function traceSourcePriority(trace) {
-  // Telegram source is the live-proof channel — always ranked above bridge-local traces.
-  return trace && trace.source === 'telegram' ? 0 : 1;
-}
-
-function collectRuntimeTraceCandidates() {
-  const candidates = [];
-  const files = [auditPath, telegramAuditPath];
-  for (const filePath of files) {
-    const entries = readJsonlSafe(filePath);
-    for (const entry of entries) {
-      if (entry && entry.type === 'runtime_trace' && entry.trace) {
-        const sanitizedNested = sanitizeTraceForRuntime(entry.trace);
-        if (sanitizedNested) candidates.push(sanitizedNested);
-        continue;
-      }
-      if (entry && entry.traceVersion === '1') {
-        const sanitized = sanitizeTraceForRuntime(entry);
-        if (sanitized) candidates.push(sanitized);
-      }
+function loadLastRuntimeTrace() {
+  if (LAST_RUNTIME_EVENT.lastTrace) return LAST_RUNTIME_EVENT.lastTrace;
+  const entries = readJsonlSafe(auditPath);
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].type === 'runtime_trace' && entries[i].trace) {
+      return entries[i].trace;
     }
   }
-  // Primary sort: Telegram source first (live-proof channel trumps local bridge traces).
-  // Secondary sort: most recent timestamp first within each source tier.
-  return candidates.sort((a, b) => {
-    const sourceDiff = traceSourcePriority(a) - traceSourcePriority(b);
-    if (sourceDiff !== 0) return sourceDiff;
-    return traceTimestampMs(b) - traceTimestampMs(a);
-  });
-}
-
-function loadLastRuntimeTrace() {
-  const candidates = collectRuntimeTraceCandidates();
-  const inMemory = LAST_RUNTIME_EVENT.lastTrace || null;
-  // If we have a live in-memory trace that is MORE RECENT than the best file
-  // candidate, prefer it. This ensures a fresh /api/chat response (e.g. a
-  // greeting or emergency routed seconds ago) is always surfaced as the
-  // lastCommandTrace, even when an older telegram trace sits in the audit file.
-  // The source-priority sort inside collectRuntimeTraceCandidates() still
-  // ensures telegram wins over bridge-local entries among file candidates when
-  // no newer in-memory trace exists.
-  if (inMemory && (candidates.length === 0 || traceTimestampMs(inMemory) > traceTimestampMs(candidates[0]))) {
-    return inMemory;
-  }
-  return candidates.length > 0 ? candidates[0] : null;
+  return null;
 }
 
 function founderProofStatus() {
-  const entries = collectRuntimeTraceCandidates();
+  const entries = readJsonlSafe(auditPath).filter((entry) => entry.type === 'runtime_trace' && entry.trace);
   function findLatest(intent) {
-    for (let i = 0; i < entries.length; i++) {
-      if (entries[i].intent === intent) {
+    for (let i = entries.length - 1; i >= 0; i--) {
+      if (entries[i].trace.intent === intent) {
         return {
           seen: true,
-          timestamp: entries[i].timestamp,
-          source: entries[i].source || 'unknown',
-          resultSummary: entries[i].resultSummary,
+          timestamp: entries[i].trace.timestamp,
+          resultSummary: entries[i].trace.resultSummary,
         };
       }
     }
     return {
       seen: false,
       timestamp: null,
-      source: null,
       resultSummary: 'Not yet shown in this bridge session.',
     };
   }
@@ -422,59 +378,30 @@ function founderProofStatus() {
 
 function telegramRuntimeStatus() {
   const entries = readJsonlSafe(telegramAuditPath);
-  const connectorCodeExists =
-    fs.existsSync(path.join(__dirname, 'chintu-telegram-runner.js')) &&
-    fs.existsSync(path.join(__dirname, 'chintu-telegram-adapter.js'));
   const tokenConfigured = Boolean(String(process.env.TELEGRAM_BOT_TOKEN || '').trim());
   const allowlistConfigured =
     csvCount(process.env.CHINTU_TELEGRAM_ALLOWED_CHAT_IDS) > 0 ||
     csvCount(process.env.CHINTU_TELEGRAM_ALLOWED_SENDER_IDS) > 0;
   const sendEnabled = String(process.env.CHINTU_TELEGRAM_SEND_ENABLED || '').trim() === '1';
-  const lastSetupCheck = entries.filter((entry) => entry.mode === 'setup-check').slice(-1)[0] || null;
   const lastTokenCheck = entries.filter((entry) => entry.mode === 'token-check').slice(-1)[0] || null;
-  const lastUpdatesDebug = entries.filter((entry) => entry.mode === 'get-updates-debug').slice(-1)[0] || null;
   const lastModeEntry = entries.filter((entry) => entry.mode || entry.sourceMode || entry.type).slice(-1)[0] || null;
-  const updatesSeen =
-    entries.some((entry) => entry.updateId != null) ||
-    entries.some((entry) => entry.traceVersion === '1' && entry.source === 'telegram') ||
-    Boolean(lastUpdatesDebug && lastUpdatesDebug.updateCount > 0);
+  const updatesSeen = entries.some((entry) => entry.updateId != null);
   const idsDiscovered = entries.some((entry) => entry.discoveryMode === true || (entry.chatId && entry.senderId));
-  const livePollOnceDemonstrated = entries.some((entry) =>
-    (entry.sourceMode === 'poll-once' && entry.updateId != null) ||
-    (entry.traceVersion === '1' && entry.source === 'telegram')
-  );
-  const tokenIdentityVerified = Boolean(lastTokenCheck && lastTokenCheck.botId != null);
-  const webhookChecked = Boolean(lastTokenCheck && lastTokenCheck.webhookCheckOk === true);
-  const webhookSet = lastTokenCheck && lastTokenCheck.webhookSet != null
-    ? lastTokenCheck.webhookSet === true
-    : null;
-  const setupReady = Boolean(lastSetupCheck) || tokenConfigured || allowlistConfigured;
+  const livePollOnceDemonstrated = entries.some((entry) => entry.sourceMode === 'poll-once');
 
-  let status = 'not-tested';
-  if (!connectorCodeExists) status = 'not available';
-  else if (livePollOnceDemonstrated) status = 'live-proven';
-  else if (idsDiscovered) status = 'IDs-discovered';
-  else if (tokenIdentityVerified) status = 'identity-verified';
-  else if (setupReady) status = 'setup-ready';
+  let status = 'setup-ready / not live-proven';
+  if (livePollOnceDemonstrated) status = 'live-proven';
+  else if (!fs.existsSync(path.join(__dirname, 'chintu-telegram-runner.js'))) status = 'not available';
 
   return {
     status,
-    connectorCodeExists,
+    connectorCodeExists:
+      fs.existsSync(path.join(__dirname, 'chintu-telegram-runner.js')) &&
+      fs.existsSync(path.join(__dirname, 'chintu-telegram-adapter.js')),
     tokenConfigured,
-    tokenIdentityVerified,
-    botId: lastTokenCheck ? lastTokenCheck.botId || null : null,
-    username: lastTokenCheck ? lastTokenCheck.username || null : null,
-    firstName: lastTokenCheck ? lastTokenCheck.firstName || null : null,
-    webhookChecked,
-    webhookActive: webhookSet,
-    webhookSet,
-    pendingUpdateCount: lastTokenCheck && lastTokenCheck.pendingUpdateCount != null
-      ? lastTokenCheck.pendingUpdateCount
-      : null,
-    lastErrorMessage: lastTokenCheck ? lastTokenCheck.lastErrorMessage || null : null,
-    allowedUpdates: lastTokenCheck && Array.isArray(lastTokenCheck.allowedUpdates)
-      ? lastTokenCheck.allowedUpdates.slice()
-      : [],
+    tokenIdentityVerified: Boolean(lastTokenCheck && lastTokenCheck.ok === true),
+    webhookChecked: Boolean(lastTokenCheck),
+    webhookActive: lastTokenCheck ? Boolean(lastTokenCheck.webhookSet) : null,
     updatesSeen,
     idsDiscovered,
     allowlistConfigured,
@@ -497,8 +424,12 @@ function balaRuntimeStatus() {
 
 function runtimeStatusPayload() {
   const trace = loadLastRuntimeTrace();
-  const lastResultSummary = trace ? trace.resultSummary : LAST_RUNTIME_EVENT.lastResultSummary;
-  const lastBlockedReason = trace ? trace.blockedReason : LAST_RUNTIME_EVENT.lastBlockedReason;
+  const lastResultSummary = LAST_RUNTIME_EVENT.lastUpdatedAt
+    ? LAST_RUNTIME_EVENT.lastResultSummary
+    : (trace ? trace.resultSummary : LAST_RUNTIME_EVENT.lastResultSummary);
+  const lastBlockedReason = LAST_RUNTIME_EVENT.lastUpdatedAt
+    ? LAST_RUNTIME_EVENT.lastBlockedReason
+    : (trace ? trace.blockedReason : null);
   return {
     ok: true,
     service: 'chintu-local-bridge',
@@ -508,8 +439,8 @@ function runtimeStatusPayload() {
     time: new Date().toISOString(),
     bridge: {
       connected: true,
-      endpoint: (trace && trace.endpoint) || LAST_RUNTIME_EVENT.lastEndpoint || null,
-      lastUpdatedAt: (trace && trace.timestamp) || LAST_RUNTIME_EVENT.lastUpdatedAt || null,
+      endpoint: LAST_RUNTIME_EVENT.lastEndpoint || (trace ? trace.endpoint : null),
+      lastUpdatedAt: LAST_RUNTIME_EVENT.lastUpdatedAt || (trace ? trace.timestamp : null),
     },
     lastCommandTrace: trace,
     lastResultSummary,

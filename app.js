@@ -4105,6 +4105,84 @@ function b60ScoreGuidanceCard(sourceKey, missingFields) {
   return card;
 }
 
+// B63 — Import Trust + Data Review ─────────────────────────────────────────
+// Renders a persistent signal-chip row and meta line below the BALA score.
+// Called after every successful import and on page load for demo mode.
+// NEVER shows: diagnosis, trend claims with < 3 days data, or invented insights.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Signal display order + weight labels for the trust panel */
+const B63_SIGNAL_META = {
+  sleep:    { label: 'Sleep',    weight: 32 },
+  hrv:      { label: 'HRV',      weight: 23 },
+  rhr:      { label: 'RHR',      weight: 20 },
+  steps:    { label: 'Activity', weight: 20 },
+  spo2:     { label: 'SpO₂',     weight:  5 },
+};
+
+/**
+ * Update the B63 Import Trust panel in the score section.
+ * @param {{ source: string, recordsImported: number, latestDate: string|null,
+ *           detectedFields: string[], missingFields: string[] }} opts
+ */
+function b63RenderImportTrust(opts) {
+  const trustEl  = document.getElementById('b63-import-trust');
+  const sourceEl = document.getElementById('score-data-source');
+  const chipsEl  = document.getElementById('b63-signal-chips');
+  const metaEl   = document.getElementById('b63-trust-meta');
+
+  if (!trustEl) return; // panel not in DOM yet — safe no-op
+
+  // Source label
+  if (sourceEl) sourceEl.textContent = `Data source: ${opts.source}`;
+
+  // Signal chips — show all 5 scored signals, green if detected, gray if missing
+  if (chipsEl) {
+    const det = new Set(opts.detectedFields || []);
+    const chips = Object.entries(B63_SIGNAL_META).map(([key, meta]) => {
+      const ok = det.has(key);
+      const chip = document.createElement('span');
+      chip.className = ok ? 'b63-chip b63-chip-ok' : 'b63-chip b63-chip-gap';
+      chip.setAttribute('aria-label', `${meta.label}: ${ok ? 'detected' : 'not detected – ' + meta.weight + ' pts'}`);
+      chip.textContent = ok ? `✓ ${meta.label}` : `${meta.label} (${meta.weight}pts)`;
+      return chip;
+    });
+    chipsEl.replaceChildren(...chips);
+    chipsEl.hidden = false;
+  }
+
+  // Meta line — records + date + trends-only-with-data note
+  if (metaEl) {
+    const parts = [];
+    if (opts.recordsImported != null) parts.push(`${opts.recordsImported} record${opts.recordsImported !== 1 ? 's' : ''}`);
+    if (opts.latestDate) parts.push(`latest ${opts.latestDate}`);
+    if (opts.recordsImported != null && opts.recordsImported < 3) {
+      parts.push('trends shown after 3+ days');
+    }
+    metaEl.textContent = parts.join(' · ');
+    metaEl.hidden = parts.length === 0;
+  }
+}
+
+/** Call once on page load to set the panel to demo-mode defaults. */
+function b63InitDemoTrust() {
+  b63RenderImportTrust({
+    source: 'Demo Mode',
+    recordsImported: null,
+    latestDate: null,
+    // Demo shows all scored signals (they're populated from demo data)
+    detectedFields: ['sleep', 'hrv', 'rhr', 'steps', 'spo2'],
+    missingFields:  [],
+  });
+  // Keep chips hidden in demo mode — no real import happened
+  const chips = document.getElementById('b63-signal-chips');
+  if (chips) chips.hidden = true;
+  const meta  = document.getElementById('b63-trust-meta');
+  if (meta)  meta.hidden = true;
+}
+
+// ─────────────────────────────────────────── End B63 Import Trust ──────────
+
 function showImportResult(result, sourceLabel, sourceKey) {
   dialogLabel.textContent = "Import complete";
   dialogTitle.textContent = `${sourceLabel} is ready`;
@@ -4135,6 +4213,14 @@ function showImportResult(result, sourceLabel, sourceKey) {
   if (guidance) container.append(guidance);
   dialogContentNode.replaceChildren(container);
   if (!dialog.open) dialog.showModal();
+  // B63: update the persistent import trust panel on the score screen
+  b63RenderImportTrust({
+    source:           sourceLabel,
+    recordsImported:  result.recordsImported,
+    latestDate:       result.latestDate || null,
+    detectedFields:   result.detectedFields || [],
+    missingFields:    result.missingFields  || [],
+  });
 }
 
 function showImportError(message) {
@@ -4963,6 +5049,9 @@ if (launchAction === "capture") captureDialog.showModal();
 if (launchAction === "coach") openCoach();
 importShortcutSync();
 
+// B63: initialise trust panel to demo state on page load
+b63InitDemoTrust();
+
 // =============================================================================
 // B58 — Founder Demo Journey
 // One-click guided 7-step tour of BALA using safe demo data.
@@ -5054,7 +5143,6 @@ importShortcutSync();
     const total = JOURNEY_STEPS.length;
     const isLast = _journeyStep === total - 1;
     const pct = Math.round(((_journeyStep + 1) / total) * 100);
-
     // Indicator
     if (_indicator) _indicator.textContent = 'Step ' + (_journeyStep + 1) + ' of ' + total;
 

@@ -186,7 +186,15 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
 .score-ring em[data-level="check"] { color: #765a2d; }
 .section-label { margin: 0 0 8px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
 .score-insight h2, .panel-heading h2, .suggestion-panel h2 { margin: 0; letter-spacing: -.6px; }
-.score-data-source { display: inline-flex; margin: 0 0 8px; padding: 5px 8px; border-radius: 999px; color: #526159; background: var(--green-pale); font-size: 9px; font-weight: 750; }
+.score-data-source { display: inline-flex; margin: 0 0 6px; padding: 5px 8px; border-radius: 999px; color: #526159; background: var(--green-pale); font-size: 9px; font-weight: 750; }
+/* B63 Import Trust */
+.b63-import-trust { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+.b63-signal-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 2px 0 4px; }
+.b63-chip { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 999px; font-size: 9px; font-weight: 700; letter-spacing: .02em; }
+.b63-chip-ok  { background: var(--green-pale, #e8f5e9); color: #357a50; }
+.b63-chip-gap { background: #f3f4f6; color: #8a8fa8; }
+.b63-chip-gap::before { content: '–'; margin-right: 2px; opacity: .55; }
+.b63-trust-meta { margin: 0 0 8px; font-size: 10px; color: var(--muted, #6b7280); line-height: 1.4; }
 .score-insight h2 { font-size: clamp(27px, 2.8vw, 42px); }
 .score-insight > p:not(.section-label) { max-width: 620px; margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
 .score-checks { margin: 17px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; }
@@ -1314,30 +1322,3 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .ex-delta-down { color: #b85c00; }
 .ex-delta-flat { color: var(--secondary); }
 .ex-note { font-size: 0.68rem; color: var(--secondary); margin: 0; opacity: 0.75; }
-
-/* =============================================================================
-   B58 — Founder Demo Journey Modal
-   Mobile-first, matches BALA design language
-   ============================================================================= */
-.journey-modal { width: min(560px, calc(100vw - 24px)); padding: 0; border: 0; border-radius: 26px; }
-.journey-modal-inner { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 420px; max-height: calc(100dvh - 48px); overflow: hidden; }
-.journey-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px 14px; }
-.journey-step-indicator { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.journey-modal-close { width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--canvas); cursor: pointer; font-size: 18px; color: var(--ink); display: flex; align-items: center; justify-content: center; }
-.journey-progress-track { height: 3px; background: var(--line); margin: 0 22px; border-radius: 2px; overflow: hidden; }
-.journey-progress-bar-inner { height: 100%; background: var(--ink); border-radius: 2px; transition: width 0.35s ease; }
-.journey-step-body { padding: 28px 26px 20px; overflow-y: auto; display: grid; gap: 14px; align-content: start; }
-.journey-step-emoji { font-size: 40px; line-height: 1; margin: 0; }
-.journey-step-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: var(--ink); margin: 0; }
-.journey-step-subtitle { font-size: 13px; color: var(--secondary); margin: 0; font-weight: 500; }
-.journey-step-divider { height: 1px; background: var(--line); border: 0; margin: 2px 0; }
-.journey-step-text { font-size: 14px; line-height: 1.65; color: var(--ink); margin: 0; }
-.journey-safe-note-box { padding: 12px 14px; border-radius: 12px; background: var(--canvas); font-size: 11px; color: var(--muted); line-height: 1.55; margin: 0; }
-.journey-modal-footer { padding: 16px 22px 22px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); }
-.journey-nav-btn { min-height: 46px; padding: 0 22px; border: 0; border-radius: 13px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
-.journey-nav-btn:disabled { opacity: 0.35; cursor: default; }
-.journey-back { background: var(--canvas); color: var(--ink); flex: 0 0 auto; }
-.journey-forward { background: var(--ink); color: var(--white); flex: 1; }
-.journey-forward.journey-finish { background: var(--green, #2e7d5b); }
-.journey-footer-center { flex: 1; text-align: center; font-size: 10px; color: var(--muted); line-height: 1.4; display: none; }
-@media (min-width: 480px) { .journey-footer-center { display: block; } }

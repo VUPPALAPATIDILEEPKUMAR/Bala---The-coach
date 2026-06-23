@@ -1,4 +1,4 @@
-const CACHE_NAME = "bala-shell-v59";
+const CACHE_NAME = "bala-shell-v44";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,7 +8,6 @@ const APP_SHELL = [
   "./vendor/fflate.min.js",
   "./privacy.html",
   "./manifest.webmanifest",
-  "./bala-health-template.csv",
   "./icons/bala-icon.svg",
   "./icons/bala-icon-192.png",
   "./icons/bala-icon-512.png"

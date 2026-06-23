@@ -103,8 +103,13 @@
           </div>
           <div class="score-insight">
             <p class="section-label" id="guide-label">Today's Guide</p>
-            <p class="score-data-source" id="score-data-source">Data source: Demo Mode</p>
-            <p class="score-confidence-note" id="score-confidence-note">Data confidence uses only the supported signals available today.</p>
+            <!-- B63: Import Trust panel ─────────────────────────────────── -->
+            <div id="b63-import-trust" class="b63-import-trust" aria-live="polite">
+              <p class="score-data-source" id="score-data-source">Data source: Demo Mode</p>
+              <div id="b63-signal-chips" class="b63-signal-chips" hidden aria-label="Signal status"></div>
+              <p id="b63-trust-meta" class="b63-trust-meta" hidden></p>
+            </div>
+            <!-- ─────────────────────────────────── End B63 Import Trust ── -->
             <h2 id="score-heading">You’re ready for a steady day</h2>
             <p id="score-guide-copy">
               Your sleep and recovery are near your usual range. Keep activity moderate and
