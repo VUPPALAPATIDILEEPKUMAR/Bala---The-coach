@@ -2241,6 +2241,7 @@ function renderScoreExplainer(metrics, breakdown) {
     row("Supporting your score", list(supporting, "building")),
     attention.length ? row("Worth a closer look", list(attention, "")) : "",
     `<p style="margin:6px 0 0;opacity:0.85">Adding the missing signals raises data confidence. BALA shows a calm reflection guide from the signals you shared.</p>`,
+    missing.length ? `<div style="margin-top:8px;padding:8px 10px;background:var(--color-surface-2,#f5f0e8);border-radius:6px;font-size:0.87em"><strong>To reach a fuller score:</strong> The BALA CSV template supports any wearable — Garmin, Samsung, Xiaomi, Apple Watch, or manual entries. <button type="button" data-b60-import="csv" style="margin-left:6px;padding:3px 10px;border-radius:5px;border:1px solid var(--color-accent,#c07b3b);background:transparent;cursor:pointer;color:inherit;font-size:0.93em">Add missing signals</button></div>` : "",
   ].join("");
 }
 
@@ -3825,7 +3826,74 @@ async function parseManualSignalFile(file) {
   throw new Error("BALA can guide you through exporting this data, but this file format is not fully parsed yet. For now, try CSV or JSON.");
 }
 
-function showImportResult(result, sourceLabel) {
+// ─────────────────────────────────────────────────────────────────────────────
+// B60 — Score completeness feedback: source-specific gap guidance
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Per-source gap map: what each importer misses and how to fill it */
+const B60_SOURCE_GAPS = {
+  googlefit: {
+    note: "Google Fit Takeout exports steps and resting heart rate — but not sleep or HRV.",
+    action: "Add sleep, HRV, and SpO₂ with the BALA CSV template (works with any wearable or manual tracking).",
+    missingKeys: ["sleep", "hrv", "spo2"],
+  },
+  fitbit: {
+    note: "Fitbit ZIP exports sleep and resting heart rate — but not HRV or step-level activity.",
+    action: "Add HRV and steps with the BALA CSV template to reach full score confidence.",
+    missingKeys: ["hrv", "steps", "spo2"],
+  },
+  apple: null,   // Apple Health typically provides all supported signals
+  csv:   null,   // CSV completeness already shown via detected/missing field rows
+};
+
+/** Score weights per signal — mirrors scoreBreakdown */
+const B60_SCORE_WEIGHTS = { sleep: 32, hrv: 23, rhr: 20, activity: 20, spo2: 5 };
+
+/**
+ * Build a "complete your score" guidance card for the import dialog.
+ * Returns a DOM element, or null if no actionable gap exists.
+ */
+function b60ScoreGuidanceCard(sourceKey, missingFields) {
+  const gap = B60_SOURCE_GAPS[sourceKey];
+  if (!gap) return null;
+  const relevant = (missingFields || []).filter((k) => gap.missingKeys.includes(k));
+  if (!relevant.length) return null;
+  const points = relevant.reduce((sum, k) => sum + (B60_SCORE_WEIGHTS[k] || 0), 0);
+  if (!points) return null;
+
+  const card = document.createElement("div");
+  card.style.cssText = [
+    "margin-top:14px",
+    "padding:12px 14px",
+    "background:var(--color-surface-2,#f5f0e8)",
+    "border-radius:8px",
+    "border-left:3px solid var(--color-accent,#c07b3b)",
+    "font-size:0.89em",
+  ].join(";");
+
+  const heading = document.createElement("p");
+  heading.style.cssText = "margin:0 0 6px;font-weight:600";
+  heading.textContent = `Complete your BALA score (+${points} pts available)`;
+
+  const noteEl = document.createElement("p");
+  noteEl.style.cssText = "margin:0 0 5px;opacity:0.88";
+  noteEl.textContent = gap.note;
+
+  const actionEl = document.createElement("p");
+  actionEl.style.cssText = "margin:0 0 8px";
+  actionEl.textContent = gap.action;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.dataset.b60Import = "csv";
+  btn.style.cssText = "padding:5px 12px;border-radius:6px;border:1px solid var(--color-accent,#c07b3b);background:transparent;cursor:pointer;color:inherit;font-size:0.93em";
+  btn.textContent = "Import BALA CSV template";
+
+  card.append(heading, noteEl, actionEl, btn);
+  return card;
+}
+
+function showImportResult(result, sourceLabel, sourceKey) {
   dialogLabel.textContent = "Import complete";
   dialogTitle.textContent = `${sourceLabel} is ready`;
   const container = document.createElement("div");
@@ -3851,6 +3919,8 @@ function showImportResult(result, sourceLabel) {
     list.append(item);
   });
   container.append(summary, list);
+  const guidance = b60ScoreGuidanceCard(sourceKey, result.missingFields);
+  if (guidance) container.append(guidance);
   dialogContentNode.replaceChildren(container);
   if (!dialog.open) dialog.showModal();
 }
@@ -4026,6 +4096,11 @@ document.querySelectorAll("[data-download-bala-csv]").forEach((button) => {
     a.download = "bala-health-template.csv";
     a.click();
   });
+});
+// B60: delegated listener — handles "complete your score" buttons in dynamic UI
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-b60-import]");
+  if (btn) { if (dialog.open) dialog.close(); openHealthImport(btn.dataset.b60Import); }
 });
 document.querySelector("#copy-timeline-button").addEventListener("click", copyTimelineSummary);
 document.querySelector("#download-timeline-button").addEventListener("click", downloadTimelineSummary);
@@ -4383,7 +4458,7 @@ healthFile.addEventListener("change", async () => {
     result.metrics.source = dataSourceLabels[selectedSource];
     setCurrentDataSource(selectedSource);
     saveMetrics(result.metrics);
-    showImportResult(result, dataSourceLabels[selectedSource]);
+    showImportResult(result, dataSourceLabels[selectedSource], selectedSource);
   } catch (error) {
     showImportError(error.message || "The selected file could not be read.");
   } finally {
