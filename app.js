@@ -3554,6 +3554,115 @@ function parseAppleHealthFile(file) {
   throw new Error("Choose apple_health_export.zip or export.xml.");
 }
 
+// ---------------------------------------------------------------------------
+// B59 — Free Health Data Importers
+// Google Fit Takeout CSV · Fitbit Export ZIP · Universal CSV Template
+// All local-first — no network calls, no API keys, no account required.
+// ---------------------------------------------------------------------------
+
+async function parseGoogleFitCSV(file) {
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) throw new Error("Google Fit CSV appears empty. Export 'Daily activity metrics.csv' from Google Takeout (takeout.google.com → Fit).");
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  const col = (kw) => headers.findIndex((h) => h.includes(kw));
+  const dateCol = col("date"), stepsCol = col("step count"), rhrCol = col("resting heart rate"), avgHrCol = col("average heart rate");
+  if (dateCol === -1) throw new Error("Could not find 'Date' column. Export 'Daily activity metrics.csv' from Google Fit Takeout.");
+  const days = [];
+  for (let i = 1; i < lines.length; i++) {
+    const c = lines[i].split(",");
+    const dateKey = c[dateCol]?.trim().slice(0, 10);
+    if (!dateKey) continue;
+    const rhr = rhrCol !== -1 ? parseFloat(c[rhrCol]) : NaN;
+    const avgHr = avgHrCol !== -1 ? parseFloat(c[avgHrCol]) : NaN;
+    const steps = stepsCol !== -1 ? parseFloat(c[stepsCol]) : NaN;
+    days.push({ date: dateKey, rhr: Number.isFinite(rhr) && rhr > 0 ? rhr : Number.isFinite(avgHr) && avgHr > 0 ? avgHr : undefined, steps: Number.isFinite(steps) && steps >= 0 ? steps : undefined });
+  }
+  if (!days.length) throw new Error("No data rows found in Google Fit CSV.");
+  const sorted = days.sort((a, b) => a.date.localeCompare(b.date));
+  const latest = sorted.at(-1);
+  return { source: `Google Fit import · ${latest.date}`, rhr: latest.rhr, steps: latest.steps, history: sorted.slice(-90) };
+}
+
+async function parseFitbitZip(file) {
+  if (!window.fflate) throw new Error("ZIP reader not loaded. Refresh BALA and try again.");
+  const fitbitDays = new Map();
+  await new Promise((resolve, reject) => {
+    let expected = 0, done = 0; let fin = false;
+    const tryDone = () => { if (!fin && done >= expected && expected > 0) { fin = true; resolve(); } };
+    const unzip = new window.fflate.Unzip((entry) => {
+      const p = entry.name.replaceAll("\\", "/").toLowerCase();
+      const isSleep = /sleep\/sleep-\d{4}-\d{2}-\d{2}\.json$/.test(p);
+      const isHr = /physical-activity\/heart_rate-\d{4}-\d{2}-\d{2}\.json$/.test(p);
+      if (!isSleep && !isHr) return;
+      expected++;
+      const chunks = [];
+      entry.ondata = (err, chunk, final) => {
+        if (err) { if (!fin) { fin = true; reject(err); } return; }
+        if (chunk?.length) chunks.push(chunk);
+        if (final) {
+          try {
+            const merged = chunks.reduce((a, c) => { const m = new Uint8Array(a.length + c.length); m.set(a); m.set(c, a.length); return m; }, new Uint8Array(0));
+            const data = JSON.parse(new TextDecoder().decode(merged));
+            const dm = p.match(/(\d{4}-\d{2}-\d{2})\.json$/);
+            if (dm) {
+              const key = dm[1]; const day = fitbitDays.get(key) || {};
+              if (isSleep && Array.isArray(data)) { let m = 0; for (const l of data) m += (l.minutesAsleep || 0); if (m > 0) day.sleep = m / 60; }
+              if (isHr && Array.isArray(data)) { let s = 0, n = 0; for (const r of data) { const b = r?.value?.bpm; if (typeof b === "number" && b > 0) { s += b; n++; } } if (n > 0) day.rhr = s / n; }
+              fitbitDays.set(key, day);
+            }
+          } catch (_) {}
+          done++; tryDone();
+        }
+      };
+      entry.start();
+    });
+    unzip.register(window.fflate.AsyncUnzipInflate);
+    (async () => {
+      try {
+        const reader = file.stream().getReader();
+        while (true) { const { value, done: d } = await reader.read(); if (d) { unzip.push(new Uint8Array(), true); if (expected === 0) resolve(); break; } unzip.push(value, false); }
+      } catch (e) { if (!fin) { fin = true; reject(e); } }
+    })();
+  });
+  if (!fitbitDays.size) throw new Error("No sleep or heart rate files found. Use a Fitbit data export ZIP (fitbit.com → Settings → Data Export).");
+  const keys = [...fitbitDays.keys()].sort();
+  const latest = fitbitDays.get(keys.at(-1));
+  return { source: `Fitbit import · ${keys.at(-1)}`, sleep: latest.sleep, rhr: latest.rhr, history: keys.slice(-90).map((k) => ({ date: k, ...fitbitDays.get(k) })) };
+}
+
+async function parseUniversalCSV(file) {
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter((l) => l && !l.startsWith("#"));
+  if (lines.length < 2) throw new Error("CSV appears empty. Columns: date, sleep, rhr, hrv, spo2, steps, exercise");
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const col = (...names) => { for (const n of names) { const i = headers.findIndex((h) => h.includes(n)); if (i !== -1) return i; } return -1; };
+  const dc = col("date"), sc = col("sleep"), rc = col("rhr", "restingheartrate"), hc = col("hrv"), oc = col("spo2", "oxygen"), tc = col("steps"), ec = col("exercise", "activeminutes");
+  if (dc === -1) throw new Error("CSV must have a 'date' column (YYYY-MM-DD).");
+  const days = [];
+  for (let i = 1; i < lines.length; i++) {
+    const c = lines[i].split(","); const dateKey = c[dc]?.trim().slice(0, 10); if (!dateKey) continue;
+    const f = (idx) => { if (idx === -1) return undefined; const v = parseFloat(c[idx]); return Number.isFinite(v) ? v : undefined; };
+    days.push({ date: dateKey, sleep: f(sc), rhr: f(rc), hrv: f(hc), spo2: f(oc), steps: f(tc), exercise: f(ec) });
+  }
+  if (!days.length) throw new Error("No valid data rows in CSV.");
+  const sorted = days.sort((a, b) => a.date.localeCompare(b.date));
+  const latest = sorted.at(-1);
+  return { source: `CSV import · ${latest.date}`, ...latest, history: sorted.slice(-90) };
+}
+
+function parseHealthFile(file, source) {
+  const name = file.name.toLowerCase();
+  if (source === "apple") return parseAppleHealthFile(file);
+  if (source === "googlefit") return parseGoogleFitCSV(file);
+  if (source === "fitbit") return parseFitbitZip(file);
+  if (source === "csv") return parseUniversalCSV(file);
+  if (name.endsWith(".zip")) return /fitbit/i.test(name) ? parseFitbitZip(file) : parseAppleHealthFile(file);
+  if (name.endsWith(".xml")) return parseAppleHealthStream(file.stream());
+  if (name.endsWith(".csv")) return /daily.activity/i.test(name) ? parseGoogleFitCSV(file) : parseUniversalCSV(file);
+  throw new Error("Unsupported file. Accepted: Apple Health ZIP/XML, Google Fit CSV, Fitbit ZIP, BALA CSV template.");
+}
+
 const importFieldLabels = {
   sleep: "Sleep hours",
   rhr: "Resting heart rate",
@@ -4215,20 +4324,25 @@ healthFile.addEventListener("change", async () => {
     }
     if (selectedSource === "manual-csv" && !/\.csv$/i.test(file.name)) throw new Error("Choose a CSV file for Manual CSV.");
     if (selectedSource === "manual-json" && !/\.json$/i.test(file.name)) throw new Error("Choose a JSON file for Manual JSON.");
-    if (!isAppleExport && !isSimpleFile) {
-      throw new Error("BALA can guide you through exporting this data, but this file format is not fully parsed yet. For now, try CSV or JSON.");
+    // B59: expanded importer — now handles Apple Health, Google Fit, Fitbit, and universal CSV
+    const isFreeImport = isAppleExport
+      || selectedSource === "googlefit"
+      || selectedSource === "fitbit"
+      || selectedSource === "csv";
+    if (!isFreeImport && !isSimpleFile) {
+      throw new Error("BALA can guide you through exporting this data. For now, try Apple Health export, Google Fit CSV, Fitbit ZIP, or BALA CSV template.");
     }
     dialogLabel.textContent = "Reading health data";
-    dialogTitle.textContent = "Processing your export locally";
-    dialogContentNode.innerHTML = `<div class="source-list"><p>BALA is reading ${(file.size / 1024 / 1024).toFixed(1)} MB locally. Keep the app open until this finishes.</p></div>`;
+    dialogTitle.textContent = "Processing your data locally";
+    dialogContentNode.innerHTML = `<div class="source-list"><p>BALA is reading ${(file.size / 1024 / 1024).toFixed(1)} MB locally. This never leaves your device.</p></div>`;
     dialog.showModal();
     let result;
-    if (isAppleExport) {
-      const appleMetrics = await parseAppleHealthFile(file);
-      const history = Array.isArray(appleMetrics.history) ? appleMetrics.history : [];
-      const detectedFields = detectedImportFields([appleMetrics]);
+    if (isFreeImport) {
+      const metrics = await parseHealthFile(file, selectedSource);
+      const history = Array.isArray(metrics.history) ? metrics.history : [];
+      const detectedFields = detectedImportFields([metrics]);
       result = {
-        metrics: appleMetrics,
+        metrics,
         recordsImported: history.length || 1,
         latestDate: history.at(-1)?.date || new Date().toISOString().slice(0, 10),
         detectedFields,
