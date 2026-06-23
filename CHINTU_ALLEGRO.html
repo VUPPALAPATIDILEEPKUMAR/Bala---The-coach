@@ -366,6 +366,140 @@
       .reality-card.span2 { grid-column: auto; }
     }
 
+    /* ── BALA Score Demo Panel ── */
+    .bala-demo-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-top: 12px;
+    }
+    .bala-demo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .bala-demo-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .bala-demo-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .bala-score-row {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .bala-score-ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) var(--score-pct, 0%), var(--surface2) 0%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .bala-score-ring::after {
+      content: '';
+      position: absolute;
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: var(--surface);
+    }
+    .bala-score-number {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--text);
+      position: relative;
+      z-index: 1;
+      line-height: 1;
+    }
+    .bala-score-label {
+      font-size: 0.67rem;
+      color: var(--muted);
+      position: relative;
+      z-index: 1;
+      margin-top: 2px;
+    }
+    .bala-signals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+      flex: 1;
+      min-width: 200px;
+    }
+    .bala-signal-card {
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.75rem;
+    }
+    .bala-signal-card.loading-card {
+      color: var(--muted);
+    }
+    .bala-signal-name {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.72rem;
+    }
+    .bala-signal-pts {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.8rem;
+      float: right;
+    }
+    .bala-signal-pts.negative { color: #e07070; }
+    .bala-signal-detail {
+      color: var(--muted);
+      font-size: 0.68rem;
+      margin-top: 2px;
+    }
+    .bala-guide-text {
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: var(--text);
+      line-height: 1.6;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .bala-guide-section {
+      margin-bottom: 8px;
+    }
+    .bala-guide-section-label {
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 3px;
+    }
+    .bala-demo-disclaimer {
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 12px;
+      font-style: italic;
+    }
+    .bala-confidence-badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--surface2);
+      color: var(--muted);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
     /* ── Command Center tab ── */
     .cmd-group {
       background: var(--surface);
@@ -481,10 +615,10 @@
   <div class="logo">CA</div>
   <div>
     <span class="topbar-title">Chintu Allegro</span>
-    <span class="topbar-sub">Founder Command Center · brain + bridge · C42.2</span>
+    <span class="topbar-sub">local operator shell - brain runtime active</span>
   </div>
   <div class="topbar-badges">
-    <span class="badge badge-stage">C42.2 · Operator</span>
+    <span class="badge badge-stage">Stage 24</span>
     <span class="badge badge-local">LOCAL-FIRST</span>
     <span class="badge badge-safe">SAFE BY DESIGN</span>
     <button class="install-hint" onclick="openInstall()">⬇ Install as app</button>
@@ -567,7 +701,28 @@
         <div class="status-dot dot-amber"></div>
         <div class="status-card-body">
           <div class="status-card-title">Telegram</div>
-          <div class="status-card-note">First activation parked · check readiness cmd</div>
+          <div class="status-card-note">Wired · needs 4 env vars → see setup guide below</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-gray"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">Discord</div>
+          <div class="status-card-note">Wired (priority 2) · needs webhook URL → see below</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-gray"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">ntfy.sh (FREE)</div>
+          <div class="status-card-note">Set CHINTU_NTFY_TOPIC → instant push to phone</div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-dot dot-gray"></div>
+        <div class="status-card-body">
+          <div class="status-card-title">WhatsApp (FREE)</div>
+          <div class="status-card-note">CallMeBot · set 3 env vars → see setup below</div>
         </div>
       </div>
       <div class="status-card">
@@ -632,12 +787,70 @@
       </div>
     </div>
 
+
+    <!-- Free Connector Setup Guide (C43) -->
+    <div>
+      <div class="section-label">🔌 Free Connector Setup (activate in 5 min)</div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--accent);margin-bottom:6px">📳 ntfy.sh — Zero-setup push to your phone (FREE, no account)</div>
+        <ol style="font-size:0.72rem;color:var(--text);margin:0 0 8px 16px;line-height:1.7">
+          <li>Install the free <strong>ntfy app</strong> on your phone (ntfy.sh/app — iOS &amp; Android)</li>
+          <li>Pick any topic name, e.g. <code style="background:var(--bg);padding:1px 4px;border-radius:3px">bala-dileep-2026</code></li>
+          <li>Subscribe to that topic in the app</li>
+          <li>Set this env var in PowerShell:<br><code style="background:var(--bg);padding:2px 6px;border-radius:3px;display:block;margin-top:4px">[System.Environment]::SetEnvironmentVariable('CHINTU_NTFY_TOPIC','bala-dileep-2026','User')</code></li>
+          <li>Test: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">node scripts\chintu-connector-send.js --preview --connector ntfy --body "BALA is live"</code></li>
+        </ol>
+        <div style="font-size:0.68rem;color:var(--muted)">No API key · No account · Data sent to ntfy.sh/&lt;your-topic&gt; only</div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--accent);margin-bottom:6px">💬 WhatsApp via CallMeBot (FREE, 5-min setup)</div>
+        <ol style="font-size:0.72rem;color:var(--text);margin:0 0 8px 16px;line-height:1.7">
+          <li>Save <strong>+34 644 98 45 08</strong> in your WhatsApp contacts (name: CallMeBot)</li>
+          <li>Send this message to that number: <code style="background:var(--bg);padding:1px 4px;border-radius:3px">I allow callmebot to send me messages</code></li>
+          <li>You receive your API key via WhatsApp within seconds</li>
+          <li>Set these env vars (replace with your phone + key):<br>
+            <code style="background:var(--bg);padding:2px 6px;border-radius:3px;display:block;margin-top:4px">[System.Environment]::SetEnvironmentVariable('CHINTU_WA_PHONE','+91XXXXXXXXXX','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_WA_APIKEY','YOUR_KEY','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_WA_ALLOWLIST','+91XXXXXXXXXX','User')</code>
+          </li>
+          <li>Test: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">node scripts\chintu-connector-send.js --preview --connector whatsapp --body "BALA test"</code></li>
+        </ol>
+        <div style="font-size:0.68rem;color:var(--muted)">No server · No monthly fee · Phone: include country code e.g. +91XXXXXXXXXX</div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--accent);margin-bottom:6px">✈️ Telegram — Already wired, just needs env vars</div>
+        <ol style="font-size:0.72rem;color:var(--text);margin:0 0 8px 16px;line-height:1.7">
+          <li>Open Telegram → search <strong>@BotFather</strong> → /newbot → copy your token</li>
+          <li>Start your bot (send it any message) → go to <code style="background:var(--bg);padding:1px 4px;border-radius:3px">https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> to get your chat ID</li>
+          <li>Set env vars:<br>
+            <code style="background:var(--bg);padding:2px 6px;border-radius:3px;display:block;margin-top:4px">[System.Environment]::SetEnvironmentVariable('CHINTU_TG_BOT_TOKEN','TOKEN','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_TG_CHAT_ID','CHAT_ID','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_TG_TARGET','CHAT_ID','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_TG_ALLOWLIST','CHAT_ID','User')</code>
+          </li>
+          <li>Setup check: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">node scripts\chintu-telegram-runner.js --setup-check</code></li>
+        </ol>
+        <div style="font-size:0.68rem;color:var(--muted)">Free forever · No phone number exposed · Bot is private</div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--accent);margin-bottom:6px">🎮 Discord — Webhook send (FREE, 2-min setup)</div>
+        <ol style="font-size:0.72rem;color:var(--text);margin:0 0 8px 16px;line-height:1.7">
+          <li>Open Discord → your server → Edit Channel → Integrations → Webhooks → New Webhook</li>
+          <li>Copy the webhook URL</li>
+          <li>Set env vars:<br>
+            <code style="background:var(--bg);padding:2px 6px;border-radius:3px;display:block;margin-top:4px">[System.Environment]::SetEnvironmentVariable('CHINTU_DISCORD_WEBHOOK_URL','https://discord.com/api/webhooks/...','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_DISCORD_TARGET','#health-alerts','User')<br>[System.Environment]::SetEnvironmentVariable('CHINTU_DISCORD_ALLOWLIST','#health-alerts','User')</code>
+          </li>
+          <li>Preview: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">node scripts\chintu-connector-send.js --preview --connector discord --body "BALA test"</code></li>
+        </ol>
+        <div style="font-size:0.68rem;color:var(--muted)">No account beyond Discord · Webhook is channel-scoped · Priority 2 connector</div>
+      </div>
+    </div>
+
     <!-- Quick actions -->
     <div>
       <div class="section-label">Quick Actions</div>
       <div class="qa-grid">
         <button class="qa-btn" onclick="quickChat('what can you do')">💬 What can you do?</button>
-        <button class="qa-btn" onclick="liveSequence('check_everything')">✅ Check everything</button>
+        <button class="qa-btn" onclick="quickChat('check everything')">✅ Check everything</button>
         <button class="qa-btn" onclick="quickChat('bro whats next')">➡️ Bro what's next?</button>
         <button class="qa-btn" onclick="quickAction('Build next BALA sprint')">🏃 Build BALA sprint</button>
         <button class="qa-btn" onclick="quickAction('Generate Claude prompt')">✦ Claude prompt</button>
@@ -647,6 +860,9 @@
         <button class="qa-btn" onclick="quickChat('connector setup check')">🧭 Connector Setup Check</button>
         <button class="qa-btn" onclick="quickChat('github status')">🐙 GitHub status</button>
         <button class="qa-btn" onclick="quickChat('Telegram Dry Run Guide')">📨 Telegram Dry Run Guide</button>
+        <button class="qa-btn" onclick="quickChat('ntfy setup guide')">📳 ntfy Setup</button>
+        <button class="qa-btn" onclick="quickChat('WhatsApp CallMeBot setup')">💬 WhatsApp Setup</button>
+        <button class="qa-btn" onclick="quickChat('Discord webhook setup')">🎮 Discord Setup</button>
         <button class="qa-btn" onclick="quickAction('Create founder brief')">📋 Founder brief</button>
         <button class="qa-btn" onclick="quickAction('Review BALA scoring model')">📊 BALA scoring</button>
         <button class="qa-btn" onclick="quickAction('Plan report explainer MVP')">🩺 Report explainer</button>
@@ -671,18 +887,6 @@
         <button class="qa-btn" onclick="liveAction('git_log')">🕑 Git Log</button>
         <button class="qa-btn qa-wide" onclick="liveAction('open_bala_public')">🌐 Open BALA Public Link</button>
       </div>
-    </div>
-
-    <!-- Founder Command Center — Sequences (C42.2) -->
-    <div id="founder-command-center">
-      <div class="section-label">Founder Sequences <span id="seqModeTag" style="font-size:0.62rem;color:var(--muted)">(bridge offline)</span></div>
-      <div class="qa-grid">
-        <button class="qa-btn qa-wide" onclick="liveSequence('check_everything')">✅ Check Everything</button>
-        <button class="qa-btn" onclick="liveSequence('bala_health_check')">💚 BALA Health Check</button>
-        <button class="qa-btn" onclick="liveSequence('chintu_health_check')">🤖 Chintu Health Check</button>
-        <button class="qa-btn" onclick="liveSequence('next_sprint')">🏃 Next Sprint Packet</button>
-      </div>
-      <div id="seqResultMini" style="margin-top:8px;font-size:0.68rem;color:var(--muted);line-height:1.5;display:none"></div>
     </div>
 
   </aside>
@@ -769,12 +973,22 @@
           <div class="reality-card">
             <div class="reality-label">Telegram</div>
             <div class="reality-value" id="realityTelegram">Checking local readiness…</div>
-            <div class="reality-note" id="realityTelegramNote">Setup-ready / not live-proven / live-proven will appear here.</div>
+            <div class="reality-note" id="realityTelegramNote">not-tested / setup-ready / identity-verified / IDs-discovered / live-proven will appear here.</div>
           </div>
           <div class="reality-card">
             <div class="reality-label">BALA Safety</div>
             <div class="reality-value" id="realityBala">Checking BALA safety skill…</div>
             <div class="reality-note" id="realityBalaNote">Medical boundary status will appear here.</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">Stage 42 Proof</div>
+            <div class="reality-value" id="realityStage42">Checking proof status…</div>
+            <div class="reality-note" id="realityStage42Note">inbound-only · dry-run · send disabled · allowlist enforced</div>
+          </div>
+          <div class="reality-card">
+            <div class="reality-label">BALA Score Engine</div>
+            <div class="reality-value" id="realityScoreEngine">✅ Live (local)</div>
+            <div class="reality-note" id="realityScoreEngineNote">bala-score-engine.js · 173 tests passing · no network</div>
           </div>
           <div class="reality-card span2">
             <div class="reality-label">Founder Proof Paths</div>
@@ -785,9 +999,32 @@
         </div>
         <div class="reality-proof-actions">
           <button class="qa-btn" onclick="quickChat('hi')">Proof: hi</button>
-          <button class="qa-btn" onclick="liveSequence('check_everything')">Proof: check everything</button>
+          <button class="qa-btn" onclick="quickChat('check everything')">Proof: check everything</button>
           <button class="qa-btn" onclick="quickChat('chest pain')">Proof: chest pain</button>
+          <button class="qa-btn" onclick="quickChat('my hrv dropped this week')">Proof: bala ask</button>
         </div>
+      </div>
+
+      <!-- ── BALA Score Demo Panel ── -->
+      <div class="bala-demo-panel" id="balaScorePanel">
+        <div class="bala-demo-header">
+          <div>
+            <div class="bala-demo-title">BALA Score · Daily Demo</div>
+            <div class="bala-demo-sub">Computed locally · your own baseline · no network · not medical advice</div>
+          </div>
+          <button class="copy-all-btn" onclick="runBalaDemo()">Refresh Demo</button>
+        </div>
+        <div class="bala-score-row">
+          <div class="bala-score-ring" id="balaScoreRing">
+            <div class="bala-score-number" id="balaScoreNumber">—</div>
+            <div class="bala-score-label" id="balaScoreLabel">Loading…</div>
+          </div>
+          <div class="bala-signals-grid" id="balaSignalsGrid">
+            <div class="bala-signal-card loading-card">Loading signals…</div>
+          </div>
+        </div>
+        <div class="bala-guide-text" id="balaGuideText"></div>
+        <div class="bala-demo-disclaimer">BALA is a personal awareness guide · not medical advice · if something feels urgent, contact a healthcare professional</div>
       </div>
 
     </div>
@@ -1069,13 +1306,29 @@ function fmtWhen(iso) {
 function yesNo(value) {
   return value ? 'yes' : 'no';
 }
+function formatTraceSource(source) {
+  if (source === 'telegram') return 'Telegram';
+  if (source === 'fixture') return 'Fixture';
+  if (source === 'bridge') return 'Allegro';
+  if (source === 'cli') return 'CLI';
+  return source || 'unknown';
+}
+function formatWebhookState(telegram) {
+  if (telegram && telegram.webhookSet === true) return 'set';
+  if (telegram && telegram.webhookSet === false) return 'not set';
+  return 'unknown';
+}
+function formatCommandSummary(text) {
+  if (!text) return 'no command text captured';
+  return '"' + String(text).trim() + '"';
+}
 function setRealityText(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text;
 }
 function formatProofLine(label, proof) {
   if (proof && proof.seen) {
-    return label + ': shown locally at ' + fmtWhen(proof.timestamp);
+    return label + ': shown from ' + formatTraceSource(proof.source) + ' at ' + fmtWhen(proof.timestamp);
   }
   return label + ': not yet shown in this bridge session';
 }
@@ -1200,7 +1453,7 @@ You are a senior product engineer and safety reviewer for BALA, a mobile-first h
 <context>
 BALA helps users understand daily body signals from sleep, HRV, resting heart rate, SpO₂, steps, activity, recovery, and symptoms.
 It is NOT a medical device. It is a local-first health-awareness companion.
-Current stage: C42.2 — Founder Command Center. Last confirmed commit: feat: add Chintu brain router and live action sequences.
+Current stage: Stage 24. Last confirmed commit: feat: add Chintu brain router and live action sequences.
 </context>
 <task>
 Plan the next BALA sprint. Identify the top 3-5 features from the backlog that are:
@@ -1859,12 +2112,14 @@ function renderRealityOffline(reason) {
   setRealityText('realityApprovals', 'unknown');
   setRealityText('realityApprovalsNote', 'Queue and trace status require the localhost bridge.');
   setRealityText('realityTelegram', 'unknown');
-  setRealityText('realityTelegramNote', 'Telegram readiness is shown only when the bridge can answer locally.');
+  setRealityText('realityTelegramNote', 'not-tested / setup-ready / identity-verified / IDs-discovered / live-proven appears here.');
   setRealityText('realityBala', 'unknown');
   setRealityText('realityBalaNote', 'BALA safety status is shown only when the bridge can answer locally.');
   setRealityText('realityHiProof', 'hi: bridge offline');
   setRealityText('realityCheckProof', 'check everything: bridge offline');
   setRealityText('realityChestProof', 'chest pain: bridge offline');
+  setRealityText('realityStage42', 'bridge offline — cannot verify');
+  setRealityText('realityStage42Note', 'Start scripts\\chintu-allegro-start.ps1 to show live Stage 42 proof status');
 }
 
 function renderReality(data) {
@@ -1881,8 +2136,17 @@ function renderReality(data) {
   setRealityText('realityUpdated', 'Last update: ' + fmtWhen(bridge.lastUpdatedAt || data.time));
 
   if (trace) {
-    setRealityText('realityTrace', [trace.source || 'bridge', trace.intent || 'unknown', trace.risk || 'unknown'].join(' · '));
-    setRealityText('realityTraceMeta', 'allowed: ' + yesNo(trace.allowed) + ' · dry-run: ' + yesNo(trace.dryRun) + ' · executed: ' + yesNo(trace.executed));
+    setRealityText('realityTrace', [
+      'source: ' + formatTraceSource(trace.source),
+      'intent: ' + (trace.intent || 'unknown'),
+      'risk: ' + (trace.risk || 'unknown')
+    ].join(' · '));
+    setRealityText('realityTraceMeta',
+      'text: ' + formatCommandSummary(trace.userText) +
+      ' · allowed: ' + yesNo(trace.allowed) +
+      ' · dry-run: ' + yesNo(trace.dryRun) +
+      ' · executed: ' + yesNo(trace.executed)
+    );
   } else {
     setRealityText('realityTrace', 'No local trace yet.');
     setRealityText('realityTraceMeta', 'Run hi, check everything, or chest pain to capture a founder-visible proof path.');
@@ -1894,8 +2158,10 @@ function renderReality(data) {
   setRealityText('realityApprovalsNote', 'Queue read from CHINTU_OUTBOX · live bridge never auto-approves');
   setRealityText('realityTelegram', telegram.status || 'unknown');
   setRealityText('realityTelegramNote',
-    'token verified: ' + yesNo(telegram.tokenIdentityVerified) +
+    'identity: ' + yesNo(telegram.tokenIdentityVerified) +
+    ' · webhook: ' + formatWebhookState(telegram) +
     ' · allowlist: ' + yesNo(telegram.allowlistConfigured) +
+    ' · IDs: ' + yesNo(telegram.idsDiscovered) +
     ' · updates seen: ' + yesNo(telegram.updatesSeen) +
     ' · send disabled: ' + yesNo(telegram.sendRemainsDisabled)
   );
@@ -1904,6 +2170,22 @@ function renderReality(data) {
   setRealityText('realityHiProof', formatProofLine('hi', proof.hi));
   setRealityText('realityCheckProof', formatProofLine('check everything', proof.checkEverything));
   setRealityText('realityChestProof', formatProofLine('chest pain', proof.chestPain));
+
+  // Stage 42 proof card — pulled from bridge stage42 data or derived from proof paths
+  const s42 = data.stage42 || {};
+  const proofPaths = [proof.hi, proof.checkEverything, proof.chestPain].filter(Boolean);
+  const proofCompleted = proofPaths.filter((p) => p && p.executed).length;
+  const proofTotal = 3;
+  if (s42.proofStatus) {
+    setRealityText('realityStage42', s42.proofStatus);
+    setRealityText('realityStage42Note', s42.proofNote || 'inbound-only · dry-run · send disabled · allowlist enforced');
+  } else if (proofCompleted > 0) {
+    setRealityText('realityStage42', '✅ ' + proofCompleted + '/' + proofTotal + ' proof paths executed');
+    setRealityText('realityStage42Note', 'inbound-only · dry-run default · CHINTU_TELEGRAM_SEND_ENABLED=0 · allowlist enforced');
+  } else {
+    setRealityText('realityStage42', 'bridge online · awaiting proof run');
+    setRealityText('realityStage42Note', 'Run hi · check everything · chest pain to complete Stage 42 proof');
+  }
 }
 
 async function refreshReality(showBusy) {
@@ -1972,68 +2254,6 @@ async function liveAction(name) {
   }
 }
 
-async function liveSequence(name) {
-  const SEQ_LABELS = {
-    check_everything: 'Check Everything',
-    bala_health_check: 'BALA Health Check',
-    chintu_health_check: 'Chintu Health Check',
-    next_sprint: 'Next Sprint Packet',
-  };
-  const label = SEQ_LABELS[name] || name;
-  if (!BRIDGE.online) { await refreshBridge(); }
-  if (!BRIDGE.online) { renderLiveOffline('git_status', label); return; }
-  liveBusy(label);
-  try {
-    const r = await fetch(BRIDGE.base + '/api/sequence', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sequence: name })
-    });
-    const j = await r.json();
-    renderSequenceResult(name, label, j);
-  } catch (e) {
-    BRIDGE.online = false; setBridgeCard(); renderLiveOffline('git_status', label);
-  }
-}
-
-function renderSequenceResult(name, label, j) {
-  lastLiveResult = j;
-  const overallOk = j.ok !== false;
-  const badge = overallOk
-    ? '<span class="risk-low">✅ All steps OK</span>'
-    : '<span class="risk-high">⚠ One or more steps failed</span>';
-  document.getElementById('responseTitle').textContent = '✦ ' + label;
-  let html = '';
-  html += section('lane', '🔁 Sequence', '<strong>' + escHtml(label) + '</strong> · ' + badge);
-  if (Array.isArray(j.results) && j.results.length) {
-    let stepsHtml = '';
-    let miniLines = [];
-    for (const res of j.results) {
-      const code = (res.exitCode === 0) ? 'exit 0 · OK' : 'exit ' + escHtml(String(res.exitCode));
-      const codeClass = (res.exitCode === 0) ? 'risk-low' : 'risk-high';
-      stepsHtml += '<div style="margin-bottom:10px">';
-      stepsHtml += '<strong>' + escHtml(res.label || res.action || 'step') + '</strong> · <span class="' + codeClass + '">' + code + '</span>';
-      stepsHtml += ' · ' + escHtml(String(res.durationMs || 0)) + ' ms';
-      if (res.stdout && res.stdout.trim()) stepsHtml += codeBlock(res.stdout.slice(0, 800));
-      if (res.stderr && res.stderr.trim()) stepsHtml += codeBlock(res.stderr.slice(0, 400));
-      stepsHtml += '</div>';
-      miniLines.push((res.exitCode === 0 ? '✅' : '❌') + ' ' + (res.label || res.action));
-    }
-    html += section('prompt', '⚡ Step results', stepsHtml);
-    // Mini status in sidebar
-    const mini = document.getElementById('seqResultMini');
-    if (mini) { mini.style.display = 'block'; mini.innerHTML = miniLines.join('<br>'); }
-  }
-  if (j.error) html += section('safety', '⚠ Sequence error', escHtml(j.error));
-  html += section('understood', '📎 Result', '<button class="copy-all-btn" onclick="copyLiveResult()">Copy sequence JSON</button>');
-  document.getElementById('responseBody').innerHTML = html;
-  const lastEl = document.getElementById('sc-bridge-last');
-  if (lastEl) lastEl.textContent = 'Last seq: ' + label + ' (' + (overallOk ? 'ok' : 'fail') + ')';
-  const seqTag = document.getElementById('seqModeTag');
-  if (seqTag) seqTag.textContent = '(bridge online)';
-  refreshReality(false);
-  speak(label + '. ' + (overallOk ? 'All steps completed.' : 'One or more steps failed.'));
-}
-
 function renderLiveResult(name, label, j) {
   lastLiveResult = j;
   const code = (j.exitCode === 0)
@@ -2081,7 +2301,7 @@ function copyLiveResult() {
 }
 
 // ============================================================
-// C42.2 — Brain chat (/api/chat) + provider status
+// Stage 24 — Brain chat (/api/chat) + provider status
 // The browser sends only the founder's message. The local
 // bridge routes it through the deterministic brain router and
 // runs ONLY allowlisted actions. The browser executes nothing.
@@ -2182,8 +2402,229 @@ async function refreshProviders() {
   }
 }
 
+// =============================================================================
+// BALA Score Demo — inline browser-native implementation
+// (bala-score-engine.js uses CommonJS, cannot be required in browser)
+// This inline engine mirrors the Stage 43 scoring logic for the demo panel.
+// =============================================================================
+
+(function () {
+  'use strict';
+
+  // Emergency phrases — must match bala-score-engine.js exactly
+  const BALA_EMERGENCY_PHRASES = [
+    'chest pain', 'chest pressure', 'chest tight', 'tight chest',
+    'cant breathe', 'cannot breathe', 'trouble breathing',
+    'shortness of breath', 'short of breath', 'fainting', 'fainted',
+    'passed out', 'severe weakness', 'numb on one side', 'face drooping',
+    'slurred speech', 'stroke', 'heart attack', 'collapsed', 'unconscious',
+  ];
+
+  function balaClamp(v, lo, hi) {
+    if (typeof v !== 'number' || isNaN(v)) return lo;
+    return Math.max(lo, Math.min(hi, v));
+  }
+
+  function balaHasEmergency(text) {
+    if (!text || typeof text !== 'string') return false;
+    const lower = text.toLowerCase();
+    return BALA_EMERGENCY_PHRASES.some((p) => lower.includes(p));
+  }
+
+  function balaScoreLabel(score) {
+    if (score >= 80) return 'Thriving';
+    if (score >= 60) return 'Balanced';
+    if (score >= 40) return 'Recovering';
+    return 'Rest Day';
+  }
+
+  // Simplified but faithful inline score calculation
+  function computeInlineBALAScore(inputs) {
+    // Emergency gate — always first
+    const symptomText = inputs.symptom_text || inputs.notes || '';
+    if (balaHasEmergency(symptomText) || inputs.symptom_level === 'urgent') {
+      return { emergency: true, score: null, label: null, signals: [], confidence: 'VERY_LOW' };
+    }
+
+    let total = 50; // base
+    const signals = [];
+
+    // --- Recovery (0–35 pts) ---
+    if (typeof inputs.hrv_today === 'number' && typeof inputs.hrv_baseline7d === 'number') {
+      const ratio = balaClamp(inputs.hrv_today / inputs.hrv_baseline7d, 0, 2);
+      const pts = balaClamp(ratio * 10, 0, 15) - 5; // offset: baseline = +5
+      total += pts;
+      signals.push({
+        key: 'hrv', name: 'HRV', pts: Math.round(pts),
+        label: ratio >= 1.05 ? 'Higher than recent days' : ratio >= 0.9 ? 'Near your pattern' : 'Lower than recent days',
+      });
+    }
+    if (typeof inputs.rhr_today === 'number' && typeof inputs.rhr_baseline7d === 'number') {
+      const ratio = balaClamp(inputs.rhr_today / inputs.rhr_baseline7d, 0, 2);
+      const inv = 2 - ratio;
+      const pts = balaClamp(inv * 5, 0, 10) - 5;
+      total += pts;
+      signals.push({
+        key: 'rhr', name: 'Resting HR', pts: Math.round(pts),
+        label: inputs.rhr_today < inputs.rhr_baseline7d ? 'Below recent average — calm signal' : 'Near or above recent average',
+      });
+    }
+    if (typeof inputs.sleep_hours_today === 'number' && typeof inputs.sleep_hours_goal === 'number') {
+      const ratio = balaClamp(inputs.sleep_hours_today / inputs.sleep_hours_goal, 0, 1.2);
+      const pts = balaClamp(ratio * 10, 0, 10) - 5;
+      total += pts;
+      signals.push({
+        key: 'sleep', name: 'Sleep', pts: Math.round(pts),
+        label: ratio >= 0.95 ? 'Met your sleep goal' : ratio >= 0.75 ? 'Close to goal' : 'Noticeably short of goal',
+      });
+    }
+    if (typeof inputs.spo2_pct === 'number') {
+      const pts = inputs.spo2_pct >= 95 ? 5 : inputs.spo2_pct >= 90 ? 2 : 0;
+      total += pts - 2;
+      signals.push({
+        key: 'spo2', name: 'SpO₂', pts: pts - 2,
+        label: inputs.spo2_pct >= 95 ? inputs.spo2_pct + '% — looks normal' : 'Below 95% — worth noting',
+      });
+    }
+
+    // --- Activity (0–20 pts) ---
+    if (typeof inputs.steps_today === 'number' && typeof inputs.steps_goal === 'number') {
+      const ratio = balaClamp(inputs.steps_today / inputs.steps_goal, 0, 1.2);
+      const pts = balaClamp(ratio * 10, 0, 10) - 5;
+      total += pts;
+      signals.push({
+        key: 'steps', name: 'Steps', pts: Math.round(pts),
+        label: ratio >= 1.0 ? 'Step goal reached' : ratio >= 0.7 ? 'Good movement today' : 'Light movement day',
+      });
+    }
+
+    // --- Lifestyle modifiers ---
+    if (typeof inputs.stress_level === 'number') {
+      const pts = -Math.max(0, (inputs.stress_level - 1));
+      total += pts;
+      if (pts < 0) signals.push({ key: 'stress', name: 'Stress', pts, label: 'Elevated stress noted' });
+    }
+    if (typeof inputs.alcohol_drinks === 'number' && inputs.alcohol_drinks > 0) {
+      const pts = -balaClamp(inputs.alcohol_drinks, 0, 4);
+      total += pts;
+      signals.push({ key: 'alcohol', name: 'Alcohol', pts, label: inputs.alcohol_drinks + ' drink' + (inputs.alcohol_drinks > 1 ? 's' : '') + ' · awareness signal' });
+    }
+    if (inputs.hydration === 'low') { total -= 2; signals.push({ key: 'hydration', name: 'Hydration', pts: -2, label: 'Low hydration noted' }); }
+
+    const score = balaClamp(Math.round(total), 0, 100);
+    const label = balaScoreLabel(score);
+
+    // Confidence based on signal count
+    const signalCount = signals.length;
+    const confidence = signalCount >= 5 ? 'HIGH' : signalCount >= 3 ? 'MEDIUM' : signalCount >= 1 ? 'LOW' : 'VERY_LOW';
+
+    return { emergency: false, score, label, signals, confidence };
+  }
+
+  // Build guide text from score result
+  function buildBalaGuide(result) {
+    if (!result || result.emergency) return null;
+
+    const labelGreeting = {
+      'Thriving':  'A strong day for you, Dileep.',
+      'Balanced':  'A steady, balanced day.',
+      'Recovering': 'Your body is in recovery mode today.',
+      'Rest Day':  'A rest day — and rest is productive.',
+    };
+
+    const sections = [];
+    sections.push({ label: 'Today', text: (labelGreeting[result.label] || 'Here\'s your daily check-in.') + ' BALA Score: ' + result.score + ' · ' + result.label });
+
+    const topSignals = [...result.signals].sort((a, b) => Math.abs(b.pts) - Math.abs(a.pts)).slice(0, 3);
+    if (topSignals.length) {
+      sections.push({ label: 'Key Signals', text: topSignals.map((s) => s.name + ': ' + s.label).join('  ·  ') });
+    }
+
+    const actions = {
+      'Thriving':  'Keep your momentum — one short walk or mindful breath goes a long way.',
+      'Balanced':  'A consistent bedtime tonight can carry this feeling into tomorrow.',
+      'Recovering': 'Prioritise gentle movement and an earlier bedtime.',
+      'Rest Day':  'Hydrate well, step outside briefly, and let your body recharge.',
+    };
+    sections.push({ label: 'One Gentle Action', text: actions[result.label] || 'Stay aware, stay kind to yourself.' });
+
+    return sections;
+  }
+
+  // DOM update helpers
+  function setScoreRing(score) {
+    const ring = document.getElementById('balaScoreRing');
+    if (ring) ring.style.setProperty('--score-pct', (score / 100 * 360) + 'deg');
+  }
+
+  function renderBalaSignals(signals) {
+    const grid = document.getElementById('balaSignalsGrid');
+    if (!grid) return;
+    if (!signals || signals.length === 0) {
+      grid.innerHTML = '<div class="bala-signal-card"><span class="bala-signal-name">No signals</span><br><small>Add data to see your score signals.</small></div>';
+      return;
+    }
+    grid.innerHTML = signals.map((s) => {
+      const ptsClass = s.pts < 0 ? 'bala-signal-pts negative' : 'bala-signal-pts';
+      const ptsStr = s.pts > 0 ? '+' + s.pts : String(s.pts);
+      return '<div class="bala-signal-card">'
+        + '<span class="bala-signal-name">' + s.name + '</span>'
+        + '<span class="' + ptsClass + '">' + ptsStr + ' pts</span>'
+        + '<small>' + s.label + '</small>'
+        + '</div>';
+    }).join('');
+  }
+
+  function renderBalaGuide(sections) {
+    const el = document.getElementById('balaGuideText');
+    if (!el || !sections) return;
+    el.innerHTML = sections.map((s) =>
+      '<div class="bala-guide-section"><span class="bala-guide-section-label">' + s.label + '</span> ' + s.text + '</div>'
+    ).join('');
+  }
+
+  // Demo data — realistic founder-day scenario
+  const BALA_DEMO_DATA = {
+    hrv_today: 58, hrv_baseline7d: 52,
+    rhr_today: 61, rhr_baseline7d: 64,
+    sleep_hours_today: 7.0, sleep_hours_goal: 7.5,
+    spo2_pct: 97,
+    steps_today: 7200, steps_goal: 10000,
+    stress_level: 3,
+    hydration: 'moderate',
+  };
+
+  window.runBalaDemo = function (customInputs) {
+    const inputs = customInputs || BALA_DEMO_DATA;
+    const result = computeInlineBALAScore(inputs);
+
+    const numEl = document.getElementById('balaScoreNumber');
+    const labelEl = document.getElementById('balaScoreLabel');
+
+    if (result.emergency) {
+      if (numEl) numEl.textContent = '!';
+      if (labelEl) labelEl.textContent = 'Emergency';
+      const guideEl = document.getElementById('balaGuideText');
+      if (guideEl) guideEl.innerHTML = '<div class="bala-guide-section" style="color:#e84040">Please seek emergency care immediately. BALA is only a daily awareness guide — not for emergencies.</div>';
+      return;
+    }
+
+    if (numEl) numEl.textContent = result.score;
+    if (labelEl) labelEl.textContent = result.label + ' · ' + result.confidence + ' confidence';
+    setScoreRing(result.score);
+    renderBalaSignals(result.signals);
+    const guide = buildBalaGuide(result);
+    renderBalaGuide(guide);
+
+    // Update score engine reality card
+    const se = document.getElementById('realityScoreEngine');
+    if (se) se.textContent = '✅ Live (local) · Score: ' + result.score + ' · ' + result.label;
+  };
+}());
+
 // Probe on load and whenever the tab regains focus.
 refreshBridge();
+runBalaDemo();
 window.addEventListener('focus', () => { if (!BRIDGE.online) refreshBridge(); else refreshReality(false); });
 
 </script>
