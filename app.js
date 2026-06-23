@@ -225,11 +225,11 @@ const healthSourceGuides = {
   samsung: {
     title: "Samsung Health",
     steps: [
-      "Open Samsung Health, then open Settings.",
-      "Tap Download personal data and save the downloaded files.",
-      "Open BALA and tap Import file.",
+      "Open the Samsung Health app and tap your Profile picture.",
+      "Scroll down to 'Download personal data' and request your export.",
+      "When your ZIP arrives, open BALA, choose Samsung Health, and import the ZIP.",
     ],
-    files: "Samsung downloads can contain multiple files. BALA currently reads only a simple supported CSV or JSON file.",
+    files: "Supported now: Samsung Health personal data ZIP — BALA reads heart rate, sleep, and daily step count automatically.",
   },
   fitbit: {
     title: "Fitbit",
@@ -261,11 +261,11 @@ const healthSourceGuides = {
   garmin: {
     title: "Garmin Connect",
     steps: [
-      "Open Garmin Connect on the web.",
-      "Open Activities or Reports, then choose Export CSV where available.",
-      "Save the file, open BALA, and tap Import file.",
+      "Go to connect.garmin.com and sign in.",
+      "Click Activities in the left menu, then scroll to the bottom and click Export to CSV.",
+      "Open BALA, choose Garmin Connect, and import the Activities.csv file.",
     ],
-    files: "BALA reads only supported daily columns. FIT, TCX, GPX, and complex Garmin exports are not parsed yet.",
+    files: "Supported now: Activities.csv from Garmin Connect — BALA reads exercise duration and heart rate. Sleep and HRV can be added via the BALA CSV template.",
   },
   oura: {
     title: "Oura",
@@ -3581,6 +3581,163 @@ function parseAppleHealthFile(file) {
 // All local-first — no network calls, no API keys, no account required.
 // ---------------------------------------------------------------------------
 
+// ─────────────────────────────────────────────────────────────────────────────
+// B61 — Garmin Connect Activities CSV parser
+// Source: garmin.com → Activities → Export to CSV
+// Provides: exercise minutes (from duration), estimated RHR (min avg HR across day)
+// ─────────────────────────────────────────────────────────────────────────────
+async function parseGarminCSV(file) {
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).filter((l) => l && !l.startsWith("#"));
+  if (lines.length < 2) throw new Error("Garmin CSV appears empty. Export Activities from Garmin Connect (Activities → Export to CSV on web).");
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ""));
+  const col = (...names) => { for (const n of names) { const i = headers.findIndex((h) => h.includes(n)); if (i !== -1) return i; } return -1; };
+  const dateCol = col("date");
+  const avgHrCol = col("avghr", "averagehr");
+  const timeCol = col("time"); // activity duration hh:mm:ss or h:mm:ss
+  if (dateCol === -1) throw new Error("Could not find 'Date' column. Export Activities.csv from Garmin Connect — go to Activities on garmin.com, then Export to CSV.");
+  // Parse duration string like "0:45:30" or "1:02:15" → minutes
+  const parseDuration = (str) => {
+    if (!str) return NaN;
+    const p = str.trim().split(":").map(Number);
+    if (p.length === 3) return p[0] * 60 + p[1] + p[2] / 60;
+    if (p.length === 2) return p[0] + p[1] / 60;
+    return NaN;
+  };
+  const dayMap = new Map();
+  for (let i = 1; i < lines.length; i++) {
+    const c = lines[i].split(",");
+    const dateRaw = c[dateCol]?.trim();
+    if (!dateRaw) continue;
+    const dateKey = dateRaw.slice(0, 10).replace(/\//g, "-");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
+    const day = dayMap.get(dateKey) || {};
+    // Avg HR across activities on this day → use minimum as RHR proxy
+    const avgHr = avgHrCol !== -1 ? parseFloat(c[avgHrCol]) : NaN;
+    if (Number.isFinite(avgHr) && avgHr > 30 && avgHr < 200) {
+      day.rhr = day.rhr ? Math.min(day.rhr, avgHr) : avgHr;
+    }
+    // Accumulate exercise minutes from activity duration
+    const dur = timeCol !== -1 ? parseDuration(c[timeCol]) : NaN;
+    if (Number.isFinite(dur) && dur > 0) {
+      day.exercise = (day.exercise || 0) + Math.round(dur);
+    }
+    dayMap.set(dateKey, day);
+  }
+  if (!dayMap.size) throw new Error("No activity rows found. Export Activities.csv from garmin.com (Activities → scroll to bottom → Export to CSV).");
+  const sorted = [...dayMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const [latestDate, latestDay] = sorted.at(-1);
+  return {
+    source: `Garmin import · ${latestDate}`,
+    rhr: latestDay.rhr,
+    exercise: latestDay.exercise,
+    history: sorted.slice(-90).map(([date, d]) => ({ date, ...d })),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B61 — Samsung Health ZIP parser
+// Source: Samsung Health app → Profile → Download personal data
+// Reads: heart_rate CSV (RHR), sleep CSV (hours), step_daily_trend CSV (steps)
+// ─────────────────────────────────────────────────────────────────────────────
+async function parseSamsungZip(file) {
+  if (!window.fflate) throw new Error("ZIP reader not loaded. Refresh BALA and try again.");
+  const dayMap = new Map();
+
+  const processCSV = (csvText, type) => {
+    const lines = csvText.split(/\r?\n/).filter((l) => l && !l.startsWith("#"));
+    if (lines.length < 2) return;
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, "").replace(/_/g, ""));
+    const col = (...names) => { for (const n of names) { const i = headers.findIndex((h) => h.includes(n)); if (i !== -1) return i; } return -1; };
+    const dateCol = col("starttime", "daytime", "timestamp", "createtime");
+    if (dateCol === -1) return;
+    for (let i = 1; i < lines.length; i++) {
+      const c = lines[i].split(",");
+      const dateRaw = c[dateCol]?.trim();
+      if (!dateRaw) continue;
+      const dateKey = dateRaw.slice(0, 10).replace(/\//g, "-");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) continue;
+      const day = dayMap.get(dateKey) || {};
+      if (type === "hr") {
+        // Samsung HR CSV: heart_rate or min_heart_rate column
+        const hrCol = col("minheartrate", "heartrate");
+        const hr = hrCol !== -1 ? parseFloat(c[hrCol]) : NaN;
+        if (Number.isFinite(hr) && hr > 30 && hr < 200) {
+          day.rhr = day.rhr ? Math.min(day.rhr, hr) : hr;
+        }
+      }
+      if (type === "sleep") {
+        // Samsung sleep CSV: duration column (milliseconds)
+        const durCol = col("duration");
+        const dur = durCol !== -1 ? parseFloat(c[durCol]) : NaN;
+        if (Number.isFinite(dur) && dur > 0) {
+          // Duration > 100000 → milliseconds; < 1440 → minutes; else hours
+          const hours = dur > 100000 ? dur / 3600000 : dur > 1440 ? dur / 60 : dur;
+          day.sleep = (day.sleep || 0) + hours;
+        }
+      }
+      if (type === "steps") {
+        // Samsung step_daily_trend CSV: count column
+        const stepsCol = col("count", "steps", "stepcount");
+        const steps = stepsCol !== -1 ? parseFloat(c[stepsCol]) : NaN;
+        if (Number.isFinite(steps) && steps >= 0) {
+          day.steps = Math.max(day.steps || 0, steps);
+        }
+      }
+      dayMap.set(dateKey, day);
+    }
+  };
+
+  await new Promise((resolve, reject) => {
+    let expected = 0, done = 0, fin = false;
+    const tryDone = () => { if (!fin && done >= expected && expected > 0) { fin = true; resolve(); } };
+    const unzip = new window.fflate.Unzip((entry) => {
+      const p = entry.name.replaceAll("\\", "/").toLowerCase();
+      const isHr    = /heart_rate(?!_variability).*\.csv$/.test(p);
+      const isSleep = /shealth\.sleep\.\d/.test(p) && p.endsWith(".csv");
+      const isSteps = /(step_daily_trend|pedometer_step_count).*\.csv$/.test(p);
+      if (!isHr && !isSleep && !isSteps) return;
+      const type = isHr ? "hr" : isSleep ? "sleep" : "steps";
+      expected++;
+      const chunks = [];
+      entry.ondata = (err, chunk, final) => {
+        if (err) { if (!fin) { fin = true; reject(err); } return; }
+        if (chunk?.length) chunks.push(chunk);
+        if (final) {
+          try {
+            const merged = chunks.reduce((a, c) => { const m = new Uint8Array(a.length + c.length); m.set(a); m.set(c, a.length); return m; }, new Uint8Array(0));
+            processCSV(new TextDecoder().decode(merged), type);
+          } catch (_) {}
+          done++; tryDone();
+        }
+      };
+      entry.start();
+    });
+    unzip.register(window.fflate.AsyncUnzipInflate);
+    (async () => {
+      try {
+        const reader = file.stream().getReader();
+        while (true) {
+          const { value, done: d } = await reader.read();
+          if (d) { unzip.push(new Uint8Array(), true); if (expected === 0) resolve(); break; }
+          unzip.push(value, false);
+        }
+      } catch (e) { if (!fin) { fin = true; reject(e); } }
+    })();
+  });
+
+  if (!dayMap.size) throw new Error("No Samsung Health data found. In the Samsung Health app: Profile → Download personal data → export. BALA reads heart rate, sleep, and step files from the ZIP.");
+  const sorted = [...dayMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const [latestDate, latestDay] = sorted.at(-1);
+  return {
+    source: `Samsung Health import · ${latestDate}`,
+    rhr: latestDay.rhr,
+    sleep: latestDay.sleep,
+    steps: latestDay.steps,
+    history: sorted.slice(-90).map(([date, d]) => ({ date, ...d })),
+  };
+}
+
 async function parseGoogleFitCSV(file) {
   const text = await file.text();
   const lines = text.split(/\r?\n/).filter(Boolean);
@@ -3677,6 +3834,8 @@ function parseHealthFile(file, source) {
   if (source === "apple") return parseAppleHealthFile(file);
   if (source === "googlefit") return parseGoogleFitCSV(file);
   if (source === "fitbit") return parseFitbitZip(file);
+  if (source === "samsung") return parseSamsungZip(file);
+  if (source === "garmin") return parseGarminCSV(file);
   if (source === "csv") return parseUniversalCSV(file);
   if (name.endsWith(".zip")) return /fitbit/i.test(name) ? parseFitbitZip(file) : parseAppleHealthFile(file);
   if (name.endsWith(".xml")) return parseAppleHealthStream(file.stream());
@@ -3841,6 +4000,16 @@ const B60_SOURCE_GAPS = {
     note: "Fitbit ZIP exports sleep and resting heart rate — but not HRV or step-level activity.",
     action: "Add HRV and steps with the BALA CSV template to reach full score confidence.",
     missingKeys: ["hrv", "steps", "spo2"],
+  },
+  samsung: {
+    note: "Samsung Health exports sleep, heart rate, and steps — but not HRV or SpO₂.",
+    action: "Add HRV data with the BALA CSV template for a more complete score.",
+    missingKeys: ["hrv", "spo2"],
+  },
+  garmin: {
+    note: "Garmin Activity exports include exercise duration and heart rate — but not sleep or HRV.",
+    action: "Add sleep and HRV with the BALA CSV template. Together they cover 55 more score points.",
+    missingKeys: ["sleep", "hrv", "spo2"],
   },
   apple: null,   // Apple Health typically provides all supported signals
   csv:   null,   // CSV completeness already shown via detected/missing field rows
@@ -4432,6 +4601,8 @@ healthFile.addEventListener("change", async () => {
     const isFreeImport = isAppleExport
       || selectedSource === "googlefit"
       || selectedSource === "fitbit"
+      || selectedSource === "samsung"
+      || selectedSource === "garmin"
       || selectedSource === "csv";
     if (!isFreeImport && !isSimpleFile) {
       throw new Error("BALA can guide you through exporting this data. For now, try Apple Health export, Google Fit CSV, Fitbit ZIP, or BALA CSV template.");
