@@ -95,8 +95,59 @@ const CONNECTORS = {
       };
     },
   },
-  gmail: {
+  ntfy: {
     priority: 4,
+    mode: 'send-capable',
+    requiredEnv: ['CHINTU_NTFY_TOPIC'],
+    allowlistEnv: 'CHINTU_NTFY_TOPIC',
+    recipientEnv: 'CHINTU_NTFY_TOPIC',
+    pauseFile: path.join(outboxDir, 'CONNECTOR_ntfy_PAUSE'),
+    previewCommand: 'node scripts/chintu-connector-send.js --preview --connector ntfy --body "..."',
+    buildRequest(env, payload) {
+      // ntfy.sh: completely free, no account needed, no API key.
+      // Setup: set CHINTU_NTFY_TOPIC to any unique topic name you choose (e.g. bala-dileep-2026).
+      // Subscribe on phone via free ntfy app → ntfy.sh/app
+      return {
+        url: `https://ntfy.sh/${env.CHINTU_NTFY_TOPIC}`,
+        method: 'POST',
+        headers: {
+          'content-type': 'text/plain; charset=utf-8',
+          'x-title': 'BALA · Chintu',
+          'x-priority': '3',
+          'x-tags': 'health,bala',
+        },
+        body: payload.body,
+      };
+    },
+  },
+  whatsapp: {
+    priority: 5,
+    mode: 'send-capable',
+    requiredEnv: ['CHINTU_WA_PHONE', 'CHINTU_WA_APIKEY', 'CHINTU_WA_ALLOWLIST'],
+    allowlistEnv: 'CHINTU_WA_ALLOWLIST',
+    recipientEnv: 'CHINTU_WA_PHONE',
+    pauseFile: path.join(outboxDir, 'CONNECTOR_whatsapp_PAUSE'),
+    previewCommand: 'node scripts/chintu-connector-send.js --preview --connector whatsapp --body "..."',
+    buildRequest(env, payload) {
+      // CallMeBot WhatsApp: 100% free, no server needed.
+      // Setup (5 min):
+      //   1. Add +34 644 98 45 08 to WhatsApp contacts (name: CallMeBot)
+      //   2. Send "I allow callmebot to send me messages" to that number
+      //   3. You receive your API key via WhatsApp within seconds
+      //   4. Set CHINTU_WA_PHONE=+91XXXXXXXXXX and CHINTU_WA_APIKEY=<key>
+      //      Set CHINTU_WA_ALLOWLIST=+91XXXXXXXXXX (same as phone)
+      const text = encodeURIComponent(payload.body);
+      const phone = env.CHINTU_WA_PHONE.replace(/[^+0-9]/g, '');
+      return {
+        url: `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${text}&apikey=${env.CHINTU_WA_APIKEY}`,
+        method: 'GET',
+        headers: {},
+        body: '',
+      };
+    },
+  },
+  gmail: {
+    priority: 6,
     mode: 'architecture-only',
     requiredEnv: ['CHINTU_GMAIL_TARGET', 'CHINTU_GMAIL_ALLOWLIST', 'CHINTU_GMAIL_FROM'],
     allowlistEnv: 'CHINTU_GMAIL_ALLOWLIST',
@@ -656,7 +707,6 @@ function printUsage() {
   console.log('  node scripts/chintu-connector-send.js --discover');
   console.log('  node scripts/chintu-connector-send.js --status');
   console.log('  node scripts/chintu-connector-send.js --validate-env');
-  console.log('  node scripts/chintu-connector-send.js --preview --connector telegram --body "..."');
   console.log('  node scripts/chintu-connector-send.js --send --connector telegram --preview-file CHINTU_OUTBOX/latest_connector_preview.json --approval "..."');
 }
 
