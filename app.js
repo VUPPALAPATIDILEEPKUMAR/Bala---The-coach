@@ -2951,6 +2951,49 @@ async function copyTimelineSummary() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// B62 — BALA JSON data export (for Chintu morning digest / personal archive)
+// Exports: today's signals + 90-day history as structured JSON
+// Privacy: stays local — file is downloaded to user's device only
+// ─────────────────────────────────────────────────────────────────────────────
+function downloadHealthJSON() {
+  const metrics = getLocalMetrics();
+  if (!metrics) { alert("No health data yet. Add a check-in or import health data first."); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const payload = {
+    exportDate: today,
+    exportVersion: 2,
+    source: "BALA",
+    exportNote: "Exported by BALA — health awareness companion. Not medical data. Stays on your device.",
+    today: {
+      sleep: metrics.sleep ?? null,
+      rhr: metrics.rhr ?? null,
+      hrv: metrics.hrv ?? null,
+      spo2: metrics.spo2 ?? null,
+      steps: metrics.steps ?? null,
+      exercise: metrics.exercise ?? null,
+    },
+    history: Array.isArray(metrics.history)
+      ? metrics.history.slice(-90).map((d) => ({
+          date: d.date,
+          sleep: d.sleep ?? null,
+          rhr: d.rhr ?? null,
+          hrv: d.hrv ?? null,
+          spo2: d.spo2 ?? null,
+          steps: d.steps ?? null,
+          exercise: d.exercise ?? null,
+        }))
+      : [],
+    dataSource: metrics.source || "BALA",
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `bala-export-${today}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function downloadTimelineSummary() {
   const status = document.querySelector("#timeline-status");
   const metrics = getLocalMetrics();
@@ -4271,6 +4314,7 @@ document.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-b60-import]");
   if (btn) { if (dialog.open) dialog.close(); openHealthImport(btn.dataset.b60Import); }
 });
+document.querySelector("#download-health-json-button").addEventListener("click", downloadHealthJSON);
 document.querySelector("#copy-timeline-button").addEventListener("click", copyTimelineSummary);
 document.querySelector("#download-timeline-button").addEventListener("click", downloadTimelineSummary);
 const timelineToggle = document.querySelector("#timeline-toggle");
