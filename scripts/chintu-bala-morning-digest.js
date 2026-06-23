@@ -3,56 +3,41 @@
 
 // =============================================================================
 // C44 — Chintu BALA Morning Digest
-// =============================================================================
-// Reads your BALA health export, computes today's BALA score, and sends a
-// calm morning summary via ntfy.sh — free, private, no cloud sync.
+// Reads BALA JSON export → computes score → sends calm ntfy morning summary
+// Dry-run by default. Set CHINTU_CONNECTOR_APPROVAL_PHRASE to enable live send.
 //
-// SETUP (5 minutes):
-//   1. In BALA: click "Export JSON" → save bala-export-YYYY-MM-DD.json
-//   2. Copy to a stable path, e.g. C:\Users\Chintu\Desktop\test\bala-export.json
-//   3. Set env vars:
-//        CHINTU_NTFY_TOPIC       (your ntfy topic — see CHINTU_ALLEGRO.html)
-//        CHINTU_BALA_EXPORT_PATH (full path to your bala-export*.json)
-//        CHINTU_CONNECTOR_APPROVAL_PHRASE  (any phrase → enables live send)
+// SETUP:
+//   1. In BALA: click "Export JSON" in Timeline → save as bala-export.json
+//   2. Set env vars (cmd): set CHINTU_NTFY_TOPIC=your-topic
+//                          set CHINTU_BALA_EXPORT_PATH=C:\...\bala-export.json
+//                          set CHINTU_CONNECTOR_APPROVAL_PHRASE=go
+//   3. node scripts/chintu-bala-morning-digest.js
 //
-// RUN:
-//   node scripts/chintu-bala-morning-digest.js
-//
-//   Dry-run by default (no CHINTU_CONNECTOR_APPROVAL_PHRASE set).
-//   Schedule in Windows Task Scheduler for daily 7am delivery.
-//
-// PRIVACY:
-//   All data stays local. ntfy sends only the formatted score summary text.
-//   No raw health values are sent unless you include them in the message.
-//   No API keys in this file. No external services except ntfy.sh (your topic).
-//
-// SAFETY:
-//   BALA is a health-awareness guide. Not a medical device.
-//   This script never sends emergency advice — it surfaces the BALA safety
-//   note if the score is very low or if urgent symptoms are detected.
+// PRIVACY: All data local. Only the formatted score text is sent via ntfy.
+// SAFETY:  BALA is a health-awareness guide. Not a medical device.
 // =============================================================================
 
-const fs   = require('fs');
-const path = require('path');
+const fs    = require('fs');
+const path  = require('path');
 const https = require('node:https');
 
-// ── Config ──────────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────────
 const NTFY_TOPIC      = process.env.CHINTU_NTFY_TOPIC || '';
 const EXPORT_PATH_ENV = process.env.CHINTU_BALA_EXPORT_PATH || '';
 const APPROVAL_PHRASE = process.env.CHINTU_CONNECTOR_APPROVAL_PHRASE || '';
 const DRY_RUN         = !APPROVAL_PHRASE;
 
-const REPO_ROOT       = path.resolve(__dirname, '..');
-const DEFAULT_EXPORT  = path.join(REPO_ROOT, 'bala-export.json');
-const EXPORT_PATH     = EXPORT_PATH_ENV || DEFAULT_EXPORT;
+const REPO_ROOT    = path.resolve(__dirname, '..');
+const DEFAULT_EXPORT = path.join(REPO_ROOT, 'bala-export.json');
+const EXPORT_PATH  = EXPORT_PATH_ENV || DEFAULT_EXPORT;
 
 const SAFETY_FOOTER =
   'BALA is a health-awareness guide. Not a medical measurement. Not a replacement for professional care.';
 
-// ── Score engine ─────────────────────────────────────────────────────────────
+// ── Score engine ──────────────────────────────────────────────────────────────
 const { computeBALAScore } = require('./bala-score-engine.js');
 
-// ── Load BALA export ─────────────────────────────────────────────────────────
+// ── Load BALA export ──────────────────────────────────────────────────────────
 function loadBALAExport(filePath) {
   if (!fs.existsSync(filePath)) {
     throw new Error(
@@ -61,66 +46,70 @@ function loadBALAExport(filePath) {
       `Then set CHINTU_BALA_EXPORT_PATH or copy to: ${DEFAULT_EXPORT}`
     );
   }
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  const parsed = JSON.parse(raw);
+  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
-  // Support two export formats:
-  // Format A: bala-export-*.json (B62 simple export)
-  //   { exportVersion:2, today:{sleep,rhr,...}, history:[...] }
-  // Format B: bala-data-*.json (existing full BALA export)
-  //   { format:'bala-export-v1', data:{ health:{ sleep,rhr,..., history:[...] } } }
+  // Format A — B62 simple export: { exportVersion:2, today:{...}, history:[...] }
   if (parsed.exportVersion === 2 && parsed.today !== undefined) {
     return { today: parsed.today, history: parsed.history || [], source: parsed.dataSource };
   }
+  // Format B — full BALA backup: { format:'bala-export-v1', data:{ health:{...} } }
   if (parsed.format && parsed.data && parsed.data.health) {
     const h = parsed.data.health;
     return { today: h, history: h.history || [], source: h.source };
   }
   throw new Error(
-    'Unrecognised BALA export format. Export using the "Export JSON" button in BALA (Timeline section) or "Export BALA Data" in Settings.'
+    'Unrecognised BALA export format. Use "Export JSON" in BALA Timeline, or "Export BALA Data" in Settings.'
   );
 }
 
-// ── Build score inputs from BALA metrics ──────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function avg(arr) {
   const nums = arr.filter((v) => typeof v === 'number' && Number.isFinite(v));
   return nums.length ? nums.reduce((s, v) => s + v, 0) / nums.length : null;
 }
 
 function buildScoreInputs(today, history) {
-  const recent7 = Array.isArray(history) ? history.slice(-7) : [];
+  const r7 = Array.isArray(history) ? history.slice(-7) : [];
   return {
     hrv_today:              today.hrv   ?? null,
-    hrv_baseline7d:         avg(recent7.map((d) => d.hrv)),
+    hrv_baseline7d:         avg(r7.map((d) => d.hrv)),
     rhr_today:              today.rhr   ?? null,
-    rhr_baseline7d:         avg(recent7.map((d) => d.rhr)),
+    rhr_baseline7d:         avg(r7.map((d) => d.rhr)),
     sleep_hours_today:      today.sleep ?? null,
     sleep_hours_goal:       8,
-    sleep_hours_baseline7d: avg(recent7.map((d) => d.sleep)),
+    sleep_hours_baseline7d: avg(r7.map((d) => d.sleep)),
     spo2_pct:               today.spo2  ?? null,
     steps_today:            today.steps ?? null,
     steps_goal:             10000,
-    weekly_cardio_pct:      today.exercise ? Math.min(100, Math.round(today.exercise / 30 * 100)) : null,
-    workout_logged:         today.exercise > 0 ? true : null,
-    late_meal:              null,
-    evening_caffeine:       null,
-    hydration:              null,
-    stress_level:           null,
-    symptom_text:           '',
+    weekly_cardio_pct: today.exercise
+      ? Math.min(100, Math.round(today.exercise / 30 * 100)) : null,
+    workout_logged:     today.exercise > 0 ? true : null,
+    late_meal:          null,
+    evening_caffeine:   null,
+    hydration:          null,
+    stress_level:       null,
+    symptom_text:       '',
   };
 }
 
-// ── Format morning message ────────────────────────────────────────────────────
-function formatDigest(result, today, missingSignals, source, exportDate) {
-  const dateStr = exportDate || new Date().toISOString().slice(0, 10);
-  const [yyyy, mm, dd] = dateStr.split('-');
+// ── Format morning digest message ─────────────────────────────────────────────
+const CORE_KEYS = {
+  hrv_today:        'HRV',
+  sleep_hours_today:'Sleep',
+  rhr_today:        'RHR',
+  spo2_pct:         'SpO₂',
+  steps_today:      'Steps',
+};
+
+function formatDigest(result, today, missingSignals, exportDate) {
+  const [, mm, dd] = (exportDate || new Date().toISOString().slice(0, 10)).split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const humanDate = `${months[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`;
 
   if (result.emergency) {
     return {
       title: `⚠️ BALA · ${humanDate}`,
-      body:  `Urgent signals detected. Please seek care if you feel unwell.\n\n${SAFETY_FOOTER}`,
+      body:  `Urgent signals noticed. Please seek care if you feel unwell.\n\n${SAFETY_FOOTER}`,
       tags:  'warning',
     };
   }
@@ -128,7 +117,7 @@ function formatDigest(result, today, missingSignals, source, exportDate) {
   const lines = [];
   lines.push(`Score: ${result.score}/100 — ${result.label}`);
 
-  // Signal summary row
+  // Signal summary
   const signals = [];
   if (today.sleep  != null) signals.push(`Sleep ${today.sleep.toFixed(1)}h`);
   if (today.rhr    != null) signals.push(`RHR ${Math.round(today.rhr)} bpm`);
@@ -137,21 +126,27 @@ function formatDigest(result, today, missingSignals, source, exportDate) {
   if (today.steps  != null) signals.push(`Steps ${Math.round(today.steps).toLocaleString()}`);
   if (signals.length) lines.push(signals.join('  ·  '));
 
-  // Confidence
-  const conf = result.confidence || 'UNKNOWN';
-  lines.push(`Confidence: ${conf.charAt(0) + conf.slice(1).toLowerCase()} (${5 - missingSignals.length}/5 signals)`);
+  // Confidence — engine returns { level, available, total, ratio }
+  const confObj  = (typeof result.confidence === 'object' && result.confidence) ? result.confidence : {};
+  const confLevel = confObj.level
+    ? confObj.level.charAt(0) + confObj.level.slice(1).toLowerCase()
+    : String(result.confidence || 'Unknown');
+  const confAvail = confObj.available ?? '?';
+  const confTotal = confObj.total ?? '?';
+  lines.push(`Confidence: ${confLevel} (${confAvail}/${confTotal} signals)`);
 
-  // Top positive contributor
-  if (result.contributors?.positive?.length) {
-    lines.push(`↑ ${result.contributors.positive[0]}`);
+  // Top contributor — array of { signal, pts, label }
+  const posContribs = Array.isArray(result.contributors?.positive)
+    ? result.contributors.positive : [];
+  if (posContribs.length) {
+    const top = posContribs[0];
+    lines.push(`↑ ${typeof top === 'string' ? top : (top.label || top.signal || '')}`);
   }
 
-  // Missing signal nudge
-  if (missingSignals.length) {
-    const missing = missingSignals
-      .map((k) => ({ hrv_today:'HRV', sleep_hours_today:'Sleep', rhr_today:'RHR', spo2_pct:'SpO₂', steps_today:'Steps' }[k] || k))
-      .join(', ');
-    lines.push(`Missing: ${missing} → add via BALA CSV template`);
+  // Core signals missing nudge
+  const coreMissing = (missingSignals || []).filter((k) => CORE_KEYS[k]);
+  if (coreMissing.length) {
+    lines.push(`Missing: ${coreMissing.map((k) => CORE_KEYS[k]).join(', ')} → add via BALA CSV template`);
   }
 
   lines.push('');
@@ -204,18 +199,13 @@ async function main() {
   console.log('║  C44 — Chintu BALA Morning Digest                    ║');
   console.log('╚══════════════════════════════════════════════════════╝');
   console.log('');
+  console.log(DRY_RUN
+    ? 'Mode: DRY RUN (set CHINTU_CONNECTOR_APPROVAL_PHRASE to enable live send)'
+    : 'Mode: LIVE — will send via ntfy');
 
-  if (DRY_RUN) {
-    console.log('Mode: DRY RUN (set CHINTU_CONNECTOR_APPROVAL_PHRASE to enable live send)');
-  } else {
-    console.log('Mode: LIVE — will send via ntfy');
-  }
-
-  // Validate ntfy topic
   if (!DRY_RUN && !NTFY_TOPIC) {
     console.error('\nERROR: CHINTU_NTFY_TOPIC is not set.');
-    console.error('Set it in System env: CHINTU_NTFY_TOPIC=bala-yourname-2026');
-    console.error('Guide: see CHINTU_ALLEGRO.html → Free Connector Setup → ntfy');
+    console.error('  cmd: set CHINTU_NTFY_TOPIC=bala-yourname-2026');
     process.exit(1);
   }
 
@@ -232,46 +222,42 @@ async function main() {
 
   // Compute score
   const { today, history } = exportData;
-  const inputs = buildScoreInputs(today, history);
-  const result = computeBALAScore(inputs);
-  const missingSignals = result.missingSignals || [];
+  const inputs  = buildScoreInputs(today, history);
+  const result  = computeBALAScore(inputs);
+  const missing = result.missingSignals || [];
 
   console.log('');
   console.log(`Score:      ${result.score ?? 'n/a'} / 100`);
   console.log(`Label:      ${result.label || 'n/a'}`);
-  console.log(`Confidence: ${result.confidence || 'n/a'}`);
-  console.log(`Missing:    ${missingSignals.length ? missingSignals.join(', ') : 'none'}`);
+  const confObj = (typeof result.confidence === 'object' && result.confidence) ? result.confidence : {};
+  console.log(`Confidence: ${confObj.level || result.confidence || 'n/a'} (${confObj.available ?? '?'}/${confObj.total ?? '?'} signals)`);
+  const coreMissing = missing.filter((k) => CORE_KEYS[k]);
+  console.log(`Core missing: ${coreMissing.length ? coreMissing.map((k) => CORE_KEYS[k]).join(', ') : 'none — all 5 signals present'}`);
 
-  // Build message
+  // Format message
   const exportDate = exportData.today?.date || new Date().toISOString().slice(0, 10);
-  const { title, body, tags } = formatDigest(result, today, missingSignals, exportData.source, exportDate);
+  const { title, body, tags } = formatDigest(result, today, missing, exportDate);
 
   console.log('');
-  console.log('── Message ─────────────────────────────────────────────');
+  console.log('── Message preview ─────────────────────────────────────');
   console.log(`Title: ${title}`);
-  console.log('Body:');
+  console.log('');
   console.log(body);
   console.log('────────────────────────────────────────────────────────');
 
   if (DRY_RUN) {
-    console.log('\nDRY RUN: message not sent.');
-    console.log('To send live: set CHINTU_CONNECTOR_APPROVAL_PHRASE=any-phrase');
-    console.log(`             set CHINTU_NTFY_TOPIC=your-topic`);
+    console.log('\nDRY RUN complete. Message not sent.');
+    console.log('To send live (cmd):');
+    console.log('  set CHINTU_CONNECTOR_APPROVAL_PHRASE=go');
+    console.log('  set CHINTU_NTFY_TOPIC=your-topic');
+    console.log('  node scripts/chintu-bala-morning-digest.js');
     return;
   }
 
   // Live send
-  try {
-    console.log(`\nSending to ntfy.sh/${NTFY_TOPIC} …`);
-    await sendNtfy(NTFY_TOPIC, title, body, tags);
-    console.log('Sent. Check your ntfy app for the morning digest.');
-  } catch (err) {
-    console.error(`ntfy send failed: ${err.message}`);
-    process.exit(1);
-  }
+  console.log(`\nSending to ntfy.sh/${NTFY_TOPIC} …`);
+  await sendNtfy(NTFY_TOPIC, title, body, tags);
+  console.log('Sent. Check your ntfy app.');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().catch((err) => { console.error(err); process.exit(1); });
