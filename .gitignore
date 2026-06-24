@@ -52,3 +52,6 @@ CHINTU_MEMORY_VAULT/telegram_offset.json
 
 # Telegram poll audit log -- contains chat IDs, must NOT be committed
 CHINTU_OUTBOX/telegram_poll_audit.jsonl
+
+# C53: per-chat conversation history (local only, never commit)
+CHINTU_MEMORY_VAULT/chat_history/

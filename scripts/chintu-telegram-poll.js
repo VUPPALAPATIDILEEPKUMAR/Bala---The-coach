@@ -45,6 +45,16 @@ try {
   chatWithGroq = async () => null; // helper not available
 }
 
+// C53: Conversation memory (optional -- graceful skip if module missing)
+let loadHistory, appendHistory, clearHistory;
+try {
+  ({ loadHistory, appendHistory, clearHistory } = require('./chintu-chat-memory'));
+} catch (_) {
+  loadHistory  = () => [];
+  appendHistory = () => {};
+  clearHistory  = () => {};
+}
+
 const repoRoot   = path.resolve(__dirname, '..');
 const vaultDir   = path.join(repoRoot, 'CHINTU_MEMORY_VAULT');
 const offsetFile = path.join(vaultDir, 'telegram_offset.json');
@@ -161,6 +171,10 @@ const COMMAND_ALIASES = {
   'd':              '__digest__',
   'summary':        '__digest__',
   'daily':          '__digest__',
+  // C53: clear conversation history
+  'forget':         '__clear_history__',
+  'reset':          '__clear_history__',
+  'clear':          '__clear_history__',
 };
 
 // Help text sent when founder types "help" or "?" (safe to send -- no secrets)
@@ -194,6 +208,9 @@ const HELP_TEXT = [
   '  check app/sw     -- syntax checks',
   '',
   '  help / ?         -- this message',
+  '',
+  '🧠 MEMORY (C53)',
+  '  forget / reset   -- clear conversation history',
 ].join('\n');
 
 // ── Logging ────────────────────────────────────────────────────────────────
@@ -324,6 +341,7 @@ function resolveCommand(text) {
   if (alias) {
     // Special multi-command digest
     if (alias === '__digest__') return { type: 'digest' };
+    if (alias === '__clear_history__') return { type: 'clear_history' };
     return { type: 'command', key: alias };
   }
 
@@ -499,21 +517,34 @@ async function main() {
         });
       }
 
+    } else if (resolved.type === 'clear_history') {
+      // Forget conversation history for this chat
+      clearHistory(chatId);
+      replyText = '🧹 Memory cleared. Starting fresh!';
+      log('  -> clear_history for chatId (masked: ...' + String(chatId).slice(-3) + ')');
+      appendAudit({ type: 'clear_history', updateId });
+
     } else if (resolved.type === 'chat') {
-      // Natural language -> Groq conversational brain
+      // Natural language -> Groq conversational brain (C52)
+      // With rolling conversation history (C53)
       log('  -> groq chat: "' + text.slice(0, 60) + '"');
       if (dryRun) {
         replyText = '[DRY-RUN] Would ask Groq: "' + text.slice(0, 60) + '"';
       } else {
-        // Gather lightweight context for Groq
+        // Load conversation history for multi-turn context
+        const history = loadHistory(chatId);
+        // Gather lightweight project context
         const ctxParts = [];
         try { ctxParts.push('Git: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
         try { ctxParts.push('Commits: ' + runSafeCommand('git_log').output.slice(0, 150)); } catch (_) {}
         const ctx = ctxParts.join('\n');
-        const groqReply = await chatWithGroq(text, ctx);
+        const groqReply = await chatWithGroq(text, ctx, history);
         if (groqReply) {
           replyText = '🧠 ' + groqReply;
-          log('  Groq replied (' + groqReply.length + ' chars)');
+          // Save to rolling history
+          appendHistory(chatId, 'user', text);
+          appendHistory(chatId, 'assistant', groqReply);
+          log('  Groq replied (' + groqReply.length + ' chars), history saved');
         } else {
           replyText = '🤔 Brain offline (CHINTU_GROQ_API_KEY not set).\nTry "help" for commands.';
           log('  Groq unavailable -- returning fallback');

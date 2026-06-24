@@ -32,11 +32,12 @@ const TIMEOUT_MS    = 20000;
 /**
  * Call Groq with a conversational message and optional project context.
  *
- * @param {string} userMessage   The message from the founder (via Telegram)
- * @param {string} [context]     Current project state (git status, commits, etc.)
+ * @param {string}   userMessage   The message from the founder (via Telegram)
+ * @param {string}   [context]     Current project state (git status, commits, etc.)
+ * @param {object[]} [history]     Prior messages [{role,content}] for multi-turn context
  * @returns {Promise<string|null>}
  */
-async function chatWithGroq(userMessage, context) {
+async function chatWithGroq(userMessage, context, history) {
   const apiKey = process.env.CHINTU_GROQ_API_KEY;
   if (!apiKey) return null;
 
@@ -55,6 +56,7 @@ async function chatWithGroq(userMessage, context) {
     model:       MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
+      ...(Array.isArray(history) ? history : []),
       { role: 'user',   content: userMessage.slice(0, 500) },
     ],
     temperature:  TEMPERATURE,
