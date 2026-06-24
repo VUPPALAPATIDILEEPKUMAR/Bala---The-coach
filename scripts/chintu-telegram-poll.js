@@ -192,6 +192,20 @@ const COMMAND_ALIASES = {
   'forget':         '__clear_history__',
   'reset':          '__clear_history__',
   'clear':          '__clear_history__',
+
+  // C69: natural language "what can you do?" -> show help (avoids "Brain offline" when Groq absent)
+  'what can you do':      '__help__',
+  'what can u do':        '__help__',
+  'what else':            '__help__',
+  'what do you do':       '__help__',
+  'what else can you do': '__help__',
+  'what else u can do':   '__help__',
+  'commands':             '__help__',
+  'list commands':        '__help__',
+  'capabilities':         '__help__',
+  'chintu help':          '__help__',
+  'hi':                   '__help__',
+  'hello':                '__help__',
 };
 
 // Help text sent when founder types "help" or "?" (safe to send -- no secrets)
@@ -393,6 +407,7 @@ function resolveCommand(text) {
     // Special multi-command digest
     if (alias === '__digest__') return { type: 'digest' };
     if (alias === '__clear_history__') return { type: 'clear_history' };
+    if (alias === '__help__') return { type: 'help' };
     return { type: 'command', key: alias };
   }
 
@@ -723,7 +738,7 @@ async function main() {
           appendHistory(chatId, 'user', text);
           appendHistory(chatId, 'assistant', groqReply);
         } else {
-          replyText = '🤔 Brain offline (CHINTU_GROQ_API_KEY not set).\nTry "help" for commands.';
+          replyText = '🤔 Groq brain not available (CHINTU_GROQ_API_KEY not set in Task Scheduler).\n\n' + HELP_TEXT;
           log('  Groq unavailable -- returning fallback');
         }
       }
@@ -754,7 +769,6 @@ async function main() {
       }
     }
   }
-
   // Save new offset (even if dry-run -- advances position so we don't reprocess)
   saveOffset(newOffset);
   log('Offset advanced to ' + newOffset);
