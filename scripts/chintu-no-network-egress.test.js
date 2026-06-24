@@ -100,6 +100,13 @@ const scannerAllowlist = new Set([
   'chintu-voice-out.js',
   // C59: QA agent -- calls api.groq.com for diagnosis + ntfy/Telegram alerts
   'chintu-qa-agent.js',
+  // C67: BALA bridge HTTP server -- calls api.groq.com/openai on POST /coach (GROQ_KEY gated, 127.0.0.1 only)
+  // Binds to 127.0.0.1 only, never 0.0.0.0. Key never returned to client. Medical safety rules hardcoded.
+  'chintu-bala-bridge.js',
+  // C68: Morning BALA health brief -- reads ~/bala-daily-snapshot.json (local only, exported by BALA app).
+  // Calls api.groq.com for AI brief (GROQ_KEY gated, optional -- falls back to plain digest).
+  // Sends via api.telegram.org (TELEGRAM_TOKEN + TELEGRAM_CHAT_ID gated). Health values never logged.
+  'chintu-health-brief.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
