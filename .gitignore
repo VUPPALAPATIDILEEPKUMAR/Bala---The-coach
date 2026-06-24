@@ -55,3 +55,6 @@ CHINTU_OUTBOX/telegram_poll_audit.jsonl
 
 # C53: per-chat conversation history (local only, never commit)
 CHINTU_MEMORY_VAULT/chat_history/
+
+# C60: Preference memory — stored at os.homedir()/chintu-prefs.json (outside repo)
+chintu-prefs.json

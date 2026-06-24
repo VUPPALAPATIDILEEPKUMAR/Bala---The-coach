@@ -63,6 +63,15 @@ try {
   clearHistory  = () => {};
 }
 
+// C57: Voice I/O (optional — graceful skip if edge-tts / groq-whisper unavailable)
+let transcribeVoiceMessage = null;
+let replyWithVoice         = null;
+try { ({ transcribeVoiceMessage } = require('./chintu-voice-in'));  } catch (_) {}
+try { ({ replyWithVoice }         = require('./chintu-voice-out')); } catch (_) {}
+// C60: Location memory (optional — graceful skip if chintu-prefs unavailable)
+let saveLocationFn = null;
+try { ({ saveLocation: saveLocationFn } = require('./chintu-prefs')); } catch (_) {}
+
 const repoRoot   = path.resolve(__dirname, '..');
 const vaultDir   = path.join(repoRoot, 'CHINTU_MEMORY_VAULT');
 const offsetFile = path.join(vaultDir, 'telegram_offset.json');
@@ -219,6 +228,10 @@ const HELP_TEXT = [
   '',
   '🧠 MEMORY (C53)',
   '  forget / reset   -- clear conversation history',
+  '',
+  '🎙️ VOICE (C57)',
+  '  Send a voice note  -- Chintu hears, thinks, replies with voice',
+  '  (requires: pip install edge-tts)',
 ].join('\n');
 
 // ── Logging ────────────────────────────────────────────────────────────────
@@ -334,6 +347,36 @@ async function sendMessage(token, chatId, text) {
   return res.json.result;
 }
 
+
+// ── C60: Reverse geocode via Nominatim (free, no key) ─────────────────────────
+function nominatimReverse(lat, lng) {
+  return new Promise((resolve) => {
+    const opts = {
+      hostname: 'nominatim.openstreetmap.org',
+      path:     '/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=10&accept-language=en',
+      method:   'GET',
+      headers:  { 'User-Agent': 'Chintu-OS/1.0 (personal assistant, local only)' },
+    };
+    const req = https.request(opts, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => {
+        try {
+          const j = JSON.parse(data);
+          const a = j.address || {};
+          const city  = a.city || a.town || a.village || a.county || '';
+          const state = a.state || '';
+          const country = a.country || '';
+          resolve([city, state, country].filter(Boolean).join(', ') || j.display_name || 'Unknown');
+        } catch (_) { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.setTimeout(8000, () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+}
+
 // ── Command resolution ─────────────────────────────────────────────────────
 function resolveCommand(text) {
   const norm = text.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -386,6 +429,8 @@ function parseUpdate(update) {
     senderId: String(from.id   || ''),
     senderName: [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || '(unknown)',
     text:     (msg.text || '').trim(),
+    voice:    msg.voice || null,    // C57: voice message object (.file_id, .duration, .mime_type)
+    location: msg.location || null,  // C60: Telegram location share
   };
 }
 
@@ -455,7 +500,7 @@ async function main() {
       continue;
     }
 
-    const { updateId, chatId, senderId, senderName, text } = parsed;
+    const { updateId, chatId, senderId, senderName, text, voice, location } = parsed;
 
     // Allowlist gate
     const allowed = isAllowlisted(chatId, senderId, process.env);
@@ -465,8 +510,117 @@ async function main() {
       continue;
     }
 
+
+    // C60: Telegram location share — save + reverse geocode + confirm
+    if (location) {
+      const { latitude, longitude } = location;
+      log('  -> location share (' + latitude + ', ' + longitude + ')');
+
+      if (dryRun) {
+        console.log('[DRY-RUN] Would reverse-geocode (' + latitude + ', ' + longitude + ') and save to prefs');
+        processed++;
+        continue;
+      }
+
+      let placeName = 'your location';
+      try {
+        const geo = await nominatimReverse(latitude, longitude);
+        if (geo) placeName = geo;
+      } catch (_) {}
+
+      if (saveLocationFn) {
+        try { saveLocationFn(latitude, longitude, placeName); } catch (_) {}
+      }
+
+      if (sendEnabled) {
+        await sendMessage(token, chatId,
+          '📍 Location saved: ' + placeName + '.\n' +
+          'I\'ll use this for listings, deals, and travel searches. Just ask!'
+        );
+        replied++;
+      }
+      appendAudit({ type: 'location_saved', updateId, place: placeName });
+      processed++;
+      continue;
+    }
+
+        // C57: Voice message handler — runs BEFORE text check (voice has no text field)
+    if (voice) {
+      const groqKey = String(process.env.CHINTU_GROQ_API_KEY || '').trim();
+      const hasVoiceModules = transcribeVoiceMessage && replyWithVoice;
+      log('  -> voice message (duration: ' + (voice.duration || '?') + 's, modules: ' + (hasVoiceModules ? 'OK' : 'missing') + ')');
+
+      if (dryRun) {
+        console.log('[DRY-RUN] Would transcribe voice + reply with voice note (edge-tts + Groq Whisper)');
+        processed++;
+        continue;
+      }
+
+      if (!hasVoiceModules || !groqKey) {
+        if (sendEnabled) {
+          await sendMessage(token, chatId, '🎙️ Voice mode not ready yet. Run setup-c57.ps1 first.');
+        }
+        processed++;
+        continue;
+      }
+
+      if (!sendEnabled) {
+        log('  SEND DISABLED -- voice reply skipped (set CHINTU_TELEGRAM_SEND_ENABLED=1)');
+        processed++;
+        continue;
+      }
+
+      // 1. Transcribe voice → text
+      const transcript = await transcribeVoiceMessage(voice.file_id, token, groqKey);
+
+      if (!transcript) {
+        await sendMessage(token, chatId, '🎙️ Hmm, I couldn\'t catch that. Try again?');
+        appendAudit({ type: 'voice_transcribe_failed', updateId });
+        processed++;
+        replied++;
+        continue;
+      }
+
+      log('  Transcript: "' + transcript.slice(0, 60) + (transcript.length > 60 ? '…' : '') + '"');
+
+      // 2. Load conversation history, run Groq tool-use brain
+      const history = loadHistory(chatId);
+      let groqReply = null;
+
+      if (chatWithGroqTools) {
+        try { groqReply = await chatWithGroqTools(transcript, history); } catch (_) {}
+      }
+      if (!groqReply) {
+        groqReply = await chatWithGroq(transcript, '', history);
+      }
+
+      if (groqReply) {
+        // 3. Save to conversation memory
+        appendHistory(chatId, 'user',      '🎙️ ' + transcript);
+        appendHistory(chatId, 'assistant', groqReply);
+
+        // 4. Reply with voice note; fall back to text if TTS fails
+        const voiceSent = await replyWithVoice(chatId, groqReply, token);
+        if (voiceSent) {
+          log('  Voice reply sent (' + groqReply.length + ' chars)');
+        } else {
+          // TTS or upload failed — send text so founder gets the answer
+          await sendMessage(token, chatId, '🎙️ ' + groqReply);
+          log('  TTS failed — sent text fallback');
+        }
+        replied++;
+      } else {
+        await sendMessage(token, chatId, '🎙️ Brain offline right now. Try again in a moment.');
+        replied++;
+      }
+
+      appendAudit({ type: 'voice_message', updateId, transcriptLen: transcript.length });
+      processed++;
+      continue;   // do not fall through to text command handling
+    }
+
     if (!text) {
-      log('Skipping update ' + updateId + ' (no text)');
+      log('Skipping update ' + updateId + ' (no text, no voice)');
       continue;
     }
 
