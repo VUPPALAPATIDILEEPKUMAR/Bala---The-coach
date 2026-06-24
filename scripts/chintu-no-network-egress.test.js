@@ -62,6 +62,10 @@ const scannerAllowlist = new Set([
   // C47: ntfy.sh Level 3 push -- sends to ntfy.sh ONLY when CHINTU_CONNECTOR_APPROVAL_PHRASE=go
   // AND CHINTU_NTFY_TOPIC is set. Dry-run by default. No health values in payload.
   'chintu-ntfy-push.js',
+  // C48: Autonomous Brain -- calls Groq API ONLY when CHINTU_GROQ_API_KEY set AND
+  // CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go. Dry-run by default. Uses only SAFE_COMMANDS allowlist.
+  // No health data, no secrets, no file deletes, no force-push.
+  'chintu-autonomous-brain.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {

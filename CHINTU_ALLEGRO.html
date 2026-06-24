@@ -792,16 +792,18 @@
       </div>
       <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center" id="alertTestBtn" onclick="testBrowserNotification()">🔔 Test Browser Notification (Level 2)</button>
       <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center;background:var(--surface);border:1px solid var(--border)" onclick="liveAction('ntfy_push')">📲 Test ntfy Push (Level 3)</button>
+      <button class="qa-btn" style="width:100%;margin-top:6px;text-align:center;background:var(--purple-soft);border:1px solid var(--purple)" onclick="liveAction('autonomous_brain')">🧠 Run Autonomous Brain (C48)</button>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;padding:0 2px;line-height:1.5">
         Level 2: browser only · No health values in alerts<br>
         Level 3 (ntfy.sh) = C47 ACTIVE · dry-run default · set CHINTU_NTFY_TOPIC to go live<br>
-        Level 4 (Telegram) = not this sprint
+        Level 4 (Telegram) = not this sprint<br>
+        C48 Autonomous Brain = ACTIVE · dry-run default · needs CHINTU_GROQ_API_KEY + CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go
       </div>
     </div>
 
     <!-- ── Skill Contracts C46 ─────────────────────────────────────── -->
     <div>
-      <div class="section-label">📋 Skill Contracts <span style="font-size:0.62rem;color:var(--muted);font-weight:400">C46/C47 · 12 skills · 1 external-gated</span></div>
+      <div class="section-label">📋 Skill Contracts <span style="font-size:0.62rem;color:var(--muted);font-weight:400">C46–C48 · 13 skills · 2 external-gated</span></div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:0.68rem;line-height:1.5">
           <thead>
@@ -823,10 +825,12 @@
             <tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px 2px 0;color:var(--fg)">morning_digest</td><td style="padding:4px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:4px 0;color:var(--muted)">brain</td></tr>
             <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">build_bala_sprint</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
             <tr><td style="padding:2px 6px 2px 0;color:var(--fg)">show_capabilities</td><td style="padding:2px 6px 2px 0"><span style="color:var(--green);font-size:0.65rem">safe_read</span></td><td style="padding:2px 0;color:var(--muted)">brain</td></tr>
+            <tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px 2px 0;color:var(--purple)">autonomous_brain</td><td style="padding:4px 6px 2px 0"><span style="color:var(--accent);font-size:0.65rem">allow_write</span></td><td style="padding:4px 0;color:var(--muted)">direct·C48</td></tr>
+            <tr><td style="padding:2px 6px 2px 0;color:var(--accent)">ntfy_alert_push</td><td style="padding:2px 6px 2px 0"><span style="color:var(--accent);font-size:0.65rem">allow_write</span></td><td style="padding:2px 0;color:var(--muted)">direct·C47</td></tr>
           </tbody>
         </table>
         <div style="margin-top:8px;font-size:0.66rem;color:var(--muted);line-height:1.5">
-          9 safe_read · 1 emergency_gate · 1 blocked<br>
+          9 safe_read · 2 allowlisted_write · 1 emergency_gate · 1 blocked<br>
           Source: <code style="font-size:0.65rem">scripts/chintu-skill-contracts.js</code>
         </div>
       </div>
@@ -2140,7 +2144,8 @@ const LIVE_LABELS = {
   prompt_costar_both: 'COSTAR Prompt', prompt_acr_both: 'ACR Prompt',
   open_allegro: 'Open Allegro', open_bala_local: 'Open BALA (local)',
   open_bala_public: 'Open BALA public link', status: 'Status',
-  ntfy_push: 'ntfy Push (Level 3)'
+  ntfy_push: 'ntfy Push (Level 3)',
+  autonomous_brain: 'Autonomous Brain (C48)'
 };
 
 const LIVE_CLI = {
@@ -2161,6 +2166,7 @@ const LIVE_CLI = {
   open_allegro: 'start CHINTU_ALLEGRO.html', open_bala_local: 'start index.html',
   open_bala_public: 'start https://vuppalapatidileepkumar.github.io/Bala---The-coach/',
   ntfy_push: 'node scripts/chintu-ntfy-push.js',
+  autonomous_brain: 'node scripts/chintu-autonomous-brain.js',
   status: 'git status --short'
 };
 

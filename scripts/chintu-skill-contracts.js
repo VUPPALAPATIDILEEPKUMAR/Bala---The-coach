@@ -210,6 +210,25 @@ const SKILL_CONTRACTS = [
     localOnly: true,
   },
   {
+    id: 'autonomous_brain',
+    name: 'Autonomous Brain (C48)',
+    description:
+      'When Claude\'s session ends, Chintu keeps working. ' +
+      'Reads CONTROL_TOWER_RESUME.md + git state, calls Groq free LLM (llama-3.1-70b-versatile), ' +
+      'gets a safe audit plan, executes allowlisted read-only commands, commits, sends ntfy push. ' +
+      'Dry-run by default. Live only when CHINTU_GROQ_API_KEY + CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go. ' +
+      'NEVER: deletes files, force-pushes, reads secrets, exports health data, runs arbitrary shell.',
+    triggers: ['autonomous brain', 'run autonomous', 'chintu auto', 'run brain', 'auto audit', 'keep working', 'autonomous mode'],
+    inputContract: 'env: CHINTU_GROQ_API_KEY (required for live), CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go (required for live)',
+    outputContract: '{ mode: "dry-run"|"live", plan: { task, safe_commands, commit_message, ntfy_message }, results?: [], committed?: boolean }',
+    safetyClass: 'allowlisted_write',
+    routeType: 'direct',
+    routeTarget: 'bridge action: autonomous_brain -> node scripts/chintu-autonomous-brain.js',
+    capabilitiesUsed: ['chintu.repoSummary', 'chintu.notify'],
+    proofPanelId: 'sc-autonomous',
+    localOnly: false,
+  },
+  {
     id: 'ntfy_alert_push',
     name: 'ntfy.sh Alert Push (Level 3)',
     description:

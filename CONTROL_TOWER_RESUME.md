@@ -1,16 +1,23 @@
 # CONTROL_TOWER_RESUME.md
-# Last updated: 2026-06-23 -- end of C47 session
+# Last updated: 2026-06-23 -- end of B64 session / start of C48
 
 ## GIT STATE
-HEAD: a287fcf -- C47: ntfy.sh Level 3 alert push (dry-run default)
-Branch: main, GitHub: pushed, origin/main == local main
+HEAD: 2adfcf4 -- B64: commit bala engine scripts B44-B57 (32 files, all syntax-pass)
+Branch: main, GitHub: PUSHED, origin/main == local main
+Previous: a287fcf (C47), 29d26c8 (B63+C45+C46)
 
-## WHAT JUST SHIPPED (C47)
-- scripts/chintu-ntfy-push.js (NEW) -- Level 3 push, dry-run default, no health values
+## WHAT JUST SHIPPED (B64)
+- 32 BALA engine scripts (bala-b44 through bala-b57, engines + tests)
+- All node --check: PASS
+- medical-claims: PASS (182 files)
+- Committed 2adfcf4, pushed to GitHub
+
+## WHAT SHIPPED BEFORE (C47)
+- scripts/chintu-ntfy-push.js (NEW) -- Level 3 push, dry-run default
 - scripts/chintu-local-bridge.js -- ntfy_push in ACTIONS map
-- scripts/chintu-skill-contracts.js -- ntfy_alert_push skill (12 skills, validator pass)
-- scripts/chintu-no-network-egress.test.js -- chintu-ntfy-push.js in scannerAllowlist
-- CHINTU_ALLEGRO.html -- Level 3 button, LIVE_LABELS+LIVE_CLI ntfy_push, C47 ACTIVE note
+- scripts/chintu-skill-contracts.js -- 12 skills, validator pass
+- scripts/chintu-no-network-egress.test.js -- chintu-ntfy-push.js allowlisted
+- CHINTU_ALLEGRO.html -- Level 3 button + C47 ACTIVE note
 
 ## ALERT LADDER STATUS
 Level 1: Status panel (C45) -- DONE
@@ -18,21 +25,39 @@ Level 2: Browser notification (C45) -- DONE
 Level 3: ntfy.sh push (C47) -- DONE
 Level 4: Telegram -- NOT THIS SPRINT
 
-## ALL TESTS PASSING
+## ALL TESTS PASSING (as of B64)
 egress: PASS (44 scripts), medical-claims: PASS (182 files), skill-contracts: 12 skills PASS
 
-## NEXT SESSION -- B64 (recommended)
+## NEXT SESSION -- C48 (AUTONOMOUS BRAIN)
 
-31 untracked bala engine scripts in scripts/ never committed. Git loss risk.
-Quick audit: node --check each, commit the ones that pass.
+The founder's explicit request:
+"When your billing/usage is done, Chintu should continue the work.
+Wire up all free skills/plugins. Make its own model. Unleash the beast."
 
-Untracked engines to audit:
-  scripts/bala-b44 through bala-b57 (engines + tests)
-  scripts/bala-score-engine.js, bala-coach-engine.js, etc.
+C48 Architecture:
+- scripts/chintu-autonomous-brain.js (NEW)
+  * Reads CONTROL_TOWER_RESUME.md as context
+  * Reads git log --oneline -10 + git status --short
+  * Calls Groq API free tier (llama-3.1-70b-versatile) -- free at console.groq.com
+  * Gets back JSON: { task, safe_commands[], commit_message, ntfy_message }
+  * Executes safe_commands (allowlisted read-only ops only)
+  * Dry-run default. Live: CHINTU_GROQ_API_KEY + CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go
+  * Commits work, sends ntfy Level 3 push with what was done
+  * Writes new CONTROL_TOWER_RESUME.md entry
 
-DO NOT commit: bala-export.json (health data, must stay gitignored)
+Files to change for C48:
+  1. scripts/chintu-autonomous-brain.js (NEW)
+  2. scripts/chintu-no-network-egress.test.js -- add to allowlist
+  3. scripts/chintu-skill-contracts.js -- add autonomous_brain skill (13 skills)
+  4. CHINTU_ALLEGRO.html -- C48 panel + Run Autonomous Brain button
+  5. push-c48.ps1 (NEW)
 
-After B64: C48 options are morning ntfy schedule OR Telegram Level 4.
+To try C48 after shipping:
+  1. Get free API key: console.groq.com/keys
+  2. set CHINTU_GROQ_API_KEY=gsk_xxx
+  3. node scripts/chintu-autonomous-brain.js   (dry-run, shows plan)
+  4. set CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go
+  5. node scripts/chintu-autonomous-brain.js   (executes, commits, ntfy push)
 
 ## DEAD WORKTREES (cosmetic, optional cleanup)
   del /f ".git\worktrees\test-claude-bala\locked"
@@ -46,8 +71,10 @@ After B64: C48 options are morning ntfy schedule OR Telegram Level 4.
 ## KEY FILES
 CHINTU_ALLEGRO.html (2902 lines) | scripts/chintu-local-bridge.js (863 lines, port 18791)
 scripts/chintu-skill-contracts.js (12 skills) | scripts/chintu-ntfy-push.js (Level 3)
+scripts/chintu-autonomous-brain.js (C48, pending)
 
 ## SECURITY (permanent)
 No yolo, no secrets in commits, no git add -A, no force-push
 bala-export.json MUST stay gitignored | ntfy topic NEVER committed
-Dry-run default on all external connectors
+Groq API key NEVER committed | dry-run default on all external connectors
+Autonomous brain NEVER: deletes files, force-pushes, reads secrets, exports health data
