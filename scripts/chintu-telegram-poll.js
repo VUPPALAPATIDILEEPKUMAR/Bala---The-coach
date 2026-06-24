@@ -533,10 +533,12 @@ async function main() {
       } else {
         // Load conversation history for multi-turn context
         const history = loadHistory(chatId);
-        // Gather lightweight project context
+        // Gather lightweight project context (C54: richer context)
         const ctxParts = [];
-        try { ctxParts.push('Git: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
-        try { ctxParts.push('Commits: ' + runSafeCommand('git_log').output.slice(0, 150)); } catch (_) {}
+        try { ctxParts.push('Git status: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
+        try { ctxParts.push('Recent commits: ' + runSafeCommand('git_log').output.slice(0, 200)); } catch (_) {}
+        try { ctxParts.push('BALA files: ' + runSafeCommand('check_bala_files').output.slice(0, 120)); } catch (_) {}
+        try { ctxParts.push('Today commits: ' + runSafeCommand('git_log_today').output.slice(0, 150)); } catch (_) {}
         const ctx = ctxParts.join('\n');
         const groqReply = await chatWithGroq(text, ctx, history);
         if (groqReply) {
