@@ -37,6 +37,14 @@ const path       = require('path');
 const https      = require('https');
 const { execSync } = require('child_process');
 
+// C52: Groq conversational brain (optional -- graceful skip if key missing)
+let chatWithGroq;
+try {
+  ({ chatWithGroq } = require('./chintu-groq-chat'));
+} catch (_) {
+  chatWithGroq = async () => null; // helper not available
+}
+
 const repoRoot   = path.resolve(__dirname, '..');
 const vaultDir   = path.join(repoRoot, 'CHINTU_MEMORY_VAULT');
 const offsetFile = path.join(vaultDir, 'telegram_offset.json');
@@ -324,7 +332,7 @@ function resolveCommand(text) {
     if (norm === key.replace(/_/g, ' ')) return { type: 'command', key };
   }
 
-  return { type: 'unknown', norm };
+  return { type: 'chat', rawText: text };
 }
 
 // ── Safe command execution ─────────────────────────────────────────────────
@@ -491,13 +499,30 @@ async function main() {
         });
       }
 
+    } else if (resolved.type === 'chat') {
+      // Natural language -> Groq conversational brain
+      log('  -> groq chat: "' + text.slice(0, 60) + '"');
+      if (dryRun) {
+        replyText = '[DRY-RUN] Would ask Groq: "' + text.slice(0, 60) + '"';
+      } else {
+        // Gather lightweight context for Groq
+        const ctxParts = [];
+        try { ctxParts.push('Git: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
+        try { ctxParts.push('Commits: ' + runSafeCommand('git_log').output.slice(0, 150)); } catch (_) {}
+        const ctx = ctxParts.join('\n');
+        const groqReply = await chatWithGroq(text, ctx);
+        if (groqReply) {
+          replyText = '🧠 ' + groqReply;
+          log('  Groq replied (' + groqReply.length + ' chars)');
+        } else {
+          replyText = '🤔 Brain offline (CHINTU_GROQ_API_KEY not set).\nTry "help" for commands.';
+          log('  Groq unavailable -- returning fallback');
+        }
+      }
+      appendAudit({ type: 'chat', updateId, text: text.slice(0, 80) });
     } else {
-      // Unknown command -- friendly hint
-      replyText =
-        '🤔 Unknown command: "' + text.slice(0, 60) + '"\n\n' +
-        'Send "help" to see available commands.';
-      log('  -> unknown command');
-      appendAudit({ type: 'unknown_command', updateId, text: text.slice(0, 80) });
+      // Fallback (should not reach here)
+      log('  -> unhandled type: ' + resolved.type);
     }
 
     // Send reply

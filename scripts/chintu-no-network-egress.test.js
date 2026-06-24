@@ -70,6 +70,10 @@ const scannerAllowlist = new Set([
   // CHINTU_TELEGRAM_SEND_ENABLED=1. Used by autonomous brain (morning push) and poll script.
   // Token never printed. Replies only to allowlisted chat IDs. No health data in payload.
   'chintu-send-telegram.js',
+  // C52: Groq conversational chat -- calls api.groq.com ONLY when CHINTU_GROQ_API_KEY set.
+  // Used by chintu-telegram-poll.js to answer natural-language Telegram messages.
+  // No health data. Token never printed. Falls back gracefully (returns null) on any error.
+  'chintu-groq-chat.js',
   // C51: Telegram poll -- calls api.telegram.org getUpdates ONLY when TELEGRAM_BOT_TOKEN set.
   // One-shot (no infinite loop). All commands gated by SAFE_COMMANDS allowlist.
   // CHINTU_TELEGRAM_SEND_ENABLED=1 required to send replies. Token never printed.
