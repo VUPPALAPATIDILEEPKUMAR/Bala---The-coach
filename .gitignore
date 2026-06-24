@@ -40,3 +40,15 @@ CHINTU_AGENT_RUNS/latest_orchestrator_summary.json
 CHINTU_AGENT_RUNS/latest_orchestrator_summary.md
 CHINTU_AGENT_RUNS/validator-agent_*/
 scripts/fixtures/_tmp_*.json
+
+# Health data exports — never commit real health exports.
+# If you need test data, put clearly-labeled synthetic fixtures in scripts/fixtures/
+bala-export.json
+bala-export-*.json
+bala-health-template.csv
+
+# Telegram poll offset -- persisted locally, must NOT be committed (contains message IDs)
+CHINTU_MEMORY_VAULT/telegram_offset.json
+
+# Telegram poll audit log -- contains chat IDs, must NOT be committed
+CHINTU_OUTBOX/telegram_poll_audit.jsonl
