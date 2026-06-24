@@ -452,6 +452,16 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
   letter-spacing: 0.03em;
 }
 .source-rail {
+  margin-top: 18px;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  align-items: center;
+  gap: 22px;
+  background: var(--white);
+}
 
 /* ─── BALA-B48 Symptom Nudge card ───────────────────────────────────────── */
 .nudge-card {
@@ -680,16 +690,6 @@ main { width: 100%; max-width: 1500px; margin: 0 auto; padding: 42px clamp(24px,
   font-weight: 600;
 }
 
-  margin-top: 18px;
-  padding: 18px 22px;
-  border: 1px solid var(--line);
-  border-radius: 19px;
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto;
-  align-items: center;
-  gap: 22px;
-  background: var(--white);
-}
 .section-intro { max-width: 720px; margin: 62px 0 18px; }
 .section-intro h2 { margin: 0; font-size: clamp(28px, 3vw, 42px); letter-spacing: -1.4px; }
 .section-intro > p:last-child { margin: 11px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
@@ -1141,7 +1141,10 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
   .panel-heading { align-items: flex-start; flex-direction: column; }
   .tabs { width: 100%; }
   .tabs button { flex: 1; }
-  .signal-row { grid-temp
+  .signal-row { grid-template-columns: 32px 1fr; gap: 8px; }
+  .signal-row em, .sparkline, .mini-progress { grid-column: 2; }
+}
+
 /* B52: signal history detail panel */
 .hist-block {
   margin-top: 18px;
@@ -1322,3 +1325,347 @@ dialog h2 { margin: 0 0 20px; font-size: 34px; letter-spacing: -1px; }
 .ex-delta-down { color: #b85c00; }
 .ex-delta-flat { color: var(--secondary); }
 .ex-note { font-size: 0.68rem; color: var(--secondary); margin: 0; opacity: 0.75; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   B67: UI Glow-Up — warm palette, circular score ring, signal gradients, coach
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Warm palette additions */
+:root {
+  --warm-primary:  #E8845A;
+  --warm-teal:     #5A9E8E;
+  --warm-bg:       #FAFAF7;
+  --warm-dark:     #1A2B2B;
+  --warm-primary-glow: rgba(232, 132, 90, 0.4);
+}
+
+/* 2. Global box-sizing safety */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* 3. Body warm background */
+html { background: var(--warm-bg, #FAFAF7); }
+
+/* 4. Typography line-height boost */
+body { line-height: 1.6; }
+p { line-height: 1.65; }
+
+/* 5. Signal cards — gradient backgrounds + micro-animation on data update */
+.signal-row {
+  border-radius: 12px;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.signal-row:hover {
+  background: linear-gradient(135deg, #f7fdfb 0%, #f0f8f5 100%);
+  transform: translateX(2px);
+  box-shadow: 0 2px 12px rgba(90, 158, 142, 0.1);
+}
+.signal-row:active { transform: scale(0.98); }
+
+/* Signal value flash animation (triggered via JS adding .signal-updated) */
+@keyframes signal-flash {
+  0%   { background: rgba(232, 132, 90, 0.15); }
+  100% { background: transparent; }
+}
+.signal-row.signal-updated { animation: signal-flash 0.6s ease forwards; }
+
+/* 6. Metric strip cards — subtle gradients */
+.metric-item {
+  background: linear-gradient(145deg, #ffffff 0%, #fafcfb 100%);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.metric-item:hover {
+  background: linear-gradient(145deg, #f5fdf9 0%, #f0f8f5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(46, 125, 91, 0.1);
+}
+.metric-item:active { transform: scale(0.97); }
+
+/* 7. Score ring — enhanced glow + animated fill */
+.score-ring {
+  filter: drop-shadow(0 8px 24px rgba(232, 132, 90, 0.18));
+  transition: filter 0.3s ease;
+}
+.score-ring:hover { filter: drop-shadow(0 12px 32px rgba(232, 132, 90, 0.28)); }
+.ring-value { transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease; }
+
+/* Score card enhanced */
+.score-panel {
+  background: linear-gradient(145deg, #ffffff 0%, #fdfaf7 100%);
+  box-shadow: 0 20px 60px rgba(26, 43, 43, 0.14);
+}
+
+/* 8. Button micro-interactions */
+button:active { transform: scale(0.96); }
+.hero-actions button:active { transform: scale(0.97); }
+.primary-action:active { transform: scale(0.97); }
+.capture-primary:active { transform: scale(0.97); }
+.dialog-primary:active { transform: scale(0.98); }
+
+/* 9. Action cards hover lift */
+.action-card {
+  background: linear-gradient(145deg, #ffffff 0%, #fdfcfb 100%);
+}
+.action-card:hover {
+  box-shadow: 0 12px 40px rgba(26, 43, 43, 0.12);
+  transform: translateY(-4px);
+}
+
+/* 10. Suggestion panel warm teal accent */
+.suggestion-panel {
+  background: linear-gradient(145deg, #eaf5f2 0%, #d6f0ea 100%);
+}
+
+/* ── B65 BALA Voice Coach Card ──────────────────────────────────────────────── */
+
+.bala-voice-coach {
+  margin: 18px 0;
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px solid rgba(232, 132, 90, 0.2);
+  border-radius: 26px;
+  background: linear-gradient(145deg, #fffaf7 0%, #fdf5ef 100%);
+  box-shadow: 0 8px 32px rgba(232, 132, 90, 0.08);
+}
+
+.bvc-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.bvc-orb {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--warm-primary);
+  overflow: hidden;
+}
+.bvc-orb i {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+}
+.bvc-orb i:nth-child(1) { width: 28px; height: 28px; left: -4px; top: 10px; }
+.bvc-orb i:nth-child(2) { width: 22px; height: 22px; right: -3px; top: 3px; background: rgba(255,255,255,0.2); }
+
+.bvc-title {
+  margin: 0;
+  font-size: clamp(18px, 2vw, 24px);
+  letter-spacing: -0.5px;
+  color: var(--warm-dark);
+}
+
+.bvc-chat {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 4px 0;
+  scroll-behavior: smooth;
+}
+
+.bvc-bubble {
+  max-width: 88%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.bvc-bubble p { margin: 0; }
+
+.bvc-bubble--bala {
+  align-self: flex-start;
+  background: white;
+  border: 1px solid rgba(232, 132, 90, 0.15);
+  color: var(--warm-dark);
+  border-radius: 4px 18px 18px 18px;
+}
+
+.bvc-bubble--user {
+  align-self: flex-end;
+  background: var(--warm-primary);
+  color: white;
+  border-radius: 18px 4px 18px 18px;
+}
+
+/* Thinking dots */
+.bvc-thinking {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 18px;
+}
+.bvc-thinking span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warm-primary);
+  animation: bvc-dot-bounce 1.2s ease infinite;
+}
+.bvc-thinking span:nth-child(2) { animation-delay: 0.2s; }
+.bvc-thinking span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bvc-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40%           { transform: scale(1.0); opacity: 1; }
+}
+
+/* Waveform when listening */
+.bvc-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  margin-bottom: 10px;
+}
+.bvc-waveform span {
+  display: inline-block;
+  width: 4px;
+  background: var(--warm-primary);
+  border-radius: 2px;
+  animation: bvc-wave 0.9s ease-in-out infinite;
+}
+.bvc-waveform span:nth-child(1) { height: 12px; animation-delay: 0s; }
+.bvc-waveform span:nth-child(2) { height: 22px; animation-delay: 0.1s; }
+.bvc-waveform span:nth-child(3) { height: 28px; animation-delay: 0.2s; }
+.bvc-waveform span:nth-child(4) { height: 18px; animation-delay: 0.3s; }
+.bvc-waveform span:nth-child(5) { height: 10px; animation-delay: 0.4s; }
+@keyframes bvc-wave {
+  0%, 100% { transform: scaleY(0.5); }
+  50%       { transform: scaleY(1.0); }
+}
+
+/* Input area */
+.bvc-input-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bvc-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(232, 132, 90, 0.25);
+  border-radius: 14px;
+  font-size: 14px;
+  color: var(--warm-dark);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.bvc-input:focus {
+  border-color: var(--warm-primary);
+  box-shadow: 0 0 0 3px rgba(232, 132, 90, 0.12);
+}
+
+/* B67 Mic button with pulse-ring animation */
+.coach-mic-btn {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--warm-primary);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px var(--warm-primary-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.coach-mic-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 28px var(--warm-primary-glow);
+}
+.coach-mic-btn:active { transform: scale(0.95); }
+.coach-mic-btn.listening {
+  animation: pulse-ring 1.5s ease infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   rgba(232, 132, 90, 0.6); }
+  70%  { box-shadow: 0 0 0 20px rgba(232, 132, 90, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(232, 132, 90, 0); }
+}
+
+.bvc-send-btn {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  background: var(--warm-dark);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.bvc-send-btn:hover { background: #2d4040; }
+.bvc-send-btn:active { transform: scale(0.94); }
+
+.bvc-powered {
+  margin: 10px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.3px;
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Mobile safety for B65 coach card at 375px ─────────────────────────────── */
+@media (max-width: 480px) {
+  .bala-voice-coach {
+    padding: 18px 14px;
+    margin: 14px 0;
+  }
+  .bvc-input-area {
+    flex-wrap: wrap;
+  }
+  .bvc-input {
+    flex: 1 1 100%;
+    order: 1;
+  }
+  .coach-mic-btn {
+    order: 2;
+    width: 56px;
+    height: 56px;
+  }
+  .bvc-send-btn {
+    order: 3;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+  .bvc-chat { max-height: 240px; }
+  .bvc-title { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-mic-btn.listening { animation: none; }
+  .bvc-thinking span { animation: none; opacity: 0.6; }
+  .bvc-waveform span { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   End B67
+   ═══════════════════════════════════════════════════════════════════════════════ */

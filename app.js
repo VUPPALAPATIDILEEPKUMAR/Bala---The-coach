@@ -5272,3 +5272,218 @@ b63InitDemoTrust();
   _upgradeHeroDemoButton();
 
 })();
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// B65: BALA Voice Coach — persistent card with mic, STT, bridge POST, TTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+(function balaVoiceCoach() {
+  // ── DOM refs ────────────────────────────────────────────────────────────────
+  const coachSection  = document.getElementById('bala-voice-coach');
+  if (!coachSection) return; // guard if section not in DOM
+
+  const micBtn        = document.getElementById('bvc-mic-btn');
+  const sendBtn       = document.getElementById('bvc-send-btn');
+  const inputEl       = document.getElementById('bvc-input');
+  const chatEl        = document.getElementById('bvc-chat');
+  const waveformEl    = document.getElementById('bvc-waveform');
+
+  // ── Speech recognition setup ─────────────────────────────────────────────────
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const bvcRec    = SpeechRec ? new SpeechRec() : null;
+  if (bvcRec) {
+    bvcRec.lang            = 'en-IN';
+    bvcRec.interimResults  = false;
+    bvcRec.maxAlternatives = 1;
+    bvcRec.onresult = function(e) {
+      const transcript = e.results[0][0].transcript;
+      inputEl.value = transcript;
+      bvcSetListening(false);
+      bvcSend(transcript);
+    };
+    bvcRec.onerror = function(e) {
+      bvcSetListening(false);
+      if (e.error === 'not-allowed') {
+        bvcShowBalaResponse("Microphone access was denied. Please type your question instead.");
+      }
+    };
+    bvcRec.onend = function() { bvcSetListening(false); };
+  }
+
+  // ── Emergency intercept ──────────────────────────────────────────────────────
+  const EMERGENCY_RE = /chest pain|chest pressure|can't breathe|cannot breathe|trouble breathing|faint|passed out|stroke|arm numb|jaw pain|severe/i;
+
+  // ── Fallback responses (no bridge available) ─────────────────────────────────
+  function bvcFallback(question) {
+    const q = question.toLowerCase();
+    if (q.includes('tired') || q.includes('sleep'))
+      return "Your body is asking for rest. Try winding down 30 minutes earlier tonight — even small sleep improvements compound over time.";
+    if (q.includes('heart') || q.includes('hrv'))
+      return "HRV reflects how well your body is recovering. A lower reading today might simply mean your nervous system needs more rest or hydration.";
+    if (q.includes('stress') || q.includes('anxious'))
+      return "Your signals suggest your system is working hard. A 5-minute breathing pause — slow inhale for 4 counts, exhale for 6 — can help shift your nervous system toward recovery.";
+    if (q.includes('step') || q.includes('walk') || q.includes('activ'))
+      return "Movement compounds. Even a short 10-minute walk after a meal is genuinely useful. Your body responds to consistency more than intensity.";
+    if (q.includes('score') || q.includes('bala'))
+      return "Your BALA score is a daily reflection guide based on available signals — sleep, heart rate, HRV, and activity. It's most useful as a trend over time, not a single number.";
+    return "I'm here to help you listen to your body. Your signals today are telling a story — take one small step toward rest, hydration, or movement. Small steps add up.";
+  }
+
+  // ── Health context for bridge ────────────────────────────────────────────────
+  function bvcGetContext() {
+    try {
+      const raw = localStorage.getItem('bala-local-health-v1');
+      const data = raw ? JSON.parse(raw) : {};
+      const latest = Array.isArray(data.history) && data.history.length
+        ? data.history[data.history.length - 1]
+        : data;
+      return {
+        hrv:       latest.hrv       || data.hrv       || null,
+        rhr:       latest.rhr       || data.rhr       || null,
+        sleep:     latest.sleep     || data.sleep     || null,
+        steps:     latest.steps     || data.steps     || null,
+        balaScore: null,  // computed at runtime; not stored directly
+        symptoms:  (function() {
+          try { return JSON.parse(localStorage.getItem('bala-symptoms-v1') || '[]').slice(-3); } catch(_) { return []; }
+        })()
+      };
+    } catch(_) { return {}; }
+  }
+
+  // ── UI helpers ────────────────────────────────────────────────────────────────
+  function bvcSetListening(active) {
+    if (active) {
+      micBtn.classList.add('listening');
+      micBtn.setAttribute('aria-label', 'Listening… tap to stop');
+      waveformEl.hidden = false;
+    } else {
+      micBtn.classList.remove('listening');
+      micBtn.setAttribute('aria-label', 'Tap to speak');
+      waveformEl.hidden = true;
+    }
+  }
+
+  function bvcAppendBubble(text, role) {
+    const div = document.createElement('div');
+    div.className = role === 'user'
+      ? 'bvc-bubble bvc-bubble--user'
+      : 'bvc-bubble bvc-bubble--bala';
+    const p = document.createElement('p');
+    p.textContent = text;
+    div.appendChild(p);
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+
+  function bvcShowThinking() {
+    const div = document.createElement('div');
+    div.id = 'bvc-thinking';
+    div.className = 'bvc-bubble bvc-bubble--bala bvc-thinking';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function bvcRemoveThinking() {
+    const el = document.getElementById('bvc-thinking');
+    if (el) el.remove();
+  }
+
+  function bvcShowBalaResponse(text) {
+    bvcRemoveThinking();
+    bvcAppendBubble(text, 'bala');
+    bvcSpeak(text);
+  }
+
+  // ── Text-to-speech ─────────────────────────────────────────────────────────
+  function bvcSpeak(text) {
+    if (!window.speechSynthesis || !text) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang  = 'en-IN';
+    utt.rate  = 0.9;
+    utt.pitch = 1.0;
+    // Prefer a calm female voice
+    const voices = speechSynthesis.getVoices();
+    const preferred = voices.find(function(v) {
+      return v.name.includes('Female') || v.name.includes('Zira') ||
+             v.name.includes('Samantha') || v.name.includes('Karen') ||
+             v.name.includes('Neerja') || v.name.includes('Moira');
+    });
+    if (preferred) utt.voice = preferred;
+    speechSynthesis.speak(utt);
+  }
+
+  // ── Core send function ────────────────────────────────────────────────────
+  async function bvcSend(question) {
+    question = (question || inputEl.value || '').trim();
+    if (!question) return;
+
+    inputEl.value = '';
+    bvcAppendBubble(question, 'user');
+
+    // ── Emergency intercept: MUST run before any AI call ─────────────────────
+    if (EMERGENCY_RE.test(question)) {
+      const emergencyMsg = "Please seek emergency care or call local emergency services right away. Do not rely on BALA for emergency decisions. Your safety comes first.";
+      bvcShowBalaResponse(emergencyMsg);
+      return;
+    }
+
+    bvcShowThinking();
+
+    const ctx = bvcGetContext();
+    let responseText;
+
+    try {
+      const res = await Promise.race([
+        fetch('http://127.0.0.1:7891/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: question, healthContext: ctx })
+        }),
+        new Promise(function(_, reject) {
+          setTimeout(function() { reject(new Error('timeout')); }, 3000);
+        })
+      ]);
+      if (!res.ok) throw new Error('bridge_error');
+      const data = await res.json();
+      responseText = data.response || bvcFallback(question);
+    } catch(_) {
+      responseText = bvcFallback(question);
+    }
+
+    bvcShowBalaResponse(responseText);
+  }
+
+  // ── Event wiring ──────────────────────────────────────────────────────────
+  micBtn.addEventListener('click', function() {
+    if (!bvcRec) {
+      alert('Voice input is not supported in this browser. Please type your question.');
+      return;
+    }
+    if (micBtn.classList.contains('listening')) {
+      bvcRec.stop();
+      bvcSetListening(false);
+    } else {
+      try { bvcRec.start(); bvcSetListening(true); }
+      catch(e) { bvcSetListening(false); }
+    }
+  });
+
+  sendBtn.addEventListener('click', function() { bvcSend(); });
+
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); bvcSend(); }
+  });
+
+  // Voices may load async
+  if (window.speechSynthesis) {
+    speechSynthesis.onvoiceschanged = function() {}; // trigger load
+  }
+
+})();
+// ═══════════════════════════════════════════════════════════════════════════════
+// End B65
+// ═══════════════════════════════════════════════════════════════════════════════

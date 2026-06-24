@@ -181,6 +181,7 @@
           </div>
           <p id="ds-status" class="ds-status" aria-live="polite"></p>
           <p class="ds-disclaimer">This is a personal wellness log, not a medical record or diagnosis. Share with your doctor as background context only.</p>
+          <a href="summary.html" class="summary-link">View Doctor-Ready Summary &rarr;</a>
         </div>
 
         <div id="ask-coach" class="ac-card" hidden>
@@ -193,6 +194,50 @@
           </div>
           <div id="ac-feed" class="ac-feed" aria-live="polite" aria-label="Coach responses"></div>
         </div>
+
+
+        <!-- B65: BALA Voice Coach Card ───────────────────────────────────────── -->
+        <section class="bala-voice-coach" id="bala-voice-coach" aria-label="BALA Voice Coach">
+          <div class="bvc-header">
+            <div class="bvc-orb" aria-hidden="true"><i></i><i></i></div>
+            <div>
+              <p class="section-label">Ask BALA Coach</p>
+              <h2 class="bvc-title">Talk to your health companion</h2>
+            </div>
+          </div>
+          <div class="bvc-chat" id="bvc-chat" aria-live="polite" aria-label="Coach conversation">
+            <div class="bvc-bubble bvc-bubble--bala" id="bvc-welcome-bubble">
+              <p>Hello! I'm here to help you understand your health signals. Ask me about sleep, HRV, heart rate, or how you're feeling today.</p>
+            </div>
+          </div>
+          <div class="bvc-waveform" id="bvc-waveform" aria-hidden="true" hidden>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="bvc-input-area">
+            <label for="bvc-input" class="sr-only">Ask your health question</label>
+            <input
+              type="text"
+              id="bvc-input"
+              class="bvc-input"
+              placeholder="e.g. Why is my HRV low today?"
+              maxlength="300"
+              autocomplete="off"
+            />
+            <button class="coach-mic-btn" id="bvc-mic-btn" type="button" aria-label="Tap to speak">
+              <svg viewBox="0 0 24 24" width="26" height="26" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10a7 7 0 0 0 14 0M12 19v3M8 22h8"/>
+              </svg>
+            </button>
+            <button class="bvc-send-btn" id="bvc-send-btn" type="button" aria-label="Send question">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h13m-5-5 5 5-5 5"/>
+              </svg>
+            </button>
+          </div>
+          <p class="bvc-powered">Powered by Chintu · awareness only · not medical advice</p>
+        </section>
+        <!-- End B65 BALA Voice Coach ──────────────────────────────────────────── -->
 
         <section class="trust-strip" aria-label="BALA privacy and safety principles">
           <span><i aria-hidden="true">✓</i> Private by design</span>

@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BALA Health Signal Summary — personal awareness only, not a medical diagnosis." />
+  <meta name="theme-color" content="#FAFAF7" />
+  <meta name="robots" content="noindex" />
+  <title>BALA Health Signal Summary</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --coral:   #E8845A;
+      --coral-dk:#C96A3E;
+      --teal:    #5A9E8E;
+      --teal-lt: #EBF4F2;
+      --bg:      #FAFAF7;
+      --dark:    #1A2B2B;
+      --mid:     #3D5555;
+      --muted:   #6B8080;
+      --surface: #FFFFFF;
+      --border:  #DDE8E6;
+      --warn-bg: #FFF8F2;
+      --warn-bd: #E8D0B8;
+      --radius:  10px;
+      --shadow:  0 2px 12px rgba(26,43,43,0.09);
+    }
+    html { background: var(--bg); color: var(--dark); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+    body  { background: var(--bg); min-height: 100vh; padding: 16px 0 40px; }
+    .page-wrap { max-width: 540px; margin: 0 auto; padding: 0 16px; }
+    .summary-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-top: 12px; }
+    .card-header { background: var(--dark); color: #FAFAF7; padding: 22px 22px 18px; }
+    .card-header-inner { display: flex; align-items: flex-start; gap: 14px; }
+    .brand-leaf { flex-shrink: 0; width: 40px; height: 40px; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .brand-text strong { display: block; font-size: 1.18rem; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
+    .brand-text small { display: block; font-size: 0.78rem; color: rgba(255,255,255,0.62); margin-top: 2px; }
+    .generated-meta { margin-top: 14px; font-size: 0.78rem; color: rgba(255,255,255,0.5); display: flex; gap: 16px; flex-wrap: wrap; }
+    .source-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.70rem; font-weight: 600; color: var(--teal); background: var(--teal-lt); border: 1px solid rgba(90,158,142,0.3); border-radius: 20px; padding: 2px 9px; margin-top: 10px; }
+    .demo-badge { display: none; font-size: 0.72rem; color: var(--coral-dk); background: #FEF0E8; border: 1px solid #F0C8A8; border-radius: 20px; padding: 2px 9px; margin-top: 10px; }
+    body.is-demo .demo-badge { display: inline-flex; align-items: center; gap: 4px; }
+    body.is-demo .source-badge { display: none; }
+    .section { padding: 20px 22px; border-bottom: 1px solid var(--border); }
+    .section:last-of-type { border-bottom: none; }
+    .section-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .score-block { display: flex; align-items: center; gap: 18px; }
+    .score-ring-wrap { flex-shrink: 0; position: relative; width: 76px; height: 76px; }
+    .score-ring-wrap svg { display: block; }
+    .score-ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.55rem; font-weight: 800; color: var(--dark); letter-spacing: -0.02em; }
+    .score-ring-track { fill: none; stroke: var(--border); stroke-width: 7; }
+    .score-ring-value { fill: none; stroke: var(--coral); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+    .score-text strong { display: block; font-size: 1.08rem; font-weight: 700; color: var(--dark); line-height: 1.25; }
+    .score-text em { display: block; font-size: 0.84rem; color: var(--mid); font-style: normal; margin-top: 5px; line-height: 1.45; }
+    .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .signal-tile { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; }
+    .signal-tile-label { font-size: 0.70rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .signal-tile-value { font-size: 1.42rem; font-weight: 800; color: var(--dark); letter-spacing: -0.02em; line-height: 1; }
+    .signal-tile-unit { font-size: 0.72rem; font-weight: 500; color: var(--muted); margin-left: 2px; }
+    .signal-tile-note { font-size: 0.71rem; color: var(--muted); margin-top: 4px; }
+    .signal-tile.teal  { border-color: var(--teal);  background: var(--teal-lt); }
+    .signal-tile.coral { border-color: var(--coral); background: var(--warn-bg); }
+    .narrative { font-size: 0.88rem; line-height: 1.65; color: var(--mid); }
+    .narrative p + p { margin-top: 10px; }
+    .narrative strong { color: var(--dark); }
+    .trend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .trend-row:last-child { margin-bottom: 0; }
+    .trend-row-label { font-size: 0.78rem; color: var(--mid); width: 90px; flex-shrink: 0; }
+    .trend-bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .trend-bar-fill { height: 100%; border-radius: 3px; background: var(--teal); }
+    .trend-row-val { font-size: 0.78rem; font-weight: 700; color: var(--dark); width: 54px; text-align: right; flex-shrink: 0; }
+    .question-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .question-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.86rem; color: var(--mid); line-height: 1.55; }
+    .question-list li::before { content: ""; flex-shrink: 0; width: 5px; height: 5px; background: var(--teal); border-radius: 50%; margin-top: 7px; }
+    .disclaimer { background: var(--warn-bg); border: 1px solid var(--warn-bd); border-radius: 8px; padding: 14px 16px; font-size: 0.82rem; line-height: 1.6; color: #6B4422; }
+    .disclaimer strong { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #5A3010; }
+    .footer-actions { padding: 18px 22px 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-print { flex: 1; min-width: 130px; background: var(--coral); color: #fff; border: none; border-radius: 8px; padding: 12px 18px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+    .btn-print:hover { background: var(--coral-dk); }
+    .btn-back { flex: 1; min-width: 130px; background: transparent; color: var(--mid); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+    .btn-back:hover { background: var(--bg); }
+    .page-footer { text-align: center; font-size: 0.72rem; color: var(--muted); margin-top: 18px; padding: 0 16px; }
+    .page-footer a { color: var(--teal); text-decoration: none; }
+    .history-note { font-size: 0.75rem; color: var(--muted); margin-top: 12px; font-style: italic; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; padding: 0; }
+      .summary-card { box-shadow: none; border: 1px solid #ddd; }
+      .page-wrap { max-width: 100%; padding: 0 8px; }
+      .footer-actions, .btn-back { display: none; }
+    }
+    @media (max-width: 375px) {
+      .section { padding: 16px 14px; }
+      .card-header { padding: 18px 14px 14px; }
+      .score-block { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .footer-actions { padding: 14px 14px 18px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="summary-card" id="summary-card">
+
+    <div class="card-header">
+      <div class="card-header-inner">
+        <div class="brand-leaf" aria-hidden="true">🌿</div>
+        <div class="brand-text">
+          <strong>BALA Health Signal Summary</strong>
+          <small>Personal awareness &middot; not a clinical document</small>
+        </div>
+      </div>
+      <div class="generated-meta">
+        <span>&#128197; Generated: <span id="gen-date">&mdash;</span></span>
+        <span id="profile-name-row" hidden>&#128100; <span id="profile-name"></span></span>
+      </div>
+      <div>
+        <span class="source-badge" id="source-badge">&#10003; Your data</span>
+        <span class="demo-badge">&#9679; Demo data &mdash; add your own in BALA</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">BALA Score</p>
+      <div class="score-block">
+        <div class="score-ring-wrap" role="img" aria-label="BALA score">
+          <svg viewBox="0 0 76 76" width="76" height="76">
+            <circle class="score-ring-track" cx="38" cy="38" r="30" />
+            <circle class="score-ring-value" id="score-arc" cx="38" cy="38" r="30"
+              stroke-dasharray="188.5" stroke-dashoffset="188.5"
+              transform="rotate(-90 38 38)" />
+          </svg>
+          <div class="score-ring-num" id="score-num">&mdash;</div>
+        </div>
+        <div class="score-text">
+          <strong id="score-label">&mdash;</strong>
+          <em id="score-interp">&mdash;</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Signal Overview</p>
+      <div class="signal-grid" id="signal-grid"></div>
+      <p class="history-note" id="history-note"></p>
+    </div>
+
+    <div class="section">
+      <p class="section-label">This Week's Patterns</p>
+      <div class="narrative" id="narrative-block"></div>
+      <div style="margin-top:16px;" id="trend-bars"></div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Questions for Your Doctor</p>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">These are personal awareness conversation starters &mdash; not diagnostic claims.</p>
+      <ul class="question-list" id="question-list"></ul>
+    </div>
+
+    <div class="section">
+      <div class="disclaimer">
+        <strong>&#9888;&#65039; For Personal Awareness Only</strong>
+        This summary is NOT a medical diagnosis, treatment plan, or clinical assessment.
+        BALA is a personal health awareness tool. Always consult a licensed healthcare provider
+        for medical advice, diagnosis, or treatment.
+      </div>
+    </div>
+
+    <div class="footer-actions no-print">
+      <button class="btn-print" id="print-btn" type="button">&#128438; Print / Save as PDF</button>
+      <a class="btn-back" href="index.html">&#8592; Back to BALA</a>
+    </div>
+
+  </div>
+
+  <p class="page-footer">
+    Generated by <a href="index.html">BALA</a> &middot; Personal health awareness tool &middot;
+    Data stays on this device only
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var STORAGE_KEY = 'bala-local-health-v1';
+  var PROFILE_KEY = 'bala-profile-v1';
+
+  var DEMO_DATA = {
+    _isDemo: true,
+    sleep: 7.4, rhr: 61, hrv: 46, spo2: 97, steps: 6842, exercise: 32,
+    history: [
+      { date: '2026-06-18', sleep: 6.8, rhr: 65, hrv: 40, spo2: 97, steps: 5900,  exercise: 18 },
+      { date: '2026-06-19', sleep: 7.1, rhr: 64, hrv: 42, spo2: 97, steps: 7600,  exercise: 27 },
+      { date: '2026-06-20', sleep: 6.6, rhr: 66, hrv: 39, spo2: 96, steps: 5100,  exercise: 14 },
+      { date: '2026-06-21', sleep: 7.3, rhr: 62, hrv: 45, spo2: 97, steps: 8900,  exercise: 36 },
+      { date: '2026-06-22', sleep: 7.6, rhr: 61, hrv: 48, spo2: 98, steps: 9400,  exercise: 41 },
+      { date: '2026-06-23', sleep: 7.2, rhr: 62, hrv: 44, spo2: 97, steps: 7200,  exercise: 29 },
+      { date: '2026-06-24', sleep: 7.4, rhr: 61, hrv: 46, spo2: 97, steps: 6842,  exercise: 32 }
+    ]
+  };
+
+  function loadBALAData() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && (p.hrv || p.sleep || p.rhr || p.steps)) return p;
+      }
+    } catch (_) {}
+    var d = JSON.parse(JSON.stringify(DEMO_DATA));
+    d._isDemo = true;
+    return d;
+  }
+
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || null; }
+    catch (_) { return null; }
+  }
+
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+  function avg(arr) {
+    var nums = arr.filter(Number.isFinite);
+    return nums.length ? nums.reduce(function(a,b){return a+b;},0)/nums.length : null;
+  }
+
+  function computeScore(metrics) {
+    var history = Array.isArray(metrics && metrics.history) ? metrics.history : [];
+    var baseline = history.slice(-7);
+    var hrvBase = avg(baseline.map(function(d){return d.hrv;}));
+    var rhrBase = avg(baseline.map(function(d){return d.rhr;}));
+    var parts = []; var tw = 0;
+    function add(score, w) { parts.push(score * w); tw += w; }
+    if (Number.isFinite(metrics.sleep)) {
+      var ss = metrics.sleep >= 8 ? 95 : metrics.sleep >= 7 ? 85 : metrics.sleep >= 6 ? 70 : metrics.sleep >= 5 ? 52 : 35;
+      add(ss, 32);
+    }
+    if (Number.isFinite(metrics.hrv)) {
+      var ratio = hrvBase ? metrics.hrv / hrvBase : null;
+      add(ratio ? 75 + clamp((ratio - 1) * 70, -40, 20) : 75, 23);
+    }
+    if (Number.isFinite(metrics.rhr)) {
+      var diff = rhrBase ? metrics.rhr - rhrBase : 0;
+      add(rhrBase ? 82 - clamp(diff * 5, -10, 45) : 76, 20);
+    }
+    if (Number.isFinite(metrics.steps)) {
+      var st = clamp((metrics.steps / 8000) * 90, 35, 100);
+      var ex = Number.isFinite(metrics.exercise) ? clamp((metrics.exercise/30)*90,35,100) : 70;
+      add(st * 0.65 + ex * 0.35, 20);
+    }
+    if (Number.isFinite(metrics.spo2)) {
+      add(metrics.spo2 >= 97 ? 90 : metrics.spo2 >= 95 ? 78 : metrics.spo2 >= 92 ? 62 : 45, 5);
+    }
+    return tw ? Math.round(parts.reduce(function(a,b){return a+b;},0) / tw) : 67;
+  }
+
+  function interpretScore(s) {
+    if (s >= 80) return 'Your signals suggest strong recovery and balance today.';
+    if (s >= 65) return 'Your signals show good balance with some room to watch.';
+    if (s >= 50) return 'Your signals show moderate balance with some areas to monitor.';
+    if (s >= 35) return 'Your body may be asking for extra rest and care today.';
+    return 'Your signals suggest your body needs prioritised recovery today.';
+  }
+
+  function scoreLabel(s) {
+    if (s >= 80) return 'Strong signals';
+    if (s >= 65) return 'Good balance';
+    if (s >= 50) return 'Moderate balance';
+    if (s >= 35) return 'Rest recommended';
+    return 'Recovery focus';
+  }
+
+  function renderScoreRing(score) {
+    var arc  = document.getElementById('score-arc');
+    var num  = document.getElementById('score-num');
+    var lbl  = document.getElementById('score-label');
+    var intr = document.getElementById('score-interp');
+    var circ = 2 * Math.PI * 30;
+    arc.style.strokeDashoffset = circ * (1 - clamp(score, 0, 100) / 100);
+    arc.style.stroke = score >= 65 ? '#5A9E8E' : score >= 40 ? '#E8845A' : '#C96A3E';
+    num.textContent  = score;
+    lbl.textContent  = scoreLabel(score);
+    intr.textContent = interpretScore(score);
+  }
+
+  function tile(label, value, unit, note, cls) {
+    return '<div class="signal-tile' + (cls ? ' '+cls : '') + '">'
+      + '<div class="signal-tile-label">' + label + '</div>'
+      + '<div class="signal-tile-value">' + value
+      + (unit ? '<span class="signal-tile-unit">' + unit + '</span>' : '') + '</div>'
+      + (note ? '<div class="signal-tile-note">' + note + '</div>' : '')
+      + '</div>';
+  }
+
+  function renderSignalGrid(m) {
+    var g = document.getElementById('signal-grid');
+    var t = '';
+    t += Number.isFinite(m.hrv)      ? tile('HRV',        Math.round(m.hrv),                  'ms',  'Heart rate variability', '')    : tile('HRV',       '—','','Not recorded','');
+    t += Number.isFinite(m.rhr)      ? tile('Resting HR',  Math.round(m.rhr),                  'bpm', 'Resting heart rate',     '')    : tile('Resting HR', '—','','Not recorded','');
+    t += Number.isFinite(m.sleep)    ? tile('Sleep',        m.sleep.toFixed(1),                 'hrs', 'Duration recorded',      'teal'): tile('Sleep',      '—','','Not recorded','teal');
+    t += Number.isFinite(m.steps)    ? tile('Steps',        Number(m.steps).toLocaleString(),   '',    'Daily step count',       '')    : tile('Steps',      '—','','Not recorded','');
+    if (Number.isFinite(m.spo2))     t += tile('SpO₂', Math.round(m.spo2),                '%',  'Wearable estimate', '');
+    if (Number.isFinite(m.exercise)) t += tile('Exercise',  Math.round(m.exercise),             'min','Active minutes',   '');
+    g.innerHTML = t;
+  }
+
+  function weekAvg(history, key) {
+    return avg(history.slice(-7).map(function(d){return d[key];}));
+  }
+
+  function buildNarrative(metrics, history) {
+    var lines = [];
+    var n = Math.min(history.length, 7);
+    if (!n) return '<p>No check-in history found. Log a few days to see your weekly pattern here.</p>';
+    lines.push('<p>Based on your last <strong>' + n + ' check-in' + (n > 1 ? 's' : '') + '</strong>:</p>');
+    var sleepAvg = weekAvg(history, 'sleep');
+    if (sleepAvg !== null) {
+      lines.push('<p>' + (
+        sleepAvg >= 7.5 ? 'Your average sleep duration of ' + sleepAvg.toFixed(1) + ' hrs looks consistent this week.'
+      : sleepAvg >= 6   ? 'Your average sleep was ' + sleepAvg.toFixed(1) + ' hrs — a little below the commonly recommended range.'
+      :                   'Sleep averaged ' + sleepAvg.toFixed(1) + ' hrs this week, which may be worth a closer look.'
+      ) + '</p>');
+    }
+    var hrvAvg = weekAvg(history, 'hrv');
+    if (hrvAvg !== null) {
+      var today = metrics.hrv;
+      lines.push('<p>' + (
+        Number.isFinite(today) && today > hrvAvg * 1.05
+          ? 'HRV is tracking above your week average (' + Math.round(hrvAvg) + ' ms), which can be a positive signal.'
+        : Number.isFinite(today) && today < hrvAvg * 0.90
+          ? 'HRV dipped below your week average (' + Math.round(hrvAvg) + ' ms) — rest and routine often support recovery signals over time.'
+        : 'HRV has been consistent this week, averaging around ' + Math.round(hrvAvg) + ' ms.'
+      ) + '</p>');
+    }
+    var stepsAvg = weekAvg(history, 'steps');
+    if (stepsAvg !== null) {
+      lines.push('<p>' + (
+        stepsAvg >= 8000
+          ? 'You\'ve been staying active — weekly step average is ' + Math.round(stepsAvg).toLocaleString() + '.'
+          : 'Weekly step average is around ' + Math.round(stepsAvg).toLocaleString() + '. Light movement often helps signals over time.'
+      ) + '</p>');
+    }
+    return lines.join('');
+  }
+
+  function renderTrendBars(history) {
+    var el = document.getElementById('trend-bars');
+    if (!history.length) return;
+    var metrics = [
+      { key: 'sleep', label: 'Sleep',    max: 9,     fmt: function(v){ return v.toFixed(1)+'h'; } },
+      { key: 'hrv',   label: 'HRV',      max: 100,   fmt: function(v){ return Math.round(v)+'ms'; } },
+      { key: 'rhr',   label: 'Rest HR',  max: 100,   fmt: function(v){ return Math.round(v)+'bpm'; } },
+      { key: 'steps', label: 'Steps',    max: 15000, fmt: function(v){ return (Math.round(v/100)*100).toLocaleString(); } }
+    ];
+    var html = '';
+    metrics.forEach(function(m) {
+      var vals = history.slice(-7).map(function(d){return d[m.key];}).filter(Number.isFinite);
+      if (!vals.length) return;
+      var a = avg(vals);
+      if (a === null) return;
+      var pct = Math.min(100, Math.round((a / m.max) * 100));
+      html += '<div class="trend-row">'
+        + '<div class="trend-row-label">' + m.label + '</div>'
+        + '<div class="trend-bar-track"><div class="trend-bar-fill" style="width:' + pct + '%;"></div></div>'
+        + '<div class="trend-row-val">' + m.fmt(a) + '</div>'
+        + '</div>';
+    });
+    if (html) el.innerHTML = '<p class="section-label" style="margin-bottom:10px;">7-Day Averages</p>' + html;
+  }
+
+  var DOCTOR_QUESTIONS = [
+    'Based on my recent HRV readings, are these values within a healthy range for my age?',
+    'I\'ve been tracking my resting heart rate. Is there anything I should watch for in these patterns?',
+    'What sleep improvements would have the most impact on my overall recovery?',
+    'Are there lifestyle changes you\'d recommend based on these activity patterns?',
+    'How often should I review these health signals with you?'
+  ];
+
+  function renderQuestions() {
+    document.getElementById('question-list').innerHTML = DOCTOR_QUESTIONS.map(function(q){
+      return '<li>' + q + '</li>';
+    }).join('');
+  }
+
+  function friendlyDate() {
+    return new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function renderHistoryNote(history) {
+    var el = document.getElementById('history-note');
+    if (!history || !history.length) return;
+    var n = history.length;
+    var latest = history[history.length - 1];
+    var ds = latest && latest.date ? new Date(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    el.textContent = n + ' check-in' + (n !== 1 ? 's' : '') + ' on file' + (ds ? ' · most recent ' + ds : '');
+  }
+
+  function render() {
+    var metrics = loadBALAData();
+    var profile = loadProfile();
+    var history = Array.isArray(metrics.history) ? metrics.history : [];
+    if (metrics._isDemo) document.body.classList.add('is-demo');
+    document.getElementById('gen-date').textContent = friendlyDate();
+    var name = profile && String(profile.name || '').trim();
+    if (name) {
+      document.getElementById('profile-name').textContent = name;
+      document.getElementById('profile-name-row').hidden = false;
+    }
+    var src = metrics.source || (metrics._isDemo ? 'Demo' : 'Your data');
+    document.getElementById('source-badge').textContent = '✓ ' + src;
+    var score = computeScore(metrics);
+    renderScoreRing(score);
+    renderSignalGrid(metrics);
+    renderHistoryNote(history);
+    document.getElementById('narrative-block').innerHTML = buildNarrative(metrics, history);
+    renderTrendBars(history);
+    renderQuestions();
+  }
+
+  document.getElementById('print-btn').onclick = function(){ window.print(); };
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', render); }
+  else { render(); }
+}());
+</script>
+</body>
+</html>
