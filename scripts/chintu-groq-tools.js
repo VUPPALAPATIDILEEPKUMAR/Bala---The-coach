@@ -1,5 +1,5 @@
 /**
- * chintu-groq-tools.js -- C55
+ * chintu-groq-tools.js -- C56
  *
  * Groq function-calling (tool use) for Telegram.
  * Groq decides which local tools to run, we execute them, return results.
@@ -21,6 +21,9 @@
  *   list_scripts      -- all chintu-*.js scripts
  *   search_web        -- DuckDuckGo instant answer (free, no key needed)
  *   get_time          -- current date + time
+ *   read_file         -- read any file in the repo (safety-guarded, C56)
+ *   get_git_diff      -- diff of last commit (C56)
+ *   get_weather       -- current weather via wttr.in (free, no key, C56)
  *
  * Exports:
  *   chatWithGroqTools(userMessage, history) -> Promise<string|null>
@@ -29,6 +32,8 @@
  *   - Only runs commands from TOOL_COMMANDS (no shell injection)
  *   - API key never printed. No health data sent.
  *   - search_web: DuckDuckGo JSON API only (no auth, no tracking param)
+ *   - read_file: no ../ escapes, no MEMORY_VAULT, no dotfiles, stays inside repoRoot
+ *   - get_weather: wttr.in plain text, city param length-capped and URL-encoded
  *   - Returns null gracefully on any error / missing key
  *   - MAX_ROUNDS = 3 (hard cap on tool-call loops)
  */
@@ -94,6 +99,62 @@ function readResume() {
 
 function getTime() {
   return new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST';
+}
+
+// C56: Read any file within the repo (safety: no ../, no vault, no dotfiles, max 2000 chars)
+function readFile(filePath) {
+  if (!filePath) return '(no path given)';
+  const cleaned = filePath.replace(/\\/g, '/').replace(/\.\.\/+/g, '');
+  if (cleaned.includes('MEMORY_VAULT') || cleaned.startsWith('.')) return '(access denied)';
+  const allowed = /^[\w\-./]+$/.test(cleaned);
+  if (!allowed) return '(path contains unsafe characters)';
+  try {
+    const target = path.resolve(repoRoot, cleaned);
+    if (!target.startsWith(repoRoot)) return '(path outside repo)';
+    if (!fs.existsSync(target)) return '(file not found: ' + cleaned + ')';
+    const stat = fs.statSync(target);
+    if (!stat.isFile()) return '(not a file)';
+    const content = fs.readFileSync(target, 'utf8');
+    const lines = content.split('\n');
+    const preview = content.slice(0, 2000);
+    return (lines.length > 60 ? '[first 2000 chars of ' + lines.length + ' lines]\n' : '') + preview;
+  } catch (_) {
+    return '(read error)';
+  }
+}
+
+// C56: Git diff of last commit (what actually changed)
+function getGitDiff() {
+  try {
+    const stat  = execSync('git diff --stat HEAD~1 HEAD', { cwd: repoRoot, timeout: 6000, encoding: 'utf8' }).trim();
+    const patch = execSync('git diff HEAD~1 HEAD', { cwd: repoRoot, timeout: 6000, encoding: 'utf8' }).slice(0, 1000).trim();
+    return 'Stat:\n' + stat.slice(0, 400) + '\n\nDiff (first 1000 chars):\n' + patch;
+  } catch (_) {
+    try {
+      return execSync('git show --stat HEAD', { cwd: repoRoot, timeout: 6000, encoding: 'utf8' }).slice(0, 600).trim();
+    } catch (_2) { return '(no diff available)'; }
+  }
+}
+
+// C56: Free weather via wttr.in (no key, plain text output)
+function getWeather(city) {
+  const q = encodeURIComponent((city || 'Chennai').slice(0, 60));
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'wttr.in',
+      path:     '/' + q + '?format=3',
+      method:   'GET',
+      headers:  { 'User-Agent': 'Chintu-OS/1.0' },
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (c) => { data += c; });
+      res.on('end', () => resolve(data.trim().slice(0, 200) || '(no weather data)'));
+    });
+    req.on('error', () => resolve('(weather unavailable)'));
+    req.setTimeout(8000, () => { req.destroy(); resolve('(weather timeout)'); });
+    req.end();
+  });
 }
 
 // DuckDuckGo Instant Answers API -- free, no auth, no tracking required
@@ -201,6 +262,43 @@ const TOOL_SCHEMAS = [
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
+  // C56 tools
+  {
+    type: 'function',
+    function: {
+      name: 'read_file',
+      description: 'Read a file from the project (repo root). Use when asked "what does X do?", "show me X", or to inspect any project file. Path is relative to repo root (e.g. "app.js", "scripts/chintu-groq-tools.js").',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Relative file path from repo root.' },
+        },
+        required: ['path'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_git_diff',
+      description: 'Get the diff of the last commit -- what files changed and what the actual code changes were. Use for "what changed?", "what did the last commit do?", "explain the last commit".',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Get current weather for a city using wttr.in (free, no key). Use when asked about weather.',
+      parameters: {
+        type: 'object',
+        properties: {
+          city: { type: 'string', description: 'City name (default: Chennai).' },
+        },
+        required: [],
+      },
+    },
+  },
 ];
 
 // ── Execute a Groq tool call ───────────────────────────────────────────────
@@ -214,6 +312,9 @@ async function executeTool(name, args) {
     case 'list_scripts':  return runTool('list_scripts');
     case 'search_web':    return searchWeb((args && args.query) || '');
     case 'get_time':      return getTime();
+    case 'read_file':     return readFile(args && args.path);
+    case 'get_git_diff':  return getGitDiff();
+    case 'get_weather':   return getWeather(args && args.city);
     default:              return '(unknown tool: ' + name + ')';
   }
 }
