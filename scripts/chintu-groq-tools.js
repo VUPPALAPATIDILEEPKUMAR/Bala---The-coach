@@ -470,6 +470,65 @@ const TOOL_SCHEMAS = [
       },
     },
   },
+  // C64: Beast Mode tools
+  {
+    type: 'function',
+    function: {
+      name: 'run_node_code',
+      description: 'Execute a Node.js code snippet and return stdout. Use for calculations, data processing, JSON manipulation, or any computation task. Network calls and file deletions are blocked for safety.',
+      parameters: {
+        type: 'object',
+        properties: {
+          code: { type: 'string', description: 'Node.js code to execute. Avoid require statements -- only built-in operators and Math/JSON/Date are safe.' },
+        },
+        required: ['code'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'write_file',
+      description: 'Write content to a file. Only allowed in the project directory or home directory. Use for saving notes, updating config files, or writing output. Will not overwrite system files.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path:    { type: 'string',  description: 'File path relative to project root, or absolute path under user home dir.' },
+          content: { type: 'string',  description: 'Content to write to the file.' },
+          append:  { type: 'boolean', description: 'If true, append instead of overwrite. Default false.' },
+        },
+        required: ['path', 'content'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_directory',
+      description: 'List files and folders in a directory. Use to explore project structure, find files, or check what exists.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Directory path. Relative to project root or absolute. Default: project root.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fetch_page',
+      description: 'Fetch a web page URL and return its text content (first 2000 chars). Use when you need to read a specific URL the user shares, check a website, or get content from a link.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'The URL to fetch. Must start with https://' },
+        },
+        required: ['url'],
+      },
+    },
+  },
 ];
 
 // ── Execute a Groq tool call ───────────────────────────────────────────────
@@ -577,7 +636,85 @@ async function executeTool(name, args) {
       const text = (cb.stdout || '').trim().slice(0, 1000);
       return text ? 'Clipboard: ' + text : '(clipboard is empty)';
     }
-        default:              return '(unknown tool: ' + name + ')';
+        // C64: Beast Mode tools
+    case 'run_node_code': {
+      const code = String((args && args.code) || '').trim().slice(0, 2000);
+      if (!code) return '(no code provided)';
+      const blocked = ['require(', 'process.exit', 'process.env', 'fs.', 'child_process', '__proto__', 'constructor[', 'globalThis', 'eval(', 'Function('];
+      for (const b of blocked) {
+        if (code.includes(b)) return 'Blocked: unsafe pattern "' + b + '" in code';
+      }
+      const result = spawnSync('node', ['-e', 'try { ' + code + ' } catch(e) { console.error(e.message); }'], {
+        timeout: 5000,
+        encoding: 'utf8',
+        env: {},
+      });
+      const out = (result.stdout || '').trim().slice(0, 800);
+      const err = (result.stderr || '').trim().slice(0, 200);
+      if (result.status !== 0 || err) return 'Error: ' + (err || 'non-zero exit');
+      return out || '(no output)';
+    }
+    case 'write_file': {
+      const fsW      = require('fs');
+      const pathMod  = require('path');
+      const os       = require('os');
+      const rawPath  = String((args && args.path) || '').trim();
+      const content  = String((args && args.content) || '');
+      const append   = !!(args && args.append);
+      if (!rawPath) return '(no path provided)';
+      const resolved = pathMod.isAbsolute(rawPath) ? rawPath : pathMod.join(__dirname, '..', rawPath);
+      const projectRoot = pathMod.resolve(__dirname, '..');
+      const homeDir     = os.homedir();
+      if (!resolved.startsWith(projectRoot) && !resolved.startsWith(homeDir)) {
+        return 'Blocked: path must be under project root or home directory';
+      }
+      const dangerousPatterns = ['node_modules', '.git\\', '.git/', 'chintu-no-network-egress', 'chintu-prefs.json'];
+      for (const d of dangerousPatterns) if (resolved.includes(d)) return 'Blocked: cannot write to ' + d;
+      try {
+        if (append) { fsW.appendFileSync(resolved, content, 'utf8'); return 'Appended ' + content.length + ' chars to ' + rawPath; }
+        else        { fsW.writeFileSync(resolved,  content, 'utf8'); return 'Written '  + content.length + ' chars to ' + rawPath; }
+      } catch (e) { return 'Write error: ' + e.message.slice(0, 100); }
+    }
+    case 'list_directory': {
+      const fsL     = require('fs');
+      const pathMod = require('path');
+      const rawPath = String((args && args.path) || '.').trim();
+      const resolved = pathMod.isAbsolute(rawPath) ? rawPath : pathMod.join(__dirname, '..', rawPath);
+      try {
+        const entries = fsL.readdirSync(resolved, { withFileTypes: true });
+        const lines   = entries.slice(0, 100).map(e => (e.isDirectory() ? '[DIR] ' : '      ') + e.name);
+        return lines.join('\n') + (entries.length > 100 ? '\n... (' + entries.length + ' total)' : '');
+      } catch (e) { return 'Error: ' + e.message.slice(0, 100); }
+    }
+    case 'fetch_page': {
+      const rawUrl = String((args && args.url) || '').trim();
+      if (!rawUrl.startsWith('https://')) return 'Only https:// URLs are supported';
+      if (/https:\/\/(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(rawUrl)) {
+        return 'Blocked: private/localhost URLs not allowed';
+      }
+      let parsedUrl;
+      try { parsedUrl = new URL(rawUrl); } catch (_) { return 'Invalid URL'; }
+      return new Promise((resolve) => {
+        const opts = {
+          hostname: parsedUrl.hostname,
+          path:     parsedUrl.pathname + (parsedUrl.search || ''),
+          method:   'GET',
+          headers:  { 'User-Agent': 'Chintu-OS/1.0 (personal assistant)' },
+        };
+        const req = https.request(opts, (res) => {
+          let data = '';
+          res.on('data', c => { data += c; if (data.length > 8000) req.destroy(); });
+          res.on('end', () => {
+            const text = data.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+            resolve(text || '(empty page)');
+          });
+        });
+        req.on('error', e => resolve('Fetch error: ' + e.message.slice(0, 80)));
+        req.setTimeout(10000, () => { req.destroy(); resolve('Timeout fetching URL'); });
+        req.end();
+      });
+    }
+    default:              return '(unknown tool: ' + name + ')';
   }
 }
 
@@ -652,6 +789,14 @@ const SYSTEM_PROMPT = [
   '',
   'BALA is health-awareness only — never diagnose, treat, predict, or replace doctors.',
   'Chintu OS is local-first — no secrets in replies, no unnecessary network calls.',
+  '',
+  '== C64 BEAST MODE TOOLS ==',
+  '\u2022 run_node_code: use for any math, calculation, data processing, or logic task.',
+  '\u2022 write_file: use when Dileep asks to save something, create a note, or write to a file.',
+  '\u2022 list_directory: use to explore the project before reading files.',
+  '\u2022 fetch_page: use when Dileep shares a URL or asks to check a website.',
+  '\u2022 BEAST MODE: chain 3-5 tools per request when needed. Do not wait for permission.',
+  '\u2022 If a task needs multiple steps, execute them all and return a complete result.',
 ].join('\n');
 
 // ── Main: chat with tool-use loop ──────────────────────────────────────────
