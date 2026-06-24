@@ -10,12 +10,12 @@
 [2026-06-24T03:16:22.321Z] Dry-run: using fallback plan (no Groq call)
 [2026-06-24T03:16:22.325Z] Plan validated OK
 [2026-06-24T03:16:22.330Z] Dry-run complete. No actions taken.
-[2026-06-24T03:45:57.333Z] === Chintu Autonomous Brain run started ===
-[2026-06-24T03:45:57.335Z] Mode: dry-run
-[2026-06-24T03:45:57.335Z] Reading repo context...
-[2026-06-24T03:45:57.580Z] Dry-run: using fallback plan (no Groq call)
-[2026-06-24T03:45:57.582Z] Plan validated OK
-[2026-06-24T03:45:57.583Z] Dry-run complete. No actions taken.
+[2026-06-24T03:59:09.993Z] === Chintu Autonomous Brain run started ===
+[2026-06-24T03:59:09.998Z] Mode: dry-run
+[2026-06-24T03:59:10.001Z] Reading repo context...
+[2026-06-24T03:59:11.198Z] Dry-run: using fallback plan (no Groq call)
+[2026-06-24T03:59:11.201Z] Plan validated OK
+[2026-06-24T03:59:11.205Z] Dry-run complete. No actions taken.
 [2026-06-24T03:46:08.736Z] === Chintu Autonomous Brain run started ===
 [2026-06-24T03:46:08.737Z] Mode: dry-run
 [2026-06-24T03:46:08.738Z] Reading repo context...
@@ -63,3 +63,27 @@
 [2026-06-24T03:48:42.684Z]   PASS: run_egress_test
 [2026-06-24T03:48:42.685Z] Commands done. All pass: true
 [2026-06-24T03:48:42.686Z] CONTROL_TOWER_RESUME.md updated
+[2026-06-24T03:48:43.088Z] Committed: [main 3d4a678] C48-auto: standard audit suite
+[2026-06-24T03:48:43.216Z] ntfy: {
+  "mode": "dry-run",
+  "topic": "(not set)",
+  "title": "Chintu OS",
+  "message": "Chintu check-in ready. Open your BALA guide when you have a moment.",
+  "priority": 3,
+  "sent": false,
+  "reason": "CHINTU_NTFY_TOPIC not set. Set it to your ntfy.sh topic name."
+}
+[2026-06-24T03:48:43.217Z] === Run complete ===
+[2026-06-24T04:08:51.517Z] === Chintu Autonomous Brain run started ===
+[2026-06-24T04:08:51.519Z] Mode: live
+[2026-06-24T04:08:51.519Z] Reading repo context...
+[2026-06-24T04:08:51.742Z] Calling Groq API (llama-3.3-70b-versatile)...
+[2026-06-24T04:08:52.372Z] Groq responded. Validating plan...
+[2026-06-24T04:08:52.374Z] Plan validated OK
+[2026-06-24T04:08:52.375Z] Executing safe commands...
+[2026-06-24T04:08:52.377Z]   Running: git_status -> git status --short
+[2026-06-24T04:08:52.484Z]   PASS: git_status
+[2026-06-24T04:08:52.485Z]   Running: run_egress_test -> node scripts/chintu-no-network-egress.test.js
+[2026-06-24T04:08:52.622Z]   PASS: run_egress_test
+[2026-06-24T04:08:52.623Z] Commands done. All pass: true
+[2026-06-24T04:08:52.624Z] CONTROL_TOWER_RESUME.md updated
