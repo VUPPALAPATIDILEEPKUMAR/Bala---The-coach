@@ -43,15 +43,34 @@ const DRY_RUN = !IS_LIVE;
 
 // ── Safe command allowlist ─────────────────────────────────────────────────
 // The LLM can only suggest commands from this list. No arbitrary shell.
+// C49: expanded to give the brain more audit power (all cross-platform).
 const SAFE_COMMANDS = {
-  'git_status':        'git status --short',
-  'git_log':           'git log --oneline -10',
-  'node_check_app':    'node --check app.js',
-  'run_egress_test':   'node scripts/chintu-no-network-egress.test.js',
-  'run_medical_test':  'node scripts/chintu-medical-claims.test.js',
-  'run_skill_test':    'node -e "require(\'./scripts/chintu-skill-contracts.js\'); console.log(\'skill-contracts: PASS\')"',
-  'list_untracked':    'git ls-files --others --exclude-standard scripts/',
-  'count_scripts':     'ls scripts/ | wc -l',
+  // Git ops (read-only)
+  'git_status':          'git status --short',
+  'git_log':             'git log --oneline -10',
+  'git_log_today':       'git log --oneline --since=midnight',
+  'list_untracked':      'git ls-files --others --exclude-standard scripts/',
+
+  // Syntax checks
+  'node_check_app':      'node --check app.js',
+  'node_check_sw':       'node --check sw.js',
+  'node_check_brain':    'node --check scripts/chintu-autonomous-brain.js',
+
+  // Test suite
+  'run_egress_test':     'node scripts/chintu-no-network-egress.test.js',
+  'run_medical_test':    'node scripts/chintu-medical-claims.test.js',
+  'run_skill_test':      'node -e "require(\'./scripts/chintu-skill-contracts.js\'); console.log(\'skill-contracts: PASS\')"',
+  'run_all_tests':       'node scripts/chintu-no-network-egress.test.js && node scripts/chintu-medical-claims.test.js',
+
+  // Repo inventory (Node-based for Windows compat)
+  'count_scripts':       'node -e "const fs=require(\'fs\'); const n=fs.readdirSync(\'scripts\').filter(f=>/^chintu-/.test(f)).length; console.log(n+\' chintu scripts\')"',
+  'list_chintu_scripts': 'node -e "const fs=require(\'fs\'); fs.readdirSync(\'scripts\').filter(f=>/^chintu-/.test(f)).forEach(f=>console.log(f))"',
+
+  // Resume context (last 30 lines -- gives LLM project memory on next run)
+  'read_resume_tail':    'node -e "const fs=require(\'fs\'); const lines=fs.readFileSync(\'CONTROL_TOWER_RESUME.md\',\'utf8\').split(\'\\n\'); console.log(lines.slice(-30).join(\'\\n\'))"',
+
+  // BALA health check
+  'check_bala_files':    'node -e "const fs=require(\'fs\'); const files=[\'index.html\',\'app.js\',\'sw.js\',\'styles.css\']; files.forEach(f=>console.log(f+(fs.existsSync(f)?\' OK\':\' MISSING\')))"',
 };
 
 // ── Logging ───────────────────────────────────────────────────────────────
@@ -313,7 +332,7 @@ async function main() {
     process.exit(0);
   }
 
-  // ── LIVE ────────────────────────────────────────────────────────────────
+  // -- LIVE execution --
   log('Executing safe commands...');
   const results = executeSafeCommands(plan.safe_commands);
   const allPass = results.every(r => r.exitCode === 0);
