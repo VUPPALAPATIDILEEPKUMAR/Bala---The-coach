@@ -114,7 +114,7 @@ ${context.gitStatus}
 What is the single best safe audit task to run right now?`;
 
     const body = JSON.stringify({
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: userMessage },
