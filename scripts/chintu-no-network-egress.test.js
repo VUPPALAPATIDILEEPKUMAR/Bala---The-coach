@@ -81,6 +81,14 @@ const scannerAllowlist = new Set([
   // One-shot (no infinite loop). All commands gated by SAFE_COMMANDS allowlist.
   // CHINTU_TELEGRAM_SEND_ENABLED=1 required to send replies. Token never printed.
   'chintu-telegram-poll.js',
+  // C57: Voice STT -- downloads OGG from api.telegram.org, transcribes via api.groq.com Whisper.
+  // Both endpoints already used by poll + brain scripts. Temp audio in os.tmpdir(), deleted immediately.
+  // No transcript stored to disk. No health data. Token never printed.
+  'chintu-voice-in.js',
+  // C57: Voice TTS -- edge-tts generates MP3 via Python subprocess (speech.platform.bing.com,
+  // not scanned here). Sends MP3 to api.telegram.org/sendVoice. Temp file deleted in finally.
+  // CHINTU_TELEGRAM_SEND_ENABLED=1 required (enforced by caller in chintu-telegram-poll.js).
+  'chintu-voice-out.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
@@ -128,7 +136,6 @@ if (!fs.existsSync(telegramRunner)) {
     'api.telegram.org',
   ]) {
     if (!runnerText.includes(required)) {
-
       fail(`telegram runner missing required gate marker: ${required}`);
     }
   }
