@@ -66,6 +66,14 @@ const scannerAllowlist = new Set([
   // CHINTU_AUTONOMOUS_APPROVAL_PHRASE=go. Dry-run by default. Uses only SAFE_COMMANDS allowlist.
   // No health data, no secrets, no file deletes, no force-push.
   'chintu-autonomous-brain.js',
+  // C51: Telegram send helper -- calls api.telegram.org ONLY when TELEGRAM_BOT_TOKEN set AND
+  // CHINTU_TELEGRAM_SEND_ENABLED=1. Used by autonomous brain (morning push) and poll script.
+  // Token never printed. Replies only to allowlisted chat IDs. No health data in payload.
+  'chintu-send-telegram.js',
+  // C51: Telegram poll -- calls api.telegram.org getUpdates ONLY when TELEGRAM_BOT_TOKEN set.
+  // One-shot (no infinite loop). All commands gated by SAFE_COMMANDS allowlist.
+  // CHINTU_TELEGRAM_SEND_ENABLED=1 required to send replies. Token never printed.
+  'chintu-telegram-poll.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
@@ -113,6 +121,7 @@ if (!fs.existsSync(telegramRunner)) {
     'api.telegram.org',
   ]) {
     if (!runnerText.includes(required)) {
+
       fail(`telegram runner missing required gate marker: ${required}`);
     }
   }

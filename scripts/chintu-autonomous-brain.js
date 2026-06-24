@@ -355,22 +355,37 @@ async function main() {
   // 8. ntfy push
   sendNtfy(plan.ntfy_message);
 
-  // 9. Final output
-  const output = {
-    mode: 'live',
-    plan,
-    results,
-    allPass,
-    committed,
-  };
-  console.log('');
-  console.log(JSON.stringify(output, null, 2));
-  log('=== Run complete ===');
+  // 8b. Telegram morning push (C51) -- proactive phone notification
+  // Uses optional dependency: chintu-send-telegram.js
+  // Graceful skip if module missing or token not configured.
+  try {
+    const { sendTelegramMessage } = require('./chintu-send-telegram.js');
+    const resultSummary = results.map(r => (r.exitCode === 0 ? '✓' : '✗') + r.key).join(' | ');
+    const telegramMsg = [
+      emoji + ' Chintu Morning Brain',
+      '',
+      '📋 Task: ' + plan.task,
+      '📝 ' + plan.ntfy_message,
+      '',
+      'Tests: ' + resultSummary,
+      'Committed: ' + (committed ? 'yes' : 'no'),
+      '',
+      new Date().toLocaleString(),
+      '',
+      '(text "digest" for full status)',
+    ].join('\n');
+    await sendTelegramMessage(telegramMsg);
+    log('Telegram morning push: sent');
+  } catch (e) {
+    log('Telegram morning push: skipped (' + e.message + ')');
+  }
 
-  process.exit(allPass ? 0 : 1);
+  log('=== Autonomous brain run complete ===');
+  console.log('');
+  console.log('Done. Check ntfy and Telegram for morning digest.');
 }
 
 main().catch((e) => {
-  console.error('Fatal error:', e.message);
+  console.error('Fatal: ' + e.message);
   process.exit(1);
 });

@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Chintu Telegram Poll -- Stage C50
+ * Chintu Telegram Poll -- Stage C51
  *
  * One-shot poller. Run by Task Scheduler every 1 minute.
  * Loads offset from disk -> polls ALL pending Telegram updates ->
@@ -45,82 +45,147 @@ const logFile    = path.join(logDir, new Date().toISOString().slice(0, 10) + '-t
 const auditFile  = path.join(repoRoot, 'CHINTU_OUTBOX', 'telegram_poll_audit.jsonl');
 
 // ── SAFE_COMMANDS allowlist ────────────────────────────────────────────────
-// C50: same list as chintu-autonomous-brain.js.
+// C51: expanded with power commands (push, diff, brain, bala-audit).
 // The LLM (and Telegram founder commands) can only trigger keys from this dict.
+// Keys marked [WRITE] make external changes -- clearly documented.
 const SAFE_COMMANDS = {
-  // Git ops (read-only)
+  // ── Git ops (read-only) ──────────────────────────────────────────────────
   'git_status':          'git status --short',
   'git_log':             'git log --oneline -10',
   'git_log_today':       'git log --oneline --since=midnight',
+  'git_diff':            'git diff --stat HEAD~1',
   'list_untracked':      'git ls-files --others --exclude-standard scripts/',
 
-  // Syntax checks
+  // ── Syntax checks ────────────────────────────────────────────────────────
   'node_check_app':      'node --check app.js',
   'node_check_sw':       'node --check sw.js',
   'node_check_brain':    'node --check scripts/chintu-autonomous-brain.js',
+  'node_check_poll':     'node --check scripts/chintu-telegram-poll.js',
+  'node_check_send':     'node --check scripts/chintu-send-telegram.js',
 
-  // Test suite
+  // ── Test suite ───────────────────────────────────────────────────────────
   'run_egress_test':     'node scripts/chintu-no-network-egress.test.js',
   'run_medical_test':    'node scripts/chintu-medical-claims.test.js',
   'run_skill_test':      'node -e "require(\'./scripts/chintu-skill-contracts.js\'); console.log(\'skill-contracts: PASS\')"',
   'run_all_tests':       'node scripts/chintu-no-network-egress.test.js && node scripts/chintu-medical-claims.test.js',
 
-  // Repo inventory (Node-based, Windows-safe)
+  // ── Repo inventory (Node-based, Windows-safe) ────────────────────────────
   'count_scripts':       'node -e "const fs=require(\'fs\'); const n=fs.readdirSync(\'scripts\').filter(f=>/^chintu-/.test(f)).length; console.log(n+\' chintu scripts\')"',
   'list_chintu_scripts': 'node -e "const fs=require(\'fs\'); fs.readdirSync(\'scripts\').filter(f=>/^chintu-/.test(f)).forEach(f=>console.log(f))"',
 
-  // Resume context (last 30 lines)
+  // ── Resume context (last 30 lines) ───────────────────────────────────────
   'read_resume_tail':    'node -e "const fs=require(\'fs\'); const lines=fs.readFileSync(\'CONTROL_TOWER_RESUME.md\',\'utf8\').split(\'\\n\'); console.log(lines.slice(-30).join(\'\\n\'))"',
 
-  // BALA health check
+  // ── BALA health audit ────────────────────────────────────────────────────
   'check_bala_files':    'node -e "const fs=require(\'fs\'); const files=[\'index.html\',\'app.js\',\'sw.js\',\'styles.css\']; files.forEach(f=>console.log(f+(fs.existsSync(f)?\' OK\':\' MISSING\')))"',
+  'bala_audit':          'node -e "const fs=require(\'fs\'); const files=[\'index.html\',\'app.js\',\'sw.js\',\'styles.css\',\'manifest.webmanifest\',\'privacy.html\']; let ok=0; files.forEach(f=>{const e=fs.existsSync(f); if(e)ok++; console.log((e?\'✓\':\'✗\')+\' \'+f)}); console.log(ok+\'/\'+files.length+\' BALA files present\')"',
+
+  // ── Autonomous brain (dry-run by default -- safe to trigger from phone) ──
+  'run_brain':           'node scripts/chintu-autonomous-brain.js',
+
+  // ── [WRITE] Git push tracked files (git add -u only -- no new untracked) ─
+  // git add -u updates already-tracked files only. No git add -A. No force-push.
+  'git_push':            'git add -u && git commit -m "Chintu: quick push from phone" && git push origin main',
 };
 
 // ── Natural language aliases → SAFE_COMMANDS keys ─────────────────────────
 // Founder can text these phrases from their phone.
+// Special values: 'digest' → multi-command digest (handled in resolveCommand)
 const COMMAND_ALIASES = {
+  // ── Status / git ────────────────────────────────────────────────────────
   'git status':     'git_status',
   'status':         'git_status',
+  's':              'git_status',
   'git log':        'git_log',
   'log':            'git_log',
+  'l':              'git_log',
   'today':          'git_log_today',
+  'commits':        'git_log_today',
+  'diff':           'git_diff',
+  'what changed':   'git_diff',
+  'last diff':      'git_diff',
   'untracked':      'list_untracked',
+
+  // ── Syntax checks ───────────────────────────────────────────────────────
   'check app':      'node_check_app',
   'check sw':       'node_check_sw',
   'check brain':    'node_check_brain',
+  'check poll':     'node_check_poll',
+
+  // ── Tests ───────────────────────────────────────────────────────────────
   'test egress':    'run_egress_test',
   'test medical':   'run_medical_test',
   'test skills':    'run_skill_test',
   'test':           'run_all_tests',
   'tests':          'run_all_tests',
+  't':              'run_all_tests',
   'run tests':      'run_all_tests',
+
+  // ── Repo inventory ──────────────────────────────────────────────────────
   'count':          'count_scripts',
   'scripts':        'list_chintu_scripts',
   'list scripts':   'list_chintu_scripts',
+
+  // ── Resume / context ────────────────────────────────────────────────────
   'resume':         'read_resume_tail',
   'tail':           'read_resume_tail',
+  'context':        'read_resume_tail',
+
+  // ── BALA ────────────────────────────────────────────────────────────────
   'bala':           'check_bala_files',
   'check bala':     'check_bala_files',
+  'bala audit':     'bala_audit',
+  'audit bala':     'bala_audit',
+
+  // ── Brain ────────────────────────────────────────────────────────────────
+  'brain':          'run_brain',
+  'run brain':      'run_brain',
+  'think':          'run_brain',
+
+  // ── Power: push from phone ───────────────────────────────────────────────
+  'push':           'git_push',
+  'quick push':     'git_push',
+  'ship':           'git_push',
+
+  // ── Digest (multi-command -- special handling in resolveCommand) ─────────
+  'digest':         '__digest__',
+  'morning':        '__digest__',
+  'd':              '__digest__',
+  'summary':        '__digest__',
+  'daily':          '__digest__',
 };
 
 // Help text sent when founder types "help" or "?" (safe to send -- no secrets)
 const HELP_TEXT = [
-  'Chintu C50 -- Telegram command bridge',
+  '🤖 Chintu C51 -- Telegram Remote',
   '',
-  'Available commands:',
-  '  status / git status   -- git status --short',
-  '  log / git log         -- last 10 commits',
-  '  today                 -- commits since midnight',
-  '  test / run tests      -- full test suite',
-  '  bala / check bala     -- BALA file health',
-  '  count                 -- count chintu scripts',
-  '  scripts / list scripts-- list all chintu scripts',
-  '  resume / tail         -- last 30 lines of resume doc',
-  '  check app/sw/brain    -- syntax check',
-  '  help / ?              -- this message',
+  '📊 STATUS',
+  '  status / s       -- git status',
+  '  log / l          -- last 10 commits',
+  '  today / commits  -- commits since midnight',
+  '  diff             -- what changed in last commit',
+  '  digest / morning -- full digest (status+today+bala)',
   '',
-  'Or use exact key names:',
-  '  ' + Object.keys(SAFE_COMMANDS).join(', '),
+  '🧪 TESTS',
+  '  test / t         -- run all tests',
+  '  test egress      -- egress safety test',
+  '  test medical     -- medical claims test',
+  '',
+  '🔵 BALA',
+  '  bala             -- BALA core files check',
+  '  bala audit       -- full BALA file audit',
+  '',
+  '🧠 BRAIN',
+  '  brain            -- run autonomous brain (dry-run)',
+  '  resume / context -- last 30 lines of resume doc',
+  '',
+  '🚀 POWER',
+  '  push / ship      -- git add -u + commit + push',
+  '  count            -- count chintu scripts',
+  '  scripts          -- list all chintu scripts',
+  '  check app/sw     -- syntax checks',
+  '',
+  '  help / ?         -- this message',
 ].join('\n');
 
 // ── Logging ────────────────────────────────────────────────────────────────
@@ -243,13 +308,18 @@ function resolveCommand(text) {
   // Help request
   if (norm === 'help' || norm === '?') return { type: 'help' };
 
-  // Exact SAFE_COMMANDS key
+  // Exact SAFE_COMMANDS key (typed directly)
   if (SAFE_COMMANDS[norm]) return { type: 'command', key: norm };
 
   // Natural language alias
-  if (COMMAND_ALIASES[norm]) return { type: 'command', key: COMMAND_ALIASES[norm] };
+  const alias = COMMAND_ALIASES[norm];
+  if (alias) {
+    // Special multi-command digest
+    if (alias === '__digest__') return { type: 'digest' };
+    return { type: 'command', key: alias };
+  }
 
-  // Partial prefix match (e.g. "git_log_today" typed with underscore)
+  // Partial prefix match (e.g. "git log today" typed with spaces instead of underscores)
   for (const key of Object.keys(SAFE_COMMANDS)) {
     if (norm === key.replace(/_/g, ' ')) return { type: 'command', key };
   }
@@ -303,7 +373,7 @@ async function main() {
   const limit     = Number(process.env.CHINTU_TELEGRAM_POLL_LIMIT) || 10;
 
   console.log('');
-  console.log('=== Chintu Telegram Poll -- C50 ===');
+  console.log('=== Chintu Telegram Poll -- C51 ===');
   console.log('Mode: ' + (dryRun ? 'DRY-RUN' : (sendEnabled ? 'LIVE (send enabled)' : 'LIVE (send DISABLED -- set CHINTU_TELEGRAM_SEND_ENABLED=1)')));
   console.log('');
 
@@ -334,7 +404,6 @@ async function main() {
   if (updates.length === 0) {
     log('No new updates. Nothing to do.');
     console.log('No new Telegram messages.');
-    // No new offset to save when empty (keep current offset)
     process.exit(0);
   }
 
@@ -377,6 +446,31 @@ async function main() {
     if (resolved.type === 'help') {
       replyText = HELP_TEXT;
       log('  -> help requested');
+
+    } else if (resolved.type === 'digest') {
+      // Multi-command morning digest -- runs 3 commands, combines output
+      log('  -> digest (multi-command)');
+      const ts = new Date().toLocaleString();
+      const parts = ['🤖 Chintu Digest [' + ts + ']'];
+
+      const digestSteps = [
+        { key: 'git_status',       icon: '📁', label: 'Git' },
+        { key: 'git_log_today',    icon: '📅', label: 'Today' },
+        { key: 'check_bala_files', icon: '🔵', label: 'BALA' },
+      ];
+
+      if (dryRun) {
+        parts.push('\n[DRY-RUN] Would run: ' + digestSteps.map(s => s.key).join(', '));
+      } else {
+        for (const step of digestSteps) {
+          const r = runSafeCommand(step.key);
+          const out = (r.output || '(no output)').trim().slice(0, 200);
+          parts.push('\n' + step.icon + ' ' + step.label + ':\n' + out);
+        }
+      }
+
+      replyText = parts.join('\n').slice(0, 3500);
+      log('  Digest assembled (' + replyText.length + ' chars)');
 
     } else if (resolved.type === 'command') {
       const key = resolved.key;
