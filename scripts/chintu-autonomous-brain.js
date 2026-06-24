@@ -355,25 +355,61 @@ async function main() {
   // 8. ntfy push
   sendNtfy(plan.ntfy_message);
 
-  // 8b. Telegram morning push (C51) -- proactive phone notification
-  // Uses optional dependency: chintu-send-telegram.js
-  // Graceful skip if module missing or token not configured.
+  // 8b. Telegram morning push (C54) -- Groq writes the morning message
+  // Optional deps: chintu-send-telegram.js + chintu-groq-chat.js
+  // Graceful fallback to static message if either unavailable.
   try {
     const { sendTelegramMessage } = require('./chintu-send-telegram.js');
     const resultSummary = results.map(r => (r.exitCode === 0 ? '✓' : '✗') + r.key).join(' | ');
-    const telegramMsg = [
-      emoji + ' Chintu Morning Brain',
-      '',
-      '📋 Task: ' + plan.task,
-      '📝 ' + plan.ntfy_message,
-      '',
+
+    // Build a rich briefing prompt for Groq
+    const briefingData = [
+      'Date: ' + new Date().toLocaleString(),
+      'Task completed: ' + plan.task,
+      'Summary: ' + plan.ntfy_message,
       'Tests: ' + resultSummary,
       'Committed: ' + (committed ? 'yes' : 'no'),
-      '',
-      new Date().toLocaleString(),
-      '',
-      '(text "digest" for full status)',
+      'Git status: ' + (context.gitStatus || '').slice(0, 200),
+      'Recent commits: ' + (context.gitLog || '').slice(0, 150),
+      'BALA files: ' + (context.balaFiles || '').slice(0, 120),
     ].join('\n');
+
+    let telegramMsg;
+    try {
+      const { chatWithGroq } = require('./chintu-groq-chat.js');
+      const groqPrompt = [
+        'Write a short warm morning briefing for Dileep (the founder).',
+        'You are Chintu, his personal assistant running on his laptop.',
+        'Max 5 lines. Be natural, warm, direct. Include the key status and one forward-looking nudge.',
+        'Do NOT use headers or bullet points -- write like a real assistant texting.',
+        '',
+        'Here is the current state:',
+        briefingData,
+      ].join('\n');
+      const groqMsg = await chatWithGroq(groqPrompt, '', []);
+      if (groqMsg) {
+        telegramMsg = emoji + ' ' + groqMsg;
+        log('Groq morning message: ' + groqMsg.length + ' chars');
+      }
+    } catch (_) {}
+
+    // Fallback to static message if Groq unavailable
+    if (!telegramMsg) {
+      telegramMsg = [
+        emoji + ' Chintu Morning Brain',
+        '',
+        '📋 Task: ' + plan.task,
+        '📝 ' + plan.ntfy_message,
+        '',
+        'Tests: ' + resultSummary,
+        'Committed: ' + (committed ? 'yes' : 'no'),
+        '',
+        new Date().toLocaleString(),
+        '(text "digest" for full status)',
+      ].join('\n');
+      log('Groq unavailable -- using static morning message');
+    }
+
     await sendTelegramMessage(telegramMsg);
     log('Telegram morning push: sent');
   } catch (e) {

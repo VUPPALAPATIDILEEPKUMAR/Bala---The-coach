@@ -45,6 +45,14 @@ try {
   chatWithGroq = async () => null; // helper not available
 }
 
+// C55: Groq tool-use (function calling) -- upgrades plain chat to smart agent
+let chatWithGroqTools;
+try {
+  ({ chatWithGroqTools } = require('./chintu-groq-tools'));
+} catch (_) {
+  chatWithGroqTools = null; // tool-use not available, fall back to plain chat
+}
+
 // C53: Conversation memory (optional -- graceful skip if module missing)
 let loadHistory, appendHistory, clearHistory;
 try {
@@ -533,20 +541,33 @@ async function main() {
       } else {
         // Load conversation history for multi-turn context
         const history = loadHistory(chatId);
-        // Gather lightweight project context (C54: richer context)
-        const ctxParts = [];
-        try { ctxParts.push('Git status: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
-        try { ctxParts.push('Recent commits: ' + runSafeCommand('git_log').output.slice(0, 200)); } catch (_) {}
-        try { ctxParts.push('BALA files: ' + runSafeCommand('check_bala_files').output.slice(0, 120)); } catch (_) {}
-        try { ctxParts.push('Today commits: ' + runSafeCommand('git_log_today').output.slice(0, 150)); } catch (_) {}
-        const ctx = ctxParts.join('\n');
-        const groqReply = await chatWithGroq(text, ctx, history);
+        let groqReply = null;
+
+        // C55: Try tool-use agent first (Groq decides what data to fetch)
+        if (chatWithGroqTools) {
+          try {
+            groqReply = await chatWithGroqTools(text, history);
+            if (groqReply) log('  Groq tools replied (' + groqReply.length + ' chars)');
+          } catch (_) { groqReply = null; }
+        }
+
+        // Fallback: plain Groq chat with pre-built context (C54)
+        if (!groqReply) {
+          const ctxParts = [];
+          try { ctxParts.push('Git status: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
+          try { ctxParts.push('Recent commits: ' + runSafeCommand('git_log').output.slice(0, 200)); } catch (_) {}
+          try { ctxParts.push('BALA files: ' + runSafeCommand('check_bala_files').output.slice(0, 120)); } catch (_) {}
+          try { ctxParts.push('Today commits: ' + runSafeCommand('git_log_today').output.slice(0, 150)); } catch (_) {}
+          const ctx = ctxParts.join('\n');
+          groqReply = await chatWithGroq(text, ctx, history);
+          if (groqReply) log('  Groq plain replied (' + groqReply.length + ' chars)');
+        }
+
         if (groqReply) {
           replyText = '🧠 ' + groqReply;
           // Save to rolling history
           appendHistory(chatId, 'user', text);
           appendHistory(chatId, 'assistant', groqReply);
-          log('  Groq replied (' + groqReply.length + ' chars), history saved');
         } else {
           replyText = '🤔 Brain offline (CHINTU_GROQ_API_KEY not set).\nTry "help" for commands.';
           log('  Groq unavailable -- returning fallback');
