@@ -76,6 +76,7 @@ const scannerAllowlist = new Set([
   'chintu-groq-chat.js',
   // C55+C56: Groq tool-use agent -- api.groq.com + api.duckduckgo.com + wttr.in (all free, no key).
   // C56 adds: read_file (local only), get_git_diff (local only), get_weather (wttr.in plain text).
+  // C58: adds vision API call (api.groq.com, same endpoint) + PowerShell screenshot (local only) + clipboard (local only).
   'chintu-groq-tools.js',
   // C51: Telegram poll -- calls api.telegram.org getUpdates ONLY when TELEGRAM_BOT_TOKEN set.
   // One-shot (no infinite loop). All commands gated by SAFE_COMMANDS allowlist.

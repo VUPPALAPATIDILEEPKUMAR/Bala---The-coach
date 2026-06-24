@@ -41,7 +41,7 @@
 'use strict';
 
 const https    = require('https');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fs       = require('fs');
 const path     = require('path');
 
@@ -378,6 +378,29 @@ const TOOL_SCHEMAS = [
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
+  // C58: Vision + clipboard tools
+  {
+    type: 'function',
+    function: {
+      name: 'analyze_screenshot',
+      description: 'Take a screenshot of the current Windows screen and analyze it with Groq vision. Use when user asks what is on screen, to read error messages, or describe what they see.',
+      parameters: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', description: 'What to analyze or ask about the screenshot. Default: describe what you see.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'read_clipboard',
+      description: "Read the current text content of the Windows clipboard. Use when the user says 'I copied something' or 'check my clipboard' or pastes a URL/text they want analyzed.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
   // C60: Agentic search tools
   {
     type: 'function',
@@ -490,6 +513,70 @@ async function executeTool(name, args) {
     case 'search_listings': return searchListings(args && args.type, args && args.location, args && args.budget, args && args.config);
     case 'search_cars':     return searchCars(args && args.query, args && args.condition, args && args.budget, args && args.location);
     case 'search_travel':   return searchTravel(args && args.type, args && args.from, args && args.to, args && args.date, args && args.budget);
+    // C58: Vision + clipboard
+    case 'analyze_screenshot': {
+      const question = String((args && args.question) || 'What do you see in this screenshot? Describe it clearly.');
+      const os = require('os');
+      const tmpFile = require('path').join(os.tmpdir(), 'chintu_screen_' + Date.now() + '.png');
+      // Take screenshot via PowerShell (Windows only). Temp file deleted in finally -- never committed.
+      const escaped = tmpFile.replace(/\\/g, '\\\\');
+      const psCmd = 'Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; '
+        + '$s=[System.Windows.Forms.Screen]::PrimaryScreen; '
+        + '$b=New-Object System.Drawing.Bitmap($s.Bounds.Width,$s.Bounds.Height); '
+        + '$g=[System.Drawing.Graphics]::FromImage($b); '
+        + '$g.CopyFromScreen($s.Bounds.Location,[System.Drawing.Point]::Empty,$s.Bounds.Size); '
+        + "$b.Save('" + escaped + "'); "
+        + '$g.Dispose(); $b.Dispose()';
+      const psResult = spawnSync('powershell', ['-NoProfile', '-Command', psCmd], { timeout: 15000 });
+      if (psResult.status !== 0 || !fs.existsSync(tmpFile)) {
+        return 'Screenshot failed: ' + (psResult.stderr ? psResult.stderr.toString().slice(0, 100) : 'unknown error');
+      }
+      let imgBase64;
+      try { imgBase64 = fs.readFileSync(tmpFile).toString('base64'); } finally {
+        try { fs.unlinkSync(tmpFile); } catch (_) {}
+      }
+      const visionKey = process.env.CHINTU_GROQ_API_KEY;
+      if (!visionKey) return 'CHINTU_GROQ_API_KEY not set';
+      const visionResp = await new Promise((resolve) => {
+        const body = JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: question },
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,' + imgBase64 } }
+          ]}],
+          max_tokens: 600
+        });
+        const opts = {
+          hostname: 'api.groq.com',
+          path: '/openai/v1/chat/completions',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + visionKey,
+            'Content-Length': Buffer.byteLength(body)
+          }
+        };
+        const req = https.request(opts, (res) => {
+          let data = '';
+          res.on('data', c => { data += c; });
+          res.on('end', () => {
+            try { const j = JSON.parse(data); resolve(j.choices[0].message.content || '(no response)'); }
+            catch (_) { resolve('Vision parse error: ' + data.slice(0, 100)); }
+          });
+        });
+        req.on('error', (e) => resolve('Vision request error: ' + e.message.slice(0, 80)));
+        req.setTimeout(20000, () => { req.destroy(); resolve('Vision timeout'); });
+        req.write(body);
+        req.end();
+      });
+      return visionResp;
+    }
+    case 'read_clipboard': {
+      const cb = spawnSync('powershell', ['-NoProfile', '-Command', 'Get-Clipboard'], { timeout: 5000, encoding: 'utf8' });
+      if (cb.status !== 0) return 'Could not read clipboard: ' + (cb.stderr || '').slice(0, 80);
+      const text = (cb.stdout || '').trim().slice(0, 1000);
+      return text ? 'Clipboard: ' + text : '(clipboard is empty)';
+    }
         default:              return '(unknown tool: ' + name + ')';
   }
 }
