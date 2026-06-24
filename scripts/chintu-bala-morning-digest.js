@@ -192,6 +192,34 @@ function sendNtfy(topic, title, body, tags) {
   });
 }
 
+// ── Groq tools morning brief (C61) ──────────────────────────────────────────
+// Try-catch require so the file still works if chintu-groq-tools.js is absent.
+let _groqTools = null;
+try {
+  _groqTools = require('./chintu-groq-tools.js');
+} catch (_) {
+  // groq-tools not available -- morning digest will use BALA-only format
+}
+
+const GROQ_MORNING_PROMPT =
+  'Morning brief for Dileep. ' +
+  'First call recall_preferences to know his city and budgets. ' +
+  'Then call get_weather for his city. ' +
+  'Then call search_deals for today deals in his location. ' +
+  'Combine into a friendly 3-paragraph morning summary: weather + deals + any key preferences to note. ' +
+  'Keep it warm and practical. No health data.';
+
+async function buildGroqMorningBrief() {
+  if (!_groqTools || typeof _groqTools.chatWithGroqTools !== 'function') return null;
+  try {
+    const result = await _groqTools.chatWithGroqTools(GROQ_MORNING_PROMPT, []);
+    if (result && typeof result === 'string' && result.trim().length > 50) return result.trim();
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('');
@@ -238,11 +266,28 @@ async function main() {
   const exportDate = exportData.today?.date || new Date().toISOString().slice(0, 10);
   const { title, body, tags } = formatDigest(result, today, missing, exportDate);
 
+  // C61: Try Groq tools chain (recall_preferences -> get_weather -> search_deals)
+  console.log('');
+  console.log('Fetching Groq morning brief (weather + deals + prefs) ...');
+  const groqBrief = await buildGroqMorningBrief();
+  if (groqBrief) {
+    console.log('[PASS] Groq morning brief received (' + groqBrief.length + ' chars)');
+  } else {
+    console.log('[INFO] Groq brief unavailable -- using BALA-only format');
+  }
+
+  // Build final message: if Groq brief is available, prepend it before the BALA score block
+  const finalTitle = title;
+  const finalBody  = groqBrief
+    ? groqBrief + '\n\n--- BALA Score ---\n' + body
+    : body;
+  const finalTags  = tags;
+
   console.log('');
   console.log('── Message preview ─────────────────────────────────────');
-  console.log(`Title: ${title}`);
+  console.log(`Title: ${finalTitle}`);
   console.log('');
-  console.log(body);
+  console.log(finalBody);
   console.log('────────────────────────────────────────────────────────');
 
   if (DRY_RUN) {
@@ -256,7 +301,7 @@ async function main() {
 
   // Live send
   console.log(`\nSending to ntfy.sh/${NTFY_TOPIC} …`);
-  await sendNtfy(NTFY_TOPIC, title, body, tags);
+  await sendNtfy(NTFY_TOPIC, finalTitle, finalBody, finalTags);
   console.log('Sent. Check your ntfy app.');
 }
 
