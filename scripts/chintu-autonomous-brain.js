@@ -271,7 +271,7 @@ async function main() {
     log('Dry-run: using fallback plan (no Groq call)');
     plan = getDryRunPlan();
   } else {
-    log('Calling Groq API (llama-3.1-70b-versatile)...');
+    log('Calling Groq API (llama-3.3-70b-versatile)...');
     try {
       plan = await callGroq(context);
       log('Groq responded. Validating plan...');
