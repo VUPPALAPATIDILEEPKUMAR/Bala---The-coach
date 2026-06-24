@@ -78,6 +78,14 @@ const scannerAllowlist = new Set([
   // C56 adds: read_file (local only), get_git_diff (local only), get_weather (wttr.in plain text).
   // C58: adds vision API call (api.groq.com, same endpoint) + PowerShell screenshot (local only) + clipboard (local only).
   'chintu-groq-tools.js',
+  // C62: GitHub watch -- polls api.github.com ONLY when CHINTU_GITHUB_WATCH_REPO is set.
+  // No auth token required (public repos). Sends ntfy alert when new commit detected.
+  // Dry-run by default.
+  'chintu-github-watch.js',
+  // C63: Health watchdog -- calls ntfy.sh ONLY when CHINTU_CONNECTOR_APPROVAL_PHRASE=go
+  // AND CHINTU_NTFY_TOPIC is set. Dry-run by default. No health values in payload.
+  // Uses direct https call (same ntfy.sh endpoint as chintu-ntfy-push.js).
+  'chintu-health-watchdog.js',
   // C51: Telegram poll -- calls api.telegram.org getUpdates ONLY when TELEGRAM_BOT_TOKEN set.
   // One-shot (no infinite loop). All commands gated by SAFE_COMMANDS allowlist.
   // CHINTU_TELEGRAM_SEND_ENABLED=1 required to send replies. Token never printed.
@@ -90,6 +98,8 @@ const scannerAllowlist = new Set([
   // not scanned here). Sends MP3 to api.telegram.org/sendVoice. Temp file deleted in finally.
   // CHINTU_TELEGRAM_SEND_ENABLED=1 required (enforced by caller in chintu-telegram-poll.js).
   'chintu-voice-out.js',
+  // C59: QA agent -- calls api.groq.com for diagnosis + ntfy/Telegram alerts
+  'chintu-qa-agent.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {
