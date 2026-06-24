@@ -74,6 +74,8 @@ const scannerAllowlist = new Set([
   // Used by chintu-telegram-poll.js to answer natural-language Telegram messages.
   // No health data. Token never printed. Falls back gracefully (returns null) on any error.
   'chintu-groq-chat.js',
+  // C55: Groq tool-use agent -- api.groq.com + api.duckduckgo.com (free, no key).
+  'chintu-groq-tools.js',
   // C51: Telegram poll -- calls api.telegram.org getUpdates ONLY when TELEGRAM_BOT_TOKEN set.
   // One-shot (no infinite loop). All commands gated by SAFE_COMMANDS allowlist.
   // CHINTU_TELEGRAM_SEND_ENABLED=1 required to send replies. Token never printed.
