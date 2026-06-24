@@ -197,7 +197,7 @@ function telegramRequest(token, method, bodyObj) {
     const opts = {
       protocol: 'https:',
       hostname: 'api.telegram.org',
-      path:     '/bot' + token + '/' + method,
+      path:     '/bot' + encodeURIComponent(token).replace(/%3A/gi, ':') + '/' + method,
       method:   body ? 'POST' : 'GET',
       headers:  body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {},
     };

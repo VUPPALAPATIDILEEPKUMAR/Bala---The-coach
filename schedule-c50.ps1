@@ -63,9 +63,8 @@ $action = New-ScheduledTaskAction `
     -WorkingDirectory $repoPath
 
 # Trigger: repeat every 1 minute, indefinitely
-$trigger = New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Minutes 1) -Once -At (Get-Date)
-# RepetitionDuration = TimeSpan.MaxValue means run forever
-$trigger.RepetitionDuration = [System.TimeSpan]::MaxValue
+# Note: omitting RepetitionDuration is correct on Windows 10/11 -- defaults to indefinite
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
 
 # Settings: start-when-available, no timeout
 # NOTE: -StartWhenAvailable is a SwitchParameter (no $true argument needed)
