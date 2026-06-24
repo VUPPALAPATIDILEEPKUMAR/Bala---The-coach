@@ -5486,4 +5486,122 @@ b63InitDemoTrust();
 })();
 // ═══════════════════════════════════════════════════════════════════════════════
 // End B65
-// ═══════════════════════════════════════════════════════════════════════════════
+
+// =============================================================================
+// B68 -- BALA Export for Chintu
+// Exports today's health snapshot as bala-daily-snapshot.json.
+// Chintu reads this file for the C68 morning health brief.
+// 100% offline -- reads localStorage only, no network call, no upload.
+// =============================================================================
+(function () {
+  'use strict';
+
+  function exportBALASnapshot() {
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('bala-local-health-v1')); } catch (e) {}
+    if (!stored) {
+      alert('No BALA health data yet.\n\nAdd a check-in first, then export for Chintu.');
+      return;
+    }
+
+    var history = Array.isArray(stored.history) ? stored.history : [];
+    var latest  = history.length ? history[history.length - 1] : stored;
+    var prev    = history.length > 1 ? history[history.length - 2] : null;
+
+    var scoreEl = document.querySelector('.score-ring strong');
+    var score   = scoreEl ? parseInt(scoreEl.textContent, 10) : null;
+
+    var prevScore = null;
+    if (prev && typeof scoreBreakdown === 'function') {
+      try {
+        var prevData = Object.assign({}, stored, { history: history.slice(0, -1) });
+        prevScore = scoreBreakdown(prevData, null).total;
+      } catch (e) {}
+    }
+    var delta = (score !== null && prevScore !== null) ? score - prevScore : null;
+    var trend = delta === null
+      ? 'building baseline'
+      : delta >= 3 ? 'improving' : delta <= -3 ? 'declining' : 'stable';
+
+    var snap = {
+      date:       latest.date || new Date().toISOString().slice(0, 10),
+      score:      score,
+      scoreDelta: delta,
+      trend:      trend,
+      hrv:        latest.hrv   != null ? Math.round(latest.hrv)   : null,
+      rhr:        latest.rhr   != null ? Math.round(latest.rhr)   : null,
+      sleep:      latest.sleep != null ? parseFloat(latest.sleep.toFixed(1)) : null,
+      steps:      latest.steps != null ? Math.round(latest.steps) : null,
+      spo2:       latest.spo2  != null ? Math.round(latest.spo2)  : null,
+      exercise:   latest.exercise != null ? Math.round(latest.exercise) : null,
+      source:     latest.source || 'manual',
+      exportedAt: new Date().toISOString(),
+      note:       'BALA health awareness data -- not a medical record, for personal use only',
+    };
+
+    var blob = new Blob([JSON.stringify(snap, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = 'bala-daily-snapshot.json'; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1200);
+
+    var toast = document.createElement('div');
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--warm-dark,#1A2B2B);color:#fff;padding:14px 20px;border-radius:12px;font-size:13px;line-height:1.5;z-index:9999;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.3)';
+    toast.innerHTML = '<strong>bala-daily-snapshot.json downloaded</strong><br><small>Move to your home folder so Chintu reads it for your morning brief.<br>Windows: C:\\Users\\YourName\\bala-daily-snapshot.json</small>';
+    document.body.appendChild(toast);
+    setTimeout(function () { toast.style.transition='opacity 0.4s'; toast.style.opacity='0'; setTimeout(function(){toast.remove();},450); }, 5000);
+  }
+
+  var btn = document.querySelector('#bala-export-chintu-btn');
+  if (btn) btn.addEventListener('click', exportBALASnapshot);
+  window.exportBALASnapshot = exportBALASnapshot;
+})();
+// End B68
+
+// =============================================================================
+// B69 -- BALA Score Delta
+// Shows +/- change vs previous check-in beneath the BALA score ring.
+// Colour-coded: teal=improving, coral=declining, grey=stable/building.
+// Re-renders automatically whenever a new check-in is saved.
+// =============================================================================
+(function () {
+  'use strict';
+
+  function computeDelta() {
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('bala-local-health-v1')); } catch (e) {}
+    if (!stored || typeof scoreBreakdown !== 'function') return null;
+    var history = Array.isArray(stored.history) ? stored.history : [];
+    if (history.length < 2) return null;
+    try {
+      var fullScore = scoreBreakdown(stored, null).total;
+      var prevData  = Object.assign({}, stored, { history: history.slice(0, -1) });
+      var prevScore = scoreBreakdown(prevData, null).total;
+      return fullScore - prevScore;
+    } catch (e) { return null; }
+  }
+
+  function renderDelta() {
+    var el = document.querySelector('#bala-score-delta');
+    if (!el) return;
+    var d = computeDelta();
+    if (d === null) { el.textContent = ''; el.style.display = 'none'; return; }
+    var sign  = d >= 0 ? '+' : '';
+    var color = d >= 3 ? 'var(--warm-teal,#5A9E8E)' : d <= -3 ? 'var(--warm-primary,#E8845A)' : '#8A9BA8';
+    el.textContent = sign + d + ' from last check-in';
+    el.style.color = color; el.style.display = 'block';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderDelta);
+  } else { renderDelta(); }
+
+  var _orig = window.updateDashboard;
+  if (typeof _orig === 'function') {
+    window.updateDashboard = function (data) { _orig(data); setTimeout(renderDelta, 50); };
+  }
+})();
+// End B69

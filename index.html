@@ -100,6 +100,7 @@
               <circle class="ring-value" cx="75" cy="75" r="62" />
             </svg>
             <span><small>BALA score</small><strong>82</strong><em id="score-status"><b id="score-icon" aria-hidden="true">↑</b> Strong day</em></span>
+            <span id="bala-score-delta" style="display:none;font-size:12px;font-weight:600;margin-top:4px;letter-spacing:0.01em;" aria-live="polite"></span>
           </div>
           <div class="score-insight">
             <p class="section-label" id="guide-label">Today's Guide</p>
@@ -282,6 +283,7 @@
           <div class="data-portability-actions">
             <button id="export-data-button" type="button">Export BALA Data</button>
             <button id="import-data-button" type="button">Import BALA Data</button>
+            <button id="bala-export-chintu-btn" type="button">Export for Chintu</button>
             <input id="bala-import-file" type="file" accept=".json,application/json" hidden />
           </div>
           <p class="data-portability-status" id="data-portability-status" role="status" aria-live="polite">Backups stay on your device unless you choose where to save or share them.</p>
