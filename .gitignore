@@ -58,3 +58,6 @@ CHINTU_MEMORY_VAULT/chat_history/
 
 # C60: Preference memory — stored at os.homedir()/chintu-prefs.json (outside repo)
 chintu-prefs.json
+
+# C62: GitHub watch state — stored at os.homedir()/chintu-github-watch-state.json (outside repo)
+chintu-github-watch-state.json
