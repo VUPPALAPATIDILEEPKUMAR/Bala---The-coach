@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>BALA Creator Hub</title>
+  <style>
+    :root {
+      --bg: #071018;
+      --panel: rgba(10, 18, 28, 0.86);
+      --panel-2: rgba(17, 27, 39, 0.92);
+      --line: rgba(134, 173, 214, 0.18);
+      --ink: #f4f8ff;
+      --muted: #a7bad3;
+      --accent: #6fd0ff;
+      --accent-2: #8ff0b5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(111, 208, 255, 0.22), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(143, 240, 181, 0.14), transparent 24%),
+        linear-gradient(180deg, #071018, #0b1520 48%, #09111a);
+    }
+    .wrap {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+    .hero, .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+      border-radius: 24px;
+    }
+    .hero {
+      padding: 26px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 5vw, 52px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+    .lede {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.75;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .card {
+      padding: 18px;
+      background: var(--panel-2);
+    }
+    .thumb {
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      display: block;
+      background: #101924;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0 10px;
+    }
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+    }
+    .pill.ok {
+      color: var(--accent-2);
+      border-color: rgba(143, 240, 181, 0.28);
+      background: rgba(143, 240, 181, 0.08);
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      background: linear-gradient(135deg, #52b5ff, #1f74da);
+    }
+    .btn.secondary {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">BALA Creator Lane</div>
+      <h1>Family reset stories, learning moments, and creator-ready review cuts.</h1>
+      <p class="lede">
+        This hub is the phone-safe version of the latest BALA creator work. It is built for review links that open on iPhone,
+        without depending on a local laptop address or exposing private machine paths.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <img class="thumb" src="./bala-episode-1/assets/poster.jpg" alt="Museum entry poster frame for BALA Episode 1">
+        <div class="meta">
+          <span class="pill ok">Episode 1 Ready</span>
+          <span class="pill">Museum Reset Day</span>
+          <span class="pill">Phone Safe</span>
+        </div>
+        <h2>What we learned at the Children's Museum</h2>
+        <p>
+          The first public creator review page is live with the real final review cut, title, hook, and next-step upload notes.
+        </p>
+        <div class="actions">
+          <a class="btn" href="./bala-episode-1/">Open Episode 1</a>
+          <a class="btn secondary" href="../">Open BALA App</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Why this hub exists</h2>
+        <p>
+          Localhost links like <code>127.0.0.1</code> only work on the laptop itself. This public creator hub solves that problem so Telegram links can open directly on phone.
+        </p>
+        <div class="meta">
+          <span class="pill">No local runtime dump</span>
+          <span class="pill">Relative assets only</span>
+          <span class="pill">Review-first flow</span>
+        </div>
+      </article>
+    </section>
+  </div>
+</body>
+</html>
