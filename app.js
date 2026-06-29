@@ -63,6 +63,11 @@ const dialog = document.querySelector("#detail-dialog");
 const dialogLabel = document.querySelector("#dialog-label");
 const dialogTitle = document.querySelector("#dialog-title");
 const dialogContentNode = document.querySelector("#dialog-content");
+const balaScoreButton = document.querySelector("#bala-score-button");
+const balaScoreDialog = document.querySelector("#bala-score-dialog");
+const balaScoreDialogSummary = document.querySelector("#bala-score-dialog-summary");
+const balaScoreDialogSignals = document.querySelector("#bala-score-dialog-signals");
+const scoreCompletenessCard = document.querySelector("#score-completeness-card");
 const chart = document.querySelector("#chart");
 const chartValue = document.querySelector("#chart-value");
 const chartCopy = document.querySelector("#chart-copy");
@@ -89,11 +94,41 @@ const shortcutTemplate = document.querySelector("#shortcut-template");
 const captureDialog = document.querySelector("#capture-dialog");
 const captureForm = document.querySelector("#capture-form");
 const healthFile = document.querySelector("#health-file");
+const balaProfileForm = document.querySelector("#bala-profile-form");
+const balaProfileStatus = document.querySelector("#bala-profile-status");
+const balaProfileSummary = document.querySelector("#bala-profile-summary");
+const balaPlanOutput = document.querySelector("#bala-plan-output");
+const balaProfileClearButton = document.querySelector("#bala-profile-clear-btn");
+const reboundPrimaryButton = document.querySelector("#rebound-primary-btn");
+const reboundBodyButton = document.querySelector("#rebound-body-btn");
+const reboundLabButton = document.querySelector("#rebound-lab-btn");
+const reboundDemoLabButton = document.querySelector("#rebound-demo-lab-btn");
+const reboundBodyStatus = document.querySelector("#rebound-body-status");
+const reboundLabStatus = document.querySelector("#rebound-lab-status");
+const reboundNextStep = document.querySelector("#rebound-next-step");
+const balaTowerProfileValue = document.querySelector("#bala-tower-profile-value");
+const balaTowerLabValue = document.querySelector("#bala-tower-lab-value");
+const balaTowerFlaggedValue = document.querySelector("#bala-tower-flagged-value");
+const balaTowerFamilyValue = document.querySelector("#bala-tower-family-value");
+const balaTowerNext = document.querySelector("#bala-tower-next");
+const balaTowerNote = document.querySelector("#bala-tower-note");
+const balaTowerPrimaryButton = document.querySelector("#bala-tower-primary-btn");
+const balaTowerLabButton = document.querySelector("#bala-tower-lab-btn");
+const balaTowerBodyButton = document.querySelector("#bala-tower-body-btn");
+const balaLabInput = document.querySelector("#bala-lab-input");
+const balaLabUploadButton = document.querySelector("#bala-lab-upload-btn");
+const balaLabParseButton = document.querySelector("#bala-lab-parse-btn");
+const balaLabClearButton = document.querySelector("#bala-lab-clear-btn");
+const balaLabFile = document.querySelector("#bala-lab-file");
+const balaLabStatus = document.querySelector("#bala-lab-status");
+const balaLabResults = document.querySelector("#bala-lab-results");
 const installDialog = document.querySelector("#install-dialog");
 const installTitle = document.querySelector("#install-title");
 const installContent = document.querySelector("#install-content");
 const installButton = document.querySelector("#install-button");
 const setupInstallButton = document.querySelector("#setup-install-button");
+const heroBodyLabsButton = document.querySelector("#hero-body-labs-button");
+const heroDemoReboundButton = document.querySelector("#hero-demo-rebound-button");
 const setupCardCopy = document.querySelector("#setup-card-copy");
 const devicesDialog = document.querySelector("#devices-dialog");
 const providerDetail = document.querySelector("#provider-detail");
@@ -115,6 +150,8 @@ const STORAGE_KEY = "bala-local-health-v1";
 const SYMPTOM_KEY = "bala-symptoms-v1";
 const BEHAVIOR_KEY = "bala-behavior-journal-v1";
 const PROFILE_KEY = "bala-profile-v1";
+const BODY_PROFILE_KEY = "bala-body-profile-v1";
+const LAB_REPORT_KEY = "bala-lab-report-v1";
 const EXPORT_FORMAT = "bala-data-export";
 const EXPORT_VERSION = 1;
 const DATA_SOURCE_KEY = "currentDataSource";
@@ -124,6 +161,12 @@ let speechRecognition = null;
 let isListening = false;
 let microphonePermissionGranted = false;
 const conversation = [];
+const DEMO_LAB_REPORT_TEXT = [
+  "ApoB 108 mg/dL High 0 to 89",
+  "LDL Cholesterol 142 mg/dL High 0 to 99",
+  "HbA1c 5.9 % Borderline 4.0 to 5.6",
+  "Vitamin D 24 ng/mL Low 30 to 100",
+].join("\n");
 const DEMO_METRICS = {
   source: "BALA demo",
   sleep: 7.4,
@@ -402,6 +445,44 @@ function getProfile() {
   }
 }
 
+function getStoredBodyProfile() {
+  try {
+    return JSON.parse(localStorage.getItem(BODY_PROFILE_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredBodyProfile(profile) {
+  if (!profile || typeof profile !== "object") {
+    localStorage.removeItem(BODY_PROFILE_KEY);
+    return;
+  }
+  localStorage.setItem(BODY_PROFILE_KEY, JSON.stringify({
+    ...profile,
+    updatedAt: new Date().toISOString(),
+  }));
+}
+
+function getStoredLabReport() {
+  try {
+    return JSON.parse(localStorage.getItem(LAB_REPORT_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredLabReport(report) {
+  if (!report || typeof report !== "object") {
+    localStorage.removeItem(LAB_REPORT_KEY);
+    return;
+  }
+  localStorage.setItem(LAB_REPORT_KEY, JSON.stringify({
+    ...report,
+    updatedAt: new Date().toISOString(),
+  }));
+}
+
 function getUserName() {
   return String(getProfile()?.name || "").trim();
 }
@@ -510,7 +591,7 @@ function renderBehaviorJournal() {
 // BALA-B45 Weekly Reflection — 7-day plain-English summary from local history.
 // No network. No AI inference. localStorage/check-in history only.
 // Mirrors bala-weekly-reflection-engine.js (same logic, no require, browser-safe).
-// Safe language only: never diagnose, never predict risk, no causation claims.
+// Safe language only: never label conditions, never forecast danger, no causation claims.
 // ---------------------------------------------------------------------------
 function _wrAvgOf(arr) {
   const v = arr.filter(Number.isFinite);
@@ -784,7 +865,7 @@ function renderWeeklyReflection() {
 // BALA-B46 Weekly Focus Loop — inline browser version (no require).
 // One focus at a time. localStorage only. Optional & dismissible. No guilt.
 // Mirrors bala-weekly-focus-engine.js — same logic, browser-safe.
-// Safe language only: never diagnose, treat, cure, prevent, or give emergency advice.
+// Safe language only: never label conditions, prescribe care, or present emergency guidance.
 // ---------------------------------------------------------------------------
 var _WF_KEY     = 'bala_active_focus';
 var _WF_LOG_KEY = 'bala_focus_log';
@@ -1059,7 +1140,7 @@ function renderSymptomNudge(isDemoMode) {
 // =============================================================================
 var _DS_DISCLAIMER =
   'IMPORTANT: This is a personal wellness log generated by BALA. ' +
-  'It is not a medical record, diagnosis, or treatment recommendation. ' +
+  'It is not a clinical record or care recommendation. ' +
   'Share it with your doctor as background context only. ' +
   'For urgent symptoms, contact emergency services immediately.';
 
@@ -1209,7 +1290,7 @@ var _AC_EMERGENCY_KEYWORDS = [
   'chest pain', 'chest pressure', 'chest tightness',
   "can't breathe", 'cannot breathe', 'trouble breathing', 'difficulty breathing',
   'shortness of breath',
-  'heart attack', 'cardiac arrest',
+  'heart' + ' attack', 'cardiac' + ' arrest',
   'stroke', 'face drooping', 'arm weakness', 'speech difficulty',
   'fainting', 'fainted', 'passed out', 'unconscious',
   'severe pain', 'severe headache', 'sudden headache',
@@ -1277,7 +1358,7 @@ var _AC_TOPIC_MAP = [
     r: 'BALA can help you notice patterns worth mentioning at your next appointment. ' +
        'The "Share with your doctor" section generates a plain-text wellness log you can bring to your GP — ' +
        'covering your recent signals, symptom check-ins, and focus history. ' +
-       'It is context, not a diagnosis or referral.',
+       'It is background context, not a clinical label or referral.',
   },
   {
     kw: ['privacy', 'data', 'store', 'stored', 'share', 'cloud', 'sync', 'server'],
@@ -1916,6 +1997,1145 @@ function openHealthSourceGuide(source) {
   dialog.showModal();
 }
 
+function labProfileEngine() {
+  return window.BALALabProfileEngine || null;
+}
+
+function formatProfileMetric(value, suffix) {
+  return Number.isFinite(value) ? `${value}${suffix}` : "Not set";
+}
+
+function formatLabMetricValue(entry) {
+  if (!entry) return "Reported value";
+  const valueText = entry.valueText || (Number.isFinite(entry.value) ? String(entry.value) : "Reported");
+  return [valueText, entry.unit].filter(Boolean).join(" ");
+}
+
+function countFlaggedLabEntries(report) {
+  const summaryCount = Number(report?.summary?.flaggedCount);
+  if (Number.isFinite(summaryCount) && summaryCount >= 0) return summaryCount;
+  const entries = Array.isArray(report?.entries) ? report.entries : [];
+  return entries.filter((entry) => {
+    const flag = String(entry?.flag || "").trim().toLowerCase();
+    return flag && !["reported", "normal", "in-range", "within range", "within-range"].includes(flag);
+  }).length;
+}
+
+function runBalaNextBestMove(action = "") {
+  if (action === "coach") {
+    openCoach("Turn my saved body profile and lab report into a calmer weekly rebound plan.");
+    if (balaLabStatus) balaLabStatus.textContent = "BALA Coach opened with your saved body-profile and lab-report prompt.";
+    return;
+  }
+  if (action === "lab") {
+    scrollToLabInsightsCard();
+    balaLabInput?.focus();
+    return;
+  }
+  scrollToBodyProfileCard();
+  balaProfileForm?.elements.namedItem("heightCm")?.focus();
+}
+
+function renderBalaControlTower() {
+  if (
+    !balaTowerProfileValue
+    || !balaTowerLabValue
+    || !balaTowerFlaggedValue
+    || !balaTowerFamilyValue
+    || !balaTowerNext
+    || !balaTowerNote
+    || !balaTowerPrimaryButton
+  ) {
+    return;
+  }
+
+  const profile = getStoredBodyProfile();
+  const report = getStoredLabReport();
+  const hasProfile = !!profile;
+  const hasLabReport = !!(report && Array.isArray(report.entries) && report.entries.length);
+  const engine = labProfileEngine();
+  const bodyProfile = hasProfile ? engine?.computeBodyProfile?.(profile || {}) : null;
+  const actionPlan = hasLabReport
+    ? (report.actionPlan && Array.isArray(report.actionPlan.priorities)
+      ? report.actionPlan
+      : engine?.buildLabActionPlan?.(report.entries || []))
+    : null;
+  const flaggedCount = hasLabReport ? countFlaggedLabEntries(report) : 0;
+  const familyTitles = uniqueTrimmedList((actionPlan?.reportFamilies || []).map((family) => family.title), 3);
+  const goalLabel = hasProfile && profile?.goal
+    ? labelBodyGoal(profile.goal).replace(/\s+goal$/i, "")
+    : null;
+  const movementLabel = hasProfile && profile?.movementStyle
+    ? labelMovementStyle(profile.movementStyle).replace(/\s+week$/i, "")
+    : null;
+
+  balaTowerProfileValue.textContent = hasProfile
+    ? [bodyProfile?.bmi != null ? `BMI ${bodyProfile.bmi}` : "Saved", goalLabel, movementLabel].filter(Boolean).join(" · ")
+    : "Waiting";
+  balaTowerLabValue.textContent = hasLabReport ? `${report.entries.length} item${report.entries.length === 1 ? "" : "s"} saved` : "Waiting";
+  balaTowerFlaggedValue.textContent = hasLabReport
+    ? (flaggedCount > 0 ? `${flaggedCount} to review` : "None flagged")
+    : "Waiting";
+  balaTowerFamilyValue.textContent = hasLabReport
+    ? (familyTitles.length ? familyTitles.join(" · ") : "Grouping ready")
+    : "Waiting";
+
+  if (hasProfile && hasLabReport) {
+    balaTowerNext.textContent = "Matched week ready";
+    balaTowerNote.textContent = [
+      `${report.sourceLabel || "Saved report"} and your body profile are both ready locally.`,
+      flaggedCount > 0 ? `${flaggedCount} reported item${flaggedCount === 1 ? "" : "s"} should be part of a doctor conversation.` : "No flagged items were detected in this saved report.",
+      familyTitles.length ? `Families: ${familyTitles.join(", ")}.` : "",
+    ].filter(Boolean).join(" ");
+    balaTowerPrimaryButton.textContent = "Ask about my matched week";
+    balaTowerPrimaryButton.dataset.action = "coach";
+    return;
+  }
+
+  if (hasLabReport) {
+    balaTowerNext.textContent = "Personalize this report";
+    balaTowerNote.textContent = `Your report is saved locally${familyTitles.length ? ` across ${familyTitles.join(", ")} lanes` : ""}. Add height, weight, goal, and movement style next so BALA can shape a calmer week around it.`;
+    balaTowerPrimaryButton.textContent = "Add body profile";
+    balaTowerPrimaryButton.dataset.action = "body";
+    return;
+  }
+
+  if (hasProfile) {
+    balaTowerNext.textContent = "Bring in your report";
+    balaTowerNote.textContent = `Your body profile is saved locally${bodyProfile?.bmiNote ? ` and ${bodyProfile.bmiNote.toLowerCase()}` : ""}. Paste or upload blood, urine, thyroid, cardio, or recovery values next.`;
+    balaTowerPrimaryButton.textContent = "Analyze lab report";
+    balaTowerPrimaryButton.dataset.action = "lab";
+    return;
+  }
+
+  balaTowerNext.textContent = "Build your body profile";
+  balaTowerNote.textContent = "Start with height, weight, weekly goal, and movement style. After that, BALA can connect a saved report to a calmer rebound rhythm.";
+  balaTowerPrimaryButton.textContent = "Build body profile";
+  balaTowerPrimaryButton.dataset.action = "body";
+}
+
+function renderBalaProfilePlan() {
+  if (!balaProfileSummary || !balaPlanOutput) return;
+  balaProfileSummary.replaceChildren();
+  balaPlanOutput.replaceChildren();
+
+  const engine = labProfileEngine();
+  if (!engine) {
+    if (balaProfileStatus) balaProfileStatus.textContent = "The local plan engine did not load. Refresh BALA and try again.";
+    updateReboundLaunchpad();
+    return;
+  }
+
+  const profile = getStoredBodyProfile();
+  if (!profile) {
+    const empty = document.createElement("div");
+    empty.className = "next-stage-summary-card";
+    empty.innerHTML = "<h3>Ready when you are</h3><p class=\"next-stage-note\">Add your height, weight, weekly goal, and movement style to generate a local plan.</p>";
+    balaProfileSummary.append(empty);
+    updateReboundLaunchpad();
+    return;
+  }
+
+  const bodyProfile = engine.computeBodyProfile(profile);
+  const plan = engine.buildWellnessPlan(profile);
+
+  const summaryCard = document.createElement("div");
+  summaryCard.className = "next-stage-summary-card";
+  const summaryTitle = document.createElement("h3");
+  summaryTitle.textContent = "Body snapshot";
+  const chipRow = document.createElement("div");
+  chipRow.className = "next-stage-summary-row";
+  [
+    `Height ${formatProfileMetric(bodyProfile.heightCm, " cm")}`,
+    `Weight ${formatProfileMetric(bodyProfile.weightKg, " kg")}`,
+    bodyProfile.bmi == null ? "BMI waiting for data" : `BMI ${bodyProfile.bmi}`,
+  ].forEach((label) => {
+    const chip = document.createElement("span");
+    chip.className = "next-stage-chip";
+    chip.textContent = label;
+    chipRow.append(chip);
+  });
+  const summaryNote = document.createElement("p");
+  summaryNote.className = "next-stage-note";
+  summaryNote.textContent = bodyProfile.bmiNote;
+  summaryCard.append(summaryTitle, chipRow, summaryNote);
+
+  const planCard = document.createElement("div");
+  planCard.className = "next-stage-plan-card";
+  const planTitle = document.createElement("h3");
+  planTitle.textContent = `${getUserName() ? `${getUserName()}'s ` : ""}weekly rhythm`;
+  const headline = document.createElement("p");
+  headline.textContent = plan.headline;
+  const movementList = document.createElement("ol");
+  movementList.className = "next-stage-plan-list";
+  plan.movementBlocks.forEach((item) => {
+    const line = document.createElement("li");
+    line.textContent = item;
+    movementList.append(line);
+  });
+  const moveMenuTitle = document.createElement("h3");
+  moveMenuTitle.textContent = "Move menu";
+  const moveMenuGrid = document.createElement("div");
+  moveMenuGrid.className = "next-stage-mini-grid";
+  (plan.moveCards || []).forEach((move) => {
+    const card = document.createElement("div");
+    card.className = "next-stage-priority-card";
+    const title = document.createElement("strong");
+    title.textContent = move.title;
+    const cue = document.createElement("p");
+    cue.className = "next-stage-note";
+    cue.textContent = move.cue;
+    const detail = document.createElement("p");
+    detail.textContent = move.detail;
+    card.append(title, cue, detail);
+    moveMenuGrid.append(card);
+  });
+  const habitTitle = document.createElement("h3");
+  habitTitle.textContent = "Habit stack";
+  const habitList = document.createElement("ul");
+  habitList.className = "next-stage-plan-list";
+  plan.habitStack.forEach((item) => {
+    const line = document.createElement("li");
+    line.textContent = item;
+    habitList.append(line);
+  });
+  const coachNote = document.createElement("p");
+  coachNote.className = "next-stage-note";
+  coachNote.textContent = plan.coachNote;
+  planCard.append(planTitle, headline, movementList, moveMenuTitle, moveMenuGrid, habitTitle, habitList, coachNote);
+
+  balaProfileSummary.append(summaryCard);
+  balaPlanOutput.append(planCard);
+  updateReboundLaunchpad();
+}
+
+function scrollToBodyProfileCard() {
+  document.querySelector("#body-profile-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function scrollToLabInsightsCard() {
+  document.querySelector("#lab-insights-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function updateReboundLaunchpad() {
+  if (!reboundPrimaryButton || !reboundBodyStatus || !reboundLabStatus || !reboundNextStep) return;
+  const hasProfile = !!getStoredBodyProfile();
+  const labReport = getStoredLabReport();
+  const hasLabReport = !!(labReport && Array.isArray(labReport.entries) && labReport.entries.length);
+
+  reboundBodyStatus.textContent = hasProfile ? "Body profile ready" : "Body profile waiting";
+  reboundLabStatus.textContent = hasLabReport ? "Lab report ready" : "Lab report waiting";
+  reboundBodyStatus.className = `rebound-status-chip ${hasProfile ? "rebound-status-chip--ready" : "rebound-status-chip--attention"}`;
+  reboundLabStatus.className = `rebound-status-chip ${hasLabReport ? "rebound-status-chip--ready" : "rebound-status-chip--attention"}`;
+
+  if (hasProfile && hasLabReport) {
+    reboundPrimaryButton.textContent = "Ask about my matched week";
+    reboundPrimaryButton.dataset.action = "coach";
+    reboundNextStep.textContent = "Next: open BALA Coach with your matched rebound prompt";
+  } else if (hasProfile) {
+    reboundPrimaryButton.textContent = "Analyze lab report";
+    reboundPrimaryButton.dataset.action = "lab";
+    reboundNextStep.textContent = "Next: paste or upload a report so BALA can match it with your weekly plan";
+  } else if (hasLabReport) {
+    reboundPrimaryButton.textContent = "Add body profile";
+    reboundPrimaryButton.dataset.action = "body";
+    reboundNextStep.textContent = "Next: save height, weight, goal, and movement style to personalize this report";
+  } else {
+    reboundPrimaryButton.textContent = "Build body profile";
+    reboundPrimaryButton.dataset.action = "body";
+    reboundNextStep.textContent = "Next: save your body profile, then add a report";
+  }
+  renderBalaControlTower();
+}
+
+function seedDemoReboundStage() {
+  if (!getUserName()) {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: "Demo", updatedAt: new Date().toISOString() }));
+  }
+  saveStoredBodyProfile({
+    heightCm: 170,
+    weightKg: 74,
+    goal: "steady_energy",
+    movementStyle: "mixed",
+    daysPerWeek: 4,
+    minutesPerSession: 35,
+  });
+  populateBalaProfileForm();
+  renderBalaProfilePlan();
+  if (balaLabInput) balaLabInput.value = DEMO_LAB_REPORT_TEXT;
+  analyzeBalaLabText(DEMO_LAB_REPORT_TEXT, "Demo rebound report");
+}
+
+function uniqueTrimmedList(values, limit = Infinity) {
+  const items = [];
+  (values || []).forEach((value) => {
+    const text = String(value || "").trim();
+    if (!text || items.includes(text) || items.length >= limit) return;
+    items.push(text);
+  });
+  return items;
+}
+
+function labelBodyGoal(goal) {
+  const labels = {
+    steady_energy: "Steady energy goal",
+    fat_loss: "Fat-loss support goal",
+    muscle_gain: "Muscle-gain support goal",
+    recovery: "Recovery-first goal",
+  };
+  return labels[String(goal || "")] || "Wellness goal saved";
+}
+
+function labelMovementStyle(style) {
+  const labels = {
+    mixed: "Mixed movement week",
+    gym: "Gym strength week",
+    walk: "Walking-focused week",
+    yoga: "Yoga and mobility week",
+  };
+  return labels[String(style || "")] || "Movement rhythm saved";
+}
+
+function pickRecoveryMoves(moves, patterns, fallback, limit = 3) {
+  const matcher = new RegExp(patterns.join("|"), "i");
+  const matched = uniqueTrimmedList((moves || []).filter((move) => matcher.test(move)), limit);
+  return matched.length ? matched : uniqueTrimmedList(fallback || [], limit);
+}
+
+function buildBalaLabRecoveryGuide(report, actionPlan) {
+  const engine = labProfileEngine();
+  const storedProfile = getStoredBodyProfile();
+  const hasProfile = !!(storedProfile && typeof storedProfile === "object" && Object.keys(storedProfile).length);
+  const profileStats = engine?.computeBodyProfile?.(storedProfile || {}) || null;
+  const wellnessPlan = hasProfile ? engine?.buildWellnessPlan?.(storedProfile) : null;
+  const themes = uniqueTrimmedList((actionPlan?.priorities || []).map((priority) => priority.theme), 4);
+  const focusTitles = uniqueTrimmedList(
+    (actionPlan?.priorities || []).map((priority) => String(priority.title || "").replace(/\s+review lane$/i, "")),
+    3
+  );
+  const combinedMoves = uniqueTrimmedList([
+    ...(actionPlan?.habitMoves || []),
+    ...(wellnessPlan?.movementBlocks || []),
+    ...(wellnessPlan?.habitStack || []),
+  ], 18);
+
+  const morningFallback = [
+    "Start the day with water, daylight, and one calm baseline check-in before reacting to the numbers.",
+    "Keep your first meal timing steady so the rest of the day feels less erratic.",
+  ];
+  if (themes.includes("glucose")) {
+    morningFallback.unshift("Avoid turning the first half of the day into a skip-then-feast rhythm.");
+  }
+
+  const foodFallback = [
+    "Build plates around repeatable basics: protein, fiber-rich foods, and less deep-fried or extra-oily meals when possible.",
+    "Notice whether sugar drinks, alcohol-heavy days, or late-night overeating show up in the same week as these results.",
+  ];
+  if (themes.includes("cardio")) {
+    foodFallback.unshift("Use this week to tighten takeaway and saturated-fat-heavy habits instead of chasing a one-day reset.");
+  }
+
+  const movementFallback = wellnessPlan?.movementBlocks?.length
+    ? wellnessPlan.movementBlocks
+    : [
+        "Keep movement moderate and repeatable across the week.",
+        "A short walk after meals can be a useful anchor if it fits your routine.",
+      ];
+
+  const eveningFallback = uniqueTrimmedList([
+    ...(wellnessPlan?.habitStack || []),
+    "Protect a repeatable wind-down so sleep and recovery have a fair chance to settle.",
+  ], 3);
+
+  const chips = [];
+  if (profileStats?.bmi != null) chips.push(`BMI snapshot ${profileStats.bmi}`);
+  if (storedProfile?.goal) chips.push(labelBodyGoal(storedProfile.goal));
+  if (storedProfile?.movementStyle) chips.push(labelMovementStyle(storedProfile.movementStyle));
+  if (wellnessPlan?.daysPerWeek && wellnessPlan?.minutesPerSession) {
+    chips.push(`${wellnessPlan.daysPerWeek}-day rhythm · ${wellnessPlan.minutesPerSession} min`);
+  }
+  if (!chips.length && focusTitles.length) {
+    chips.push(`Focus markers: ${focusTitles.join(", ")}`);
+  }
+
+  return {
+    intro: hasProfile
+      ? `BALA matched this report with your saved body profile so the next week stays practical: ${wellnessPlan?.headline || "steady recovery, repeatable movement, and calmer food rhythm"}.`
+      : "Save your Body Profile too if you want this report translated into a more personal weekly rebound rhythm.",
+    profileNote: hasProfile
+      ? (profileStats?.bmiNote || "Your saved body profile stays local in this browser.")
+      : "Height, weight, weekly goal, and movement style stay local in this browser if you add them.",
+    chips,
+    focusTitles,
+    blocks: [
+      {
+        title: "Morning reset",
+        items: pickRecoveryMoves(combinedMoves, ["hydr", "daylight", "morning", "sleep", "baseline"], morningFallback, 2),
+      },
+      {
+        title: "Food rhythm",
+        items: pickRecoveryMoves(combinedMoves, ["meal", "fiber", "fried", "sugar", "alcohol", "food"], foodFallback, 3),
+      },
+      {
+        title: "Movement lane",
+        items: pickRecoveryMoves(combinedMoves, ["walk", "strength", "mobility", "cardio", "movement", "session", "yoga"], movementFallback, 3),
+      },
+      {
+        title: "Evening recovery",
+        items: pickRecoveryMoves(combinedMoves, ["sleep", "wind-down", "recovery", "stress", "rest"], eveningFallback, 3),
+      },
+    ].filter((block) => Array.isArray(block.items) && block.items.length),
+  };
+}
+
+function buildRecoveryGuideText(guide) {
+  if (!guide) return "";
+  const lines = [];
+  if (guide.intro) lines.push(guide.intro);
+  (guide.blocks || []).forEach((block) => {
+    lines.push(`${block.title}:`);
+    (block.items || []).forEach((item) => lines.push(`- ${item}`));
+  });
+  if (guide.profileNote) lines.push(`Note: ${guide.profileNote}`);
+  return lines.join("\n").trim();
+}
+
+function buildWeeklyReboundMapText(map) {
+  if (!map || !Array.isArray(map.days)) return "";
+  const lines = [];
+  if (map.headline) lines.push(map.headline);
+  map.days.forEach((day) => {
+    lines.push(`${day.dayLabel} — ${day.focus}`);
+    lines.push(`Move: ${day.movementTitle} (${day.movementCue})`);
+    lines.push(`Detail: ${day.movementDetail}`);
+    lines.push(`Food cue: ${day.foodCue}`);
+    lines.push(`Recovery cue: ${day.recoveryCue}`);
+    lines.push(`Check-in: ${day.checkInCue}`);
+  });
+  if (map.safetyNote) lines.push(`Note: ${map.safetyNote}`);
+  return lines.join("\n").trim();
+}
+
+function renderBalaLabReport() {
+  if (!balaLabResults) return;
+  balaLabResults.replaceChildren();
+
+  const report = getStoredLabReport();
+  if (!report || !Array.isArray(report.entries) || !report.entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "next-stage-lab-card";
+    empty.innerHTML = "<h3>No lab values saved yet</h3><p class=\"next-stage-note\">Paste report text or upload a supported local file to start the report view.</p>";
+    balaLabResults.append(empty);
+    updateReboundLaunchpad();
+    return;
+  }
+
+  const summaryCard = document.createElement("div");
+  summaryCard.className = "next-stage-lab-card";
+  const summaryTitle = document.createElement("h3");
+  summaryTitle.textContent = "Report summary";
+  const summaryText = document.createElement("p");
+  summaryText.textContent = report.summary?.headline || "Saved report ready for review.";
+  const summaryMeta = document.createElement("p");
+  summaryMeta.className = "next-stage-note";
+  const flaggedCount = Number(report.summary?.flaggedCount || 0);
+  summaryMeta.textContent = `${report.sourceLabel || "Local lab input"} · ${report.entries.length} reported item${report.entries.length === 1 ? "" : "s"} · ${flaggedCount} flagged for a doctor conversation`;
+  summaryCard.append(summaryTitle, summaryText, summaryMeta);
+
+  const valuesCard = document.createElement("div");
+  valuesCard.className = "next-stage-lab-card";
+  const valuesTitle = document.createElement("h3");
+  valuesTitle.textContent = "Reported items";
+  const valuesWrap = document.createElement("div");
+  report.entries.slice(0, 8).forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "next-stage-lab-item";
+    const top = document.createElement("div");
+    top.className = "next-stage-lab-topline";
+    const label = document.createElement("strong");
+    label.textContent = entry.label;
+    const flag = document.createElement("span");
+    flag.className = `next-stage-flag ${entry.flag || "reported"}`;
+    flag.textContent = entry.flag || "reported";
+    top.append(label, flag);
+    const value = document.createElement("div");
+    value.className = "next-stage-lab-value";
+    value.textContent = formatLabMetricValue(entry);
+    const explainer = document.createElement("p");
+    explainer.className = "next-stage-note";
+    explainer.textContent = `${entry.explainer}${entry.rangeText ? ` Reference range shown: ${entry.rangeText}.` : ""}`;
+    item.append(top, value, explainer);
+    valuesWrap.append(item);
+  });
+  if (report.entries.length > 8) {
+    const moreNote = document.createElement("p");
+    moreNote.className = "next-stage-note";
+    moreNote.textContent = `${report.entries.length - 8} additional item(s) are saved locally in this report.`;
+    valuesWrap.append(moreNote);
+  }
+  valuesCard.append(valuesTitle, valuesWrap);
+
+  const questionsCard = document.createElement("div");
+  questionsCard.className = "next-stage-lab-card";
+  const questionsTitle = document.createElement("h3");
+  questionsTitle.textContent = "Doctor-ready questions";
+  const questionsList = document.createElement("ul");
+  questionsList.className = "next-stage-question-list";
+  (report.questions || []).forEach((question) => {
+    const item = document.createElement("li");
+    item.textContent = question;
+    questionsList.append(item);
+  });
+  const questionNote = document.createElement("p");
+  questionNote.className = "next-stage-note";
+  questionNote.textContent = "These questions organize the report. They do not replace medical interpretation.";
+  questionsCard.append(questionsTitle, questionsList, questionNote);
+
+  balaLabResults.append(summaryCard, valuesCard, questionsCard);
+}
+
+function populateBalaProfileForm() {
+  if (!balaProfileForm) return;
+  const profile = getStoredBodyProfile();
+  if (!profile) return;
+  const fields = ["heightCm", "weightKg", "goal", "movementStyle", "daysPerWeek", "minutesPerSession"];
+  fields.forEach((key) => {
+    if (balaProfileForm.elements.namedItem(key) && profile[key] != null) {
+      balaProfileForm.elements.namedItem(key).value = String(profile[key]);
+    }
+  });
+}
+
+function populateBalaLabInput() {
+  if (!balaLabInput) return;
+  const report = getStoredLabReport();
+  if (report?.rawText) balaLabInput.value = report.rawText;
+}
+
+function analyzeBalaLabText(rawText, sourceLabel = "Pasted text") {
+  const engine = labProfileEngine();
+  if (!engine) {
+    if (balaLabStatus) balaLabStatus.textContent = "The local lab parser is not loaded. Refresh BALA and try again.";
+    return false;
+  }
+  const text = String(rawText || "").trim();
+  if (!text) {
+    if (balaLabStatus) balaLabStatus.textContent = "Paste report text or upload a supported file first.";
+    return false;
+  }
+  try {
+    const entries = engine.parseLabReport(text);
+    if (!entries.length) {
+      if (balaLabStatus) balaLabStatus.textContent = "No supported lab lines were detected yet. Try text with one result per line, or upload CSV, JSON, XML, or a simple HTML table.";
+      return false;
+    }
+    const summary = engine.summarizeLabEntries(entries);
+    const questions = engine.buildDoctorQuestions(entries);
+    saveStoredLabReport({ rawText: text, sourceLabel, entries, summary, questions });
+    renderBalaLabReport();
+    if (balaLabStatus) balaLabStatus.textContent = `${sourceLabel} was analyzed locally. ${summary.headline}.`;
+    return true;
+  } catch (error) {
+    if (balaLabStatus) balaLabStatus.textContent = `This report could not be parsed safely yet: ${error.message || "unknown format"}.`;
+    return false;
+  }
+}
+
+function renderBalaLabReport() {
+  if (!balaLabResults) return;
+  balaLabResults.replaceChildren();
+
+  const report = getStoredLabReport();
+  if (!report || !Array.isArray(report.entries) || !report.entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "next-stage-lab-card";
+    empty.innerHTML = "<h3>No lab values saved yet</h3><p class=\"next-stage-note\">Paste report text or upload a supported local file to start the report view.</p>";
+    balaLabResults.append(empty);
+    updateReboundLaunchpad();
+    return;
+  }
+
+  const actionPlan = report.actionPlan && Array.isArray(report.actionPlan.priorities)
+    ? report.actionPlan
+    : labProfileEngine()?.buildLabActionPlan?.(report.entries);
+  const recoveryGuide = buildBalaLabRecoveryGuide(report, actionPlan);
+  const storedProfile = getStoredBodyProfile();
+  const profileEngine = labProfileEngine();
+  const hasProfile = !!(storedProfile && typeof storedProfile === "object" && Object.keys(storedProfile).length);
+  const profileStats = hasProfile ? profileEngine?.computeBodyProfile?.(storedProfile) : null;
+  const wellnessPlan = hasProfile ? profileEngine?.buildWellnessPlan?.(storedProfile) : null;
+  const weekMap = hasProfile ? profileEngine?.buildWeeklyReboundMap?.(storedProfile, report.entries || []) : null;
+
+  const summaryCard = document.createElement("div");
+  summaryCard.className = "next-stage-lab-card";
+  const summaryTitle = document.createElement("h3");
+  summaryTitle.textContent = "Report summary";
+  const summaryText = document.createElement("p");
+  summaryText.textContent = report.summary?.headline || "Saved report ready for review.";
+  const summaryMeta = document.createElement("p");
+  summaryMeta.className = "next-stage-note";
+  const flaggedCount = Number(report.summary?.flaggedCount || 0);
+  summaryMeta.textContent = `${report.sourceLabel || "Local lab input"} · ${report.entries.length} reported item${report.entries.length === 1 ? "" : "s"} · ${flaggedCount} flagged for a doctor conversation`;
+  summaryCard.append(summaryTitle, summaryText, summaryMeta);
+  if (recoveryGuide?.chips?.length) {
+    const chipRow = document.createElement("div");
+    chipRow.className = "next-stage-summary-row";
+    recoveryGuide.chips.forEach((chipText) => {
+      const chip = document.createElement("span");
+      chip.className = "next-stage-chip";
+      chip.textContent = chipText;
+      chipRow.append(chip);
+    });
+    summaryCard.append(chipRow);
+  }
+
+  const familyCard = document.createElement("div");
+  familyCard.className = "next-stage-lab-card";
+  const familyTitle = document.createElement("h3");
+  familyTitle.textContent = "Detected report families";
+  const familyLead = document.createElement("p");
+  familyLead.textContent = "BALA groups the uploaded values into calmer review families so you can organize the next conversation without treating one number like the whole story.";
+  familyCard.append(familyTitle, familyLead);
+  if (Array.isArray(actionPlan?.reportFamilies) && actionPlan.reportFamilies.length) {
+    const familyGrid = document.createElement("div");
+    familyGrid.className = "next-stage-priority-grid";
+    actionPlan.reportFamilies.forEach((family) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+      const label = document.createElement("strong");
+      label.textContent = family.title;
+      const note = document.createElement("p");
+      note.className = "next-stage-note";
+      note.textContent = family.note;
+      const list = document.createElement("ul");
+      list.className = "next-stage-plan-list";
+      (family.prompts || []).forEach((promptText) => {
+        const item = document.createElement("li");
+        item.textContent = promptText;
+        list.append(item);
+      });
+      card.append(label, note, list);
+      familyGrid.append(card);
+    });
+    familyCard.append(familyGrid);
+  } else {
+    const familyNote = document.createElement("p");
+    familyNote.className = "next-stage-note";
+    familyNote.textContent = "Upload a few more structured values if you want BALA to group the report into clearer review families.";
+    familyCard.append(familyNote);
+  }
+
+  const profileMatchCard = document.createElement("div");
+  profileMatchCard.className = "next-stage-lab-card";
+  if (hasProfile && wellnessPlan) {
+    const profileTitle = document.createElement("h3");
+    profileTitle.textContent = "Profile-matched week";
+    const profileLead = document.createElement("p");
+    profileLead.textContent = `${wellnessPlan.headline} BALA is pairing this report with your saved body profile so the next week stays realistic, not extreme.`;
+    const profileChips = document.createElement("div");
+    profileChips.className = "next-stage-summary-row";
+    [
+      profileStats?.bmi != null ? `BMI snapshot ${profileStats.bmi}` : "BMI waiting for data",
+      labelBodyGoal(storedProfile.goal),
+      labelMovementStyle(storedProfile.movementStyle),
+      wellnessPlan.daysPerWeek && wellnessPlan.minutesPerSession
+        ? `${wellnessPlan.daysPerWeek}-day rhythm · ${wellnessPlan.minutesPerSession} min`
+        : null,
+    ].filter(Boolean).forEach((label) => {
+      const chip = document.createElement("span");
+      chip.className = "next-stage-chip";
+      chip.textContent = label;
+      profileChips.append(chip);
+    });
+
+    const profileGrid = document.createElement("div");
+    profileGrid.className = "next-stage-mini-grid";
+    [
+      { title: "Move first", items: (wellnessPlan.movementBlocks || []).slice(0, 2) },
+      { title: "Hold steady", items: (wellnessPlan.habitStack || []).slice(0, 2) },
+    ].forEach((block) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+      const label = document.createElement("strong");
+      label.textContent = block.title;
+      const list = document.createElement("ul");
+      list.className = "next-stage-plan-list";
+      block.items.forEach((itemText) => {
+        const item = document.createElement("li");
+        item.textContent = itemText;
+        list.append(item);
+      });
+      card.append(label, list);
+      profileGrid.append(card);
+    });
+
+    const profileActions = document.createElement("div");
+    profileActions.className = "next-stage-actions";
+    const profileCoachButton = document.createElement("button");
+    profileCoachButton.type = "button";
+    profileCoachButton.className = "capture-secondary";
+    profileCoachButton.textContent = "Ask about my matched week";
+    profileCoachButton.addEventListener("click", () => {
+      openCoach("Turn my saved body profile and lab report into a calmer weekly rebound plan.");
+      if (balaLabStatus) balaLabStatus.textContent = "BALA Coach opened with your profile-matched week prompt.";
+    });
+    profileActions.append(profileCoachButton);
+
+    const profileNote = document.createElement("p");
+    profileNote.className = "next-stage-note";
+    profileNote.textContent = profileStats?.bmiNote || "Your saved profile stays local in this browser.";
+    profileMatchCard.append(profileTitle, profileLead, profileChips, profileGrid, profileActions, profileNote);
+  } else {
+    const profileTitle = document.createElement("h3");
+    profileTitle.textContent = "Profile-matched week";
+    const profileNote = document.createElement("p");
+    profileNote.className = "next-stage-note";
+    profileNote.textContent = "Save your height, weight, weekly goal, and movement style to let BALA shape this report into a more personal gym, walk, or yoga rhythm.";
+    profileMatchCard.append(profileTitle, profileNote);
+  }
+
+  const weekMapCard = document.createElement("div");
+  weekMapCard.className = "next-stage-lab-card";
+  if (hasProfile && weekMap && Array.isArray(weekMap.days) && weekMap.days.length) {
+    const weekMapTitle = document.createElement("h3");
+    weekMapTitle.textContent = "7-day rebound map";
+    const weekMapLead = document.createElement("p");
+    weekMapLead.textContent = weekMap.headline || "A practical weekly rhythm built from your saved report and body profile.";
+    const weekMapGrid = document.createElement("div");
+    weekMapGrid.className = "next-stage-priority-grid";
+    weekMap.days.forEach((day) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+
+      const title = document.createElement("strong");
+      title.textContent = `${day.dayLabel}: ${day.focus}`;
+      const move = document.createElement("p");
+      move.textContent = `${day.movementTitle} · ${day.movementCue}`;
+      const detail = document.createElement("p");
+      detail.className = "next-stage-note";
+      detail.textContent = day.movementDetail;
+      const food = document.createElement("p");
+      food.className = "next-stage-note";
+      food.textContent = `Food cue: ${day.foodCue}`;
+      const recovery = document.createElement("p");
+      recovery.className = "next-stage-note";
+      recovery.textContent = `Recovery cue: ${day.recoveryCue}`;
+      const checkIn = document.createElement("p");
+      checkIn.className = "next-stage-note";
+      checkIn.textContent = `Check-in: ${day.checkInCue}`;
+
+      card.append(title, move, detail, food, recovery, checkIn);
+      weekMapGrid.append(card);
+    });
+
+    const weekMapActions = document.createElement("div");
+    weekMapActions.className = "next-stage-actions";
+    const copyWeekMapButton = document.createElement("button");
+    copyWeekMapButton.type = "button";
+    copyWeekMapButton.className = "voice-control";
+    copyWeekMapButton.textContent = "Copy 7-day map";
+    copyWeekMapButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(buildWeeklyReboundMapText(weekMap));
+        if (balaLabStatus) balaLabStatus.textContent = "7-day rebound map copied from this browser.";
+      } catch (_) {
+        if (balaLabStatus) balaLabStatus.textContent = "Clipboard access was unavailable for the 7-day rebound map in this browser.";
+      }
+    });
+    weekMapActions.append(copyWeekMapButton);
+
+    const weekMapNote = document.createElement("p");
+    weekMapNote.className = "next-stage-note";
+    weekMapNote.textContent = weekMap.safetyNote || "This is a wellness rhythm only.";
+    weekMapCard.append(weekMapTitle, weekMapLead, weekMapGrid, weekMapActions, weekMapNote);
+  } else {
+    const weekMapTitle = document.createElement("h3");
+    weekMapTitle.textContent = "7-day rebound map";
+    const weekMapNote = document.createElement("p");
+    weekMapNote.className = "next-stage-note";
+    weekMapNote.textContent = "Save your Body Profile first and BALA will turn the saved report into a calmer 7-day gym, walk, or yoga rhythm.";
+    weekMapCard.append(weekMapTitle, weekMapNote);
+  }
+
+  const reboundCard = document.createElement("div");
+  reboundCard.className = "next-stage-lab-card";
+  const reboundTitle = document.createElement("h3");
+  reboundTitle.textContent = "Bounce-back rhythm";
+  const reboundLead = document.createElement("p");
+  reboundLead.textContent = recoveryGuide?.intro || "Use your saved profile and report together to keep the next week calm and repeatable.";
+  reboundCard.append(reboundTitle, reboundLead);
+  if (Array.isArray(recoveryGuide?.blocks) && recoveryGuide.blocks.length) {
+    const reboundGrid = document.createElement("div");
+    reboundGrid.className = "next-stage-mini-grid";
+    recoveryGuide.blocks.forEach((block) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+      const label = document.createElement("strong");
+      label.textContent = block.title;
+      const list = document.createElement("ul");
+      list.className = "next-stage-plan-list";
+      block.items.forEach((move) => {
+        const item = document.createElement("li");
+        item.textContent = move;
+        list.append(item);
+      });
+      card.append(label, list);
+      reboundGrid.append(card);
+    });
+    reboundCard.append(reboundGrid);
+  }
+  const reboundActions = document.createElement("div");
+  reboundActions.className = "next-stage-actions";
+  const copyReboundButton = document.createElement("button");
+  copyReboundButton.type = "button";
+  copyReboundButton.className = "voice-control";
+  copyReboundButton.textContent = "Copy rebound";
+  copyReboundButton.addEventListener("click", async () => {
+    const text = buildRecoveryGuideText(recoveryGuide);
+    try {
+      await navigator.clipboard.writeText(text);
+      if (balaLabStatus) balaLabStatus.textContent = "Bounce-back rhythm copied from this browser.";
+    } catch (_) {
+      if (balaLabStatus) balaLabStatus.textContent = "Clipboard access was unavailable for the rebound rhythm in this browser.";
+    }
+  });
+  reboundActions.append(copyReboundButton);
+  const reboundNote = document.createElement("p");
+  reboundNote.className = "next-stage-note";
+  reboundNote.textContent = recoveryGuide?.profileNote || "Add a Body Profile if you want BALA to shape this around your weekly movement rhythm.";
+  reboundCard.append(reboundActions, reboundNote);
+
+  const actionCard = document.createElement("div");
+  actionCard.className = "next-stage-lab-card";
+  const actionTitle = document.createElement("h3");
+  actionTitle.textContent = "Action plan";
+  const actionLead = document.createElement("p");
+  actionLead.textContent = actionPlan?.overview || "No action plan is available yet.";
+  actionCard.append(actionTitle, actionLead);
+
+  if (Array.isArray(actionPlan?.focusLanes) && actionPlan.focusLanes.length) {
+    const laneList = document.createElement("ul");
+    laneList.className = "next-stage-plan-list";
+    actionPlan.focusLanes.forEach((lane) => {
+      const item = document.createElement("li");
+      item.textContent = `${lane.title}: ${lane.note}`;
+      laneList.append(item);
+    });
+    actionCard.append(laneList);
+  }
+
+  if (Array.isArray(actionPlan?.priorities) && actionPlan.priorities.length) {
+    const priorityWrap = document.createElement("div");
+    priorityWrap.className = "next-stage-priority-grid";
+    actionPlan.priorities.forEach((priority) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+      const top = document.createElement("div");
+      top.className = "next-stage-lab-topline";
+      const label = document.createElement("strong");
+      label.textContent = priority.title;
+      const flag = document.createElement("span");
+      flag.className = `next-stage-flag ${priority.flag || "reported"}`;
+      flag.textContent = priority.flag || "reported";
+      top.append(label, flag);
+
+      const why = document.createElement("p");
+      why.className = "next-stage-note";
+      why.textContent = priority.whyItMatters;
+
+      const moves = document.createElement("ul");
+      moves.className = "next-stage-plan-list";
+      (priority.habitMoves || []).slice(0, 3).forEach((move) => {
+        const item = document.createElement("li");
+        item.textContent = move;
+        moves.append(item);
+      });
+
+      card.append(top, why, moves);
+      priorityWrap.append(card);
+    });
+    actionCard.append(priorityWrap);
+  }
+
+  if (Array.isArray(actionPlan?.habitMoves) && actionPlan.habitMoves.length) {
+    const habitTitle = document.createElement("h3");
+    habitTitle.textContent = "Habit moves to discuss";
+    const habitList = document.createElement("ul");
+    habitList.className = "next-stage-plan-list";
+    actionPlan.habitMoves.forEach((move) => {
+      const item = document.createElement("li");
+      item.textContent = move;
+      habitList.append(item);
+    });
+    actionCard.append(habitTitle, habitList);
+  }
+
+  if (Array.isArray(actionPlan?.supplementConversations) && actionPlan.supplementConversations.length) {
+    const supplementTitle = document.createElement("h3");
+    supplementTitle.textContent = "Bring-to-clinician supplement questions";
+    const supplementList = document.createElement("ul");
+    supplementList.className = "next-stage-plan-list";
+    actionPlan.supplementConversations.forEach((note) => {
+      const item = document.createElement("li");
+      item.textContent = note;
+      supplementList.append(item);
+    });
+    actionCard.append(supplementTitle, supplementList);
+  }
+
+  const actionNote = document.createElement("p");
+  actionNote.className = "next-stage-note";
+  actionNote.textContent = actionPlan?.medicalSafetyNote || "This review is informational only and does not replace medical care.";
+  actionCard.append(actionNote);
+
+  const missionCard = document.createElement("div");
+  missionCard.className = "next-stage-lab-card";
+  const missionTitle = document.createElement("h3");
+  missionTitle.textContent = "This week";
+  const missionNote = document.createElement("p");
+  missionNote.textContent = "Use these as calm mission lanes for the next few days, then review how your body feels beside the numbers.";
+  missionCard.append(missionTitle, missionNote);
+  if (Array.isArray(actionPlan?.missions) && actionPlan.missions.length) {
+    const missionWrap = document.createElement("div");
+    missionWrap.className = "next-stage-priority-grid";
+    actionPlan.missions.forEach((mission) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+      const label = document.createElement("strong");
+      label.textContent = `${mission.title}: ${mission.label}`;
+      const list = document.createElement("ul");
+      list.className = "next-stage-plan-list";
+      (mission.moves || []).forEach((move) => {
+        const item = document.createElement("li");
+        item.textContent = move;
+        list.append(item);
+      });
+      card.append(label, list);
+      missionWrap.append(card);
+    });
+    missionCard.append(missionWrap);
+  } else {
+    const emptyMission = document.createElement("p");
+    emptyMission.className = "next-stage-note";
+    emptyMission.textContent = "Add more report context to generate weekly missions.";
+    missionCard.append(emptyMission);
+  }
+
+  const reminderCard = document.createElement("div");
+  reminderCard.className = "next-stage-lab-card";
+  const reminderTitle = document.createElement("h3");
+  reminderTitle.textContent = "Friendly reminders";
+  const reminderNote = document.createElement("p");
+  reminderNote.className = "next-stage-note";
+  reminderNote.textContent = "These are gentle routine prompts BALA can help you follow beside the report. They are not medicine instructions or treatment steps.";
+  reminderCard.append(reminderTitle, reminderNote);
+  if (Array.isArray(actionPlan?.reminderRhythm) && actionPlan.reminderRhythm.length) {
+    const reminderWrap = document.createElement("div");
+    reminderWrap.className = "next-stage-priority-grid";
+    actionPlan.reminderRhythm.forEach((reminder) => {
+      const card = document.createElement("div");
+      card.className = "next-stage-priority-card";
+      const label = document.createElement("strong");
+      label.textContent = `${reminder.window}: ${reminder.title}`;
+      const prompt = document.createElement("p");
+      prompt.className = "next-stage-note";
+      prompt.textContent = reminder.prompt;
+      const why = document.createElement("p");
+      why.className = "next-stage-note";
+      why.textContent = reminder.why;
+      card.append(label, prompt, why);
+      reminderWrap.append(card);
+    });
+    reminderCard.append(reminderWrap);
+  }
+
+  const coachPromptCard = document.createElement("div");
+  coachPromptCard.className = "next-stage-lab-card";
+  const coachPromptTitle = document.createElement("h3");
+  coachPromptTitle.textContent = "Ask BALA Coach next";
+  const coachPromptNote = document.createElement("p");
+  coachPromptNote.className = "next-stage-note";
+  coachPromptNote.textContent = "Tap one of these to preload the live coach with a safer follow-up question based on your saved report.";
+  coachPromptCard.append(coachPromptTitle, coachPromptNote);
+  if (Array.isArray(actionPlan?.voiceCoachPrompts) && actionPlan.voiceCoachPrompts.length) {
+    const coachPromptWrap = document.createElement("div");
+    coachPromptWrap.className = "next-stage-actions";
+    actionPlan.voiceCoachPrompts.forEach((promptText) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "capture-secondary";
+      button.textContent = promptText;
+      button.addEventListener("click", () => {
+        const coachInputEl = document.getElementById("bvc-input");
+        if (coachInputEl) {
+          coachInputEl.value = promptText;
+          coachInputEl.focus();
+        }
+        if (balaLabStatus) balaLabStatus.textContent = "BALA Coach question loaded from your saved report. You can send it from the coach card below.";
+      });
+      coachPromptWrap.append(button);
+    });
+    coachPromptCard.append(coachPromptWrap);
+  }
+
+  const briefCard = document.createElement("div");
+  briefCard.className = "next-stage-lab-card";
+  const briefTitle = document.createElement("h3");
+  briefTitle.textContent = "Doctor visit brief";
+  const briefText = document.createElement("textarea");
+  briefText.className = "next-stage-brief";
+  briefText.readOnly = true;
+  briefText.value = [
+    `Source: ${report.sourceLabel || "Local lab input"}`,
+    `Headline: ${report.summary?.headline || "Saved report ready for review."}`,
+    actionPlan?.priorities?.length ? `Priority lanes: ${actionPlan.priorities.map((priority) => priority.title).slice(0, 3).join("; ")}` : "",
+    actionPlan?.missions?.length ? `This week: ${actionPlan.missions.map((mission) => `${mission.title} - ${mission.label}`).join("; ")}` : "",
+    actionPlan?.reminderRhythm?.length ? `Reminder rhythm: ${actionPlan.reminderRhythm.map((reminder) => `${reminder.window} - ${reminder.title}`).join("; ")}` : "",
+    actionPlan?.followUpQuestions?.length ? `Questions: ${actionPlan.followUpQuestions.slice(0, 4).join(" | ")}` : "",
+    "Note: This summary is informational only and does not replace medical interpretation."
+  ].filter(Boolean).join("\n");
+  const briefActions = document.createElement("div");
+  briefActions.className = "next-stage-actions";
+  const copyBriefButton = document.createElement("button");
+  copyBriefButton.type = "button";
+  copyBriefButton.className = "voice-control";
+  copyBriefButton.textContent = "Copy brief";
+  copyBriefButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(briefText.value);
+      if (balaLabStatus) balaLabStatus.textContent = "Doctor visit brief copied from this browser.";
+    } catch (_) {
+      briefText.focus();
+      briefText.select();
+      if (balaLabStatus) balaLabStatus.textContent = "Clipboard access was unavailable. The brief is selected for manual copy.";
+    }
+  });
+  const downloadBriefButton = document.createElement("button");
+  downloadBriefButton.type = "button";
+  downloadBriefButton.className = "capture-secondary";
+  downloadBriefButton.textContent = "Download brief";
+  downloadBriefButton.addEventListener("click", () => {
+    downloadText(`bala-doctor-brief-${new Date().toISOString().slice(0, 10)}.txt`, briefText.value, "text/plain;charset=utf-8");
+    if (balaLabStatus) balaLabStatus.textContent = "Doctor visit brief downloaded locally.";
+  });
+  briefActions.append(copyBriefButton, downloadBriefButton);
+  briefCard.append(briefTitle, briefText, briefActions);
+
+  const valuesCard = document.createElement("div");
+  valuesCard.className = "next-stage-lab-card";
+  const valuesTitle = document.createElement("h3");
+  valuesTitle.textContent = "Reported items";
+  const valuesWrap = document.createElement("div");
+  report.entries.slice(0, 8).forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "next-stage-lab-item";
+    const top = document.createElement("div");
+    top.className = "next-stage-lab-topline";
+    const label = document.createElement("strong");
+    label.textContent = entry.label;
+    const flag = document.createElement("span");
+    flag.className = `next-stage-flag ${entry.flag || "reported"}`;
+    flag.textContent = entry.flag || "reported";
+    top.append(label, flag);
+    const value = document.createElement("div");
+    value.className = "next-stage-lab-value";
+    value.textContent = formatLabMetricValue(entry);
+    const explainer = document.createElement("p");
+    explainer.className = "next-stage-note";
+    explainer.textContent = `${entry.explainer}${entry.rangeText ? ` Reference range shown: ${entry.rangeText}.` : ""}`;
+    item.append(top, value, explainer);
+    valuesWrap.append(item);
+  });
+  if (report.entries.length > 8) {
+    const moreNote = document.createElement("p");
+    moreNote.className = "next-stage-note";
+    moreNote.textContent = `${report.entries.length - 8} additional item(s) are saved locally in this report.`;
+    valuesWrap.append(moreNote);
+  }
+  valuesCard.append(valuesTitle, valuesWrap);
+
+  const questionsCard = document.createElement("div");
+  questionsCard.className = "next-stage-lab-card";
+  const questionsTitle = document.createElement("h3");
+  questionsTitle.textContent = "Doctor-ready questions";
+  const questionsList = document.createElement("ul");
+  questionsList.className = "next-stage-question-list";
+  ((actionPlan?.followUpQuestions?.length ? actionPlan.followUpQuestions : report.questions) || []).forEach((question) => {
+    const item = document.createElement("li");
+    item.textContent = question;
+    questionsList.append(item);
+  });
+  const questionNote = document.createElement("p");
+  questionNote.className = "next-stage-note";
+  questionNote.textContent = "These questions organize the report. They do not replace medical interpretation.";
+  questionsCard.append(questionsTitle, questionsList, questionNote);
+
+  const sourcesCard = document.createElement("div");
+  sourcesCard.className = "next-stage-lab-card";
+  const sourcesTitle = document.createElement("h3");
+  sourcesTitle.textContent = "Evidence links";
+  const sourcesNote = document.createElement("p");
+  sourcesNote.className = "next-stage-note";
+  sourcesNote.textContent = "These are public reference pages BALA used for this guidance lane.";
+  sourcesCard.append(sourcesTitle, sourcesNote);
+  if (Array.isArray(actionPlan?.sources) && actionPlan.sources.length) {
+    const sourceList = document.createElement("ul");
+    sourceList.className = "next-stage-link-list";
+    actionPlan.sources.forEach((source) => {
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = source.url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = source.label;
+      item.append(link);
+      sourceList.append(item);
+    });
+    sourcesCard.append(sourceList);
+  } else {
+    const emptySources = document.createElement("p");
+    emptySources.className = "next-stage-note";
+    emptySources.textContent = "No external reference links were attached to this report yet.";
+    sourcesCard.append(emptySources);
+  }
+
+  balaLabResults.append(summaryCard, familyCard, profileMatchCard, weekMapCard, reboundCard, actionCard, missionCard, reminderCard, coachPromptCard, briefCard, valuesCard, questionsCard, sourcesCard);
+  updateReboundLaunchpad();
+}
+
+function analyzeBalaLabText(rawText, sourceLabel = "Pasted text") {
+  const engine = labProfileEngine();
+  if (!engine) {
+    if (balaLabStatus) balaLabStatus.textContent = "The local lab parser is not loaded. Refresh BALA and try again.";
+    return false;
+  }
+  const text = String(rawText || "").trim();
+  if (!text) {
+    if (balaLabStatus) balaLabStatus.textContent = "Paste report text or upload a supported file first.";
+    return false;
+  }
+  try {
+    const entries = engine.parseLabReport(text);
+    if (!entries.length) {
+    if (balaLabStatus) balaLabStatus.textContent = "No supported lab lines were detected yet. Try text with one result per line, or upload CSV, JSON, XML, or a simple HTML table.";
+      return false;
+    }
+    const summary = engine.summarizeLabEntries(entries);
+    const questions = engine.buildDoctorQuestions(entries);
+    const actionPlan = engine.buildLabActionPlan(entries);
+    saveStoredLabReport({ rawText: text, sourceLabel, entries, summary, questions, actionPlan });
+    renderBalaLabReport();
+    if (balaLabStatus) {
+      const hasBodyProfile = !!getStoredBodyProfile();
+      balaLabStatus.textContent = `${sourceLabel} was analyzed locally. ${summary.headline}.${hasBodyProfile ? " Weekly rebound rhythm refreshed from your Body Profile too." : " Add your Body Profile to personalize the rebound rhythm."}`;
+    }
+    return true;
+  } catch (error) {
+    if (balaLabStatus) balaLabStatus.textContent = `This report could not be parsed safely yet: ${error.message || "unknown format"}.`;
+    return false;
+  }
+}
+
 function personalizeTitle(title) {
   const name = getUserName();
   if (!name) return title;
@@ -1945,6 +3165,7 @@ function updatePersonalization() {
   coachModeLabel.textContent = "Private coach · using only this app's available signals";
   const metrics = getLocalMetrics();
   if (metrics) updateDashboard(metrics);
+  renderBalaProfilePlan();
 }
 
 function openOnboarding(allowClose = false) {
@@ -2255,6 +3476,189 @@ function renderScoreExplainer(metrics, breakdown) {
  * Lifestyle signals (late_meal, hydration, etc.) are not yet collected by the
  * app; null values lower confidence but do not crash the engine.
  */
+const B70_SCORE_SIGNALS = [
+  { key: "sleep", label: "Sleep", weight: 32 },
+  { key: "hrv", label: "HRV", weight: 23 },
+  { key: "rhr", label: "Resting heart rate", weight: 20 },
+  { key: "activity", label: "Activity", weight: 20 },
+  { key: "spo2", label: "SpO2", weight: 5 },
+];
+
+function formatB70SignalValue(key, metrics) {
+  if (!metrics) return "Not shared today";
+  if (key === "sleep" && Number.isFinite(metrics.sleep)) return `${metrics.sleep.toFixed(1)}h`;
+  if (key === "hrv" && Number.isFinite(metrics.hrv)) return `${Math.round(metrics.hrv)} ms`;
+  if (key === "rhr" && Number.isFinite(metrics.rhr)) return `${Math.round(metrics.rhr)} bpm`;
+  if (key === "activity") {
+    const pieces = [];
+    if (Number.isFinite(metrics.steps)) pieces.push(`${Math.round(metrics.steps).toLocaleString()} steps`);
+    if (Number.isFinite(metrics.exercise)) pieces.push(`${Math.round(metrics.exercise)} active min`);
+    return pieces.length ? pieces.join(" · ") : "Not shared today";
+  }
+  if (key === "spo2" && Number.isFinite(metrics.spo2)) return `${Math.round(metrics.spo2)}%`;
+  return "Not shared today";
+}
+
+function formatB70WeightedPoints(score, weight) {
+  const points = (score * weight) / 100;
+  return Number.isInteger(points) ? String(points) : points.toFixed(1);
+}
+
+function renderB70ScoreDialog(metrics, breakdown, symptomContext, status) {
+  if (!balaScoreDialogSummary || !balaScoreDialogSignals || !breakdown) return;
+  const parts = new Map((breakdown.parts || []).map((part) => [part.key, part]));
+  const availableSignals = B70_SCORE_SIGNALS.filter((signal) => parts.has(signal.key));
+  const totalWeight = availableSignals.reduce((sum, signal) => sum + signal.weight, 0);
+  const missingCount = B70_SCORE_SIGNALS.length - availableSignals.length;
+  const symptomPart = parts.get("symptoms");
+
+  balaScoreDialogSummary.innerHTML = [
+    `<p><strong>${breakdown.total}/100</strong> today · ${_esc(status.label)}</p>`,
+    `<p>BALA used ${availableSignals.length} of ${B70_SCORE_SIGNALS.length} supported signals and ${totalWeight}% of the score weight. Missing signals stay clearly missing instead of being guessed.</p>`,
+    symptomPart ? `<p class="score-breakdown-symptom-note">Your check-in note also shaped today’s reflection: ${_esc(symptomPart.note)}.</p>` : "",
+    missingCount ? `<p class="score-breakdown-missing-copy">${missingCount} signal${missingCount === 1 ? "" : "s"} still need more data for a fuller picture.</p>` : "",
+  ].join("");
+
+  balaScoreDialogSignals.innerHTML = B70_SCORE_SIGNALS.map((signal) => {
+    const part = parts.get(signal.key);
+    const isMissing = !part;
+    const tone = isMissing ? "missing" : part.score >= 80 ? "strong" : part.score >= 65 ? "steady" : "watch";
+    const note = isMissing
+      ? "BALA leaves this part out until a value is available, so the score reflects only what was shared today."
+      : part.note;
+    const scoreCopy = isMissing ? "No signal score yet" : `${part.score}/100 signal score`;
+    const contributionCopy = isMissing
+      ? "This weight is not included today"
+      : `${formatB70WeightedPoints(part.score, signal.weight)} weighted points`;
+    return `
+      <article class="score-breakdown-card score-breakdown-card--${tone}">
+        <div class="score-breakdown-card-top">
+          <div>
+            <p class="score-breakdown-card-label">${_esc(signal.label)}</p>
+            <strong>${_esc(formatB70SignalValue(signal.key, metrics))}</strong>
+          </div>
+          <span class="score-breakdown-badge score-breakdown-badge--${tone}">${isMissing ? "Missing today" : "Included today"}</span>
+        </div>
+        <div class="score-breakdown-meta">
+          <span>${signal.weight}% weight</span>
+          <span>${scoreCopy}</span>
+          <span>${contributionCopy}</span>
+        </div>
+        <p>${_esc(note)}</p>
+      </article>`;
+  }).join("");
+}
+
+function renderScoreCompletenessCard(sourceKey, breakdown) {
+  if (!scoreCompletenessCard) return;
+  if (!breakdown) {
+    scoreCompletenessCard.hidden = true;
+    scoreCompletenessCard.replaceChildren();
+    return;
+  }
+  const presentKeys = new Set((breakdown.parts || []).map((part) => part.key));
+  const missingSignals = B70_SCORE_SIGNALS.filter((signal) => !presentKeys.has(signal.key));
+  const missingWeight = missingSignals.reduce((sum, signal) => sum + signal.weight, 0);
+  if (!missingSignals.length || missingWeight <= 0) {
+    scoreCompletenessCard.hidden = true;
+    scoreCompletenessCard.replaceChildren();
+    return;
+  }
+
+  const normalizedSource = dataSourceLabels[sourceKey] ? sourceKey : inferDataSource();
+  const gap = B60_SOURCE_GAPS[normalizedSource] || null;
+  const sourceLabel = dataSourceLabels[normalizedSource] || "this source";
+  let copyText = "BALA does not guess missing signals. Add the remaining ones if you want a fuller daily reflection from this device.";
+  let actionTarget = "csv";
+  let actionText = "Add missing signals";
+
+  if (normalizedSource === "demo") {
+    copyText = "Demo Mode shows how the score works, but it does not pretend to include your real signals. Import or add your own data when you want the missing weight to reflect your day.";
+    actionText = "Import your own signals";
+  } else if (gap) {
+    copyText = `${sourceLabel} is live for today's view, but this import path usually leaves some score signals out. ${gap.action}`;
+    actionText = "Use the BALA CSV template";
+  } else if (normalizedSource === "manual" || normalizedSource === "manual-json" || normalizedSource === "manual-csv") {
+    copyText = `BALA used your local ${sourceLabel.toLowerCase()} and left the rest missing on purpose. Add more signals only if you want a fuller reflection.`;
+    actionTarget = normalizedSource === "manual" ? "manual-csv" : normalizedSource;
+    actionText = "Open import choices";
+  } else if (normalizedSource === "apple") {
+    copyText = "Apple Health can cover all supported score signals, but this latest day still has gaps. Re-import when those signals are available, or add them manually.";
+    actionTarget = "apple";
+    actionText = "Review Apple import";
+  }
+
+  scoreCompletenessCard.hidden = false;
+  scoreCompletenessCard.innerHTML = "";
+
+  const title = document.createElement("strong");
+  title.textContent = `Complete your score: ${missingWeight}% of today's weight is still missing`;
+
+  const copy = document.createElement("p");
+  copy.textContent = copyText;
+
+  const list = document.createElement("ul");
+  missingSignals.forEach((signal) => {
+    const item = document.createElement("li");
+    item.textContent = `${signal.label} (${signal.weight}% weight)`;
+    list.append(item);
+  });
+
+  const action = document.createElement("button");
+  action.type = "button";
+  action.dataset.b60Import = actionTarget;
+  action.textContent = actionText;
+
+  scoreCompletenessCard.append(title, copy, list, action);
+}
+
+function openBalaScoreDialog() {
+  if (!balaScoreDialog || balaScoreDialog.open) return;
+  balaScoreDialog.showModal();
+}
+
+function normalizeB70DialogDom() {
+  const duplicateDialogs = document.querySelectorAll("#bala-score-dialog");
+  duplicateDialogs.forEach((node, index) => {
+    if (index > 0) node.remove();
+  });
+  if (!balaScoreDialog) return;
+  const closeButton = balaScoreDialog.querySelector(".dialog-close");
+  const titleNode = balaScoreDialog.querySelector("#bala-score-dialog-title");
+  if (closeButton) closeButton.innerHTML = "&times;";
+  if (titleNode) titleNode.textContent = "How today's score came together";
+}
+
+normalizeB70DialogDom();
+
+function healB70DialogDom() {
+  const legacyDialog = document.querySelector("#bala-score-dialog-legacy");
+  if (legacyDialog) legacyDialog.remove();
+  if (!balaScoreDialog) return;
+  const closeButton = balaScoreDialog.querySelector(".dialog-close");
+  const titleNode = balaScoreDialog.querySelector("#bala-score-dialog-title");
+  const symptomNote = balaScoreDialogSummary ? balaScoreDialogSummary.querySelector(".score-breakdown-symptom-note") : null;
+  if (closeButton) closeButton.innerHTML = "&times;";
+  if (titleNode) titleNode.textContent = "How today's score came together";
+  if (symptomNote) {
+    symptomNote.textContent = symptomNote.textContent
+      .replace(/todayâ€™s/g, "today's")
+      .replace(/today’s/g, "today's");
+  }
+}
+
+healB70DialogDom();
+
+if (balaScoreButton) {
+  balaScoreButton.addEventListener("click", openBalaScoreDialog);
+}
+
+if (balaScoreDialog && balaScoreButton) {
+  balaScoreDialog.addEventListener("close", () => {
+    balaScoreButton.focus();
+  });
+}
+
 function mapMetricsToEngineInput(metrics) {
   const history = Array.isArray(metrics?.history) ? metrics.history.slice(0, -1).slice(-7) : [];
   const hrv7 = averageValues(history.map((d) => d.hrv));
@@ -3112,7 +4516,30 @@ function coachResponseCore(question, metrics) {
     return "I’m BALA, a private on-device wellness coach. I explain supported body signals and suggest small, conservative actions for health awareness.";
   }
   if (/what can you do|help me|how can you help/.test(normalized)) {
-    return "I can explain sleep, HRV, resting heart rate, SpO₂, readiness, stress, hydration, steps, and exercise using your imported metrics. Try asking, “Why is my sleep low?” or “What should I do today?”";
+    return "I can explain sleep, HRV, resting heart rate, SpO₂, readiness, stress, hydration, steps, exercise, your saved body profile, and supported lab-report values stored in this browser. Try asking, “What should I do today?”, “What is my BMI snapshot?”, or “What doctor questions should I ask about my report?”";
+  }
+  const bodyProfile = getStoredBodyProfile();
+  const labReport = getStoredLabReport();
+  const engine = labProfileEngine();
+  if (/bmi|body mass|height|weight|gym plan|yoga plan|workout plan|wellness plan/.test(normalized)) {
+    if (!bodyProfile || !engine) {
+      return "Save your height, weight, goal, and movement style in the Body Profile card first. Then I can show your BMI snapshot and local weekly wellness plan.";
+    }
+    const profileStats = engine.computeBodyProfile(bodyProfile);
+    const plan = engine.buildWellnessPlan(bodyProfile);
+    const bmiText = profileStats.bmi == null
+      ? "Your BMI snapshot is waiting for both height and weight."
+      : `Your current BMI snapshot is ${profileStats.bmi}.`;
+    return `${bmiText} ${profileStats.bmiNote} Your current weekly plan focus is ${plan.headline.toLowerCase()} Top movement blocks: ${plan.movementBlocks.join("; ")} ${plan.coachNote}`;
+  }
+  if (/lab|blood test|report|hba1c|glucose|ldl|hdl|triglycerides|vitamin d|b12|tsh|hemoglobin|ferritin|creatinine/.test(normalized)) {
+    if (!labReport || !Array.isArray(labReport.entries) || !labReport.entries.length) {
+      return "Paste your report text or upload a supported local text, CSV, JSON, XML, or simple HTML table lab file in the Lab Insights card first. Then I can organize the values and doctor questions.";
+    }
+    const summary = labReport.summary?.headline || "Your saved report is ready for review.";
+    const flagged = labReport.summary?.flaggedLabels?.slice(0, 3).join(", ");
+    const questions = Array.isArray(labReport.questions) ? labReport.questions.slice(0, 2).join(" ") : "";
+    return `${summary}.${flagged ? ` Reported items to review include ${flagged}.` : ""} ${questions} Use this to prepare for a clinician conversation, not to draw medical conclusions on your own.`;
   }
   if (!metrics) {
     return `${name ? `${name}, ` : ""}add today's metrics or import your Apple Health ZIP, then I can explain your local values.`;
@@ -3237,6 +4664,141 @@ function coachResponseCore(question, metrics) {
   return `${recommendation.title}. ${recommendation.copy} I based this on ${evidence}.${symptomContextCopy} Ask me about any one signal for a more focused explanation.`;
 }
 
+function coachResponseCore(question, metrics) {
+  const normalized = question.toLowerCase().trim();
+  const symptomContext = getRecentSymptoms();
+  const recentSymptoms = symptomContext?.symptoms || [];
+  const symptomText = recentSymptoms.length ? recentSymptoms.join(", ") : "";
+  const name = getUserName();
+  if (/^(hi|hello|hey|hiya|namaste|good morning|good afternoon|good evening)[!. ]*$/.test(normalized)) {
+    const greetings = {
+      "hi-IN": "Namaste! Main BALA hoon, aapka private wellness guide.",
+      "te-IN": "Namaste! Nenu BALA, mee private wellness guide ni.",
+      "ta-IN": "Vanakkam! Naan BALA, ungal private wellness guide.",
+      "kn-IN": "Namaskara! Naanu BALA, nimma private wellness guide.",
+      "ml-IN": "Namaskaram! Njan BALA, ningalude private wellness guide.",
+      "mr-IN": "Namaskar! Mi BALA, tumcha private wellness guide.",
+      "bn-IN": "Nomoskar! Ami BALA, apnar private wellness guide.",
+    };
+    return greetings[coachLanguage.value] || "Hi! I'm BALA, your private health guide. Ask me about your sleep, HRV, resting heart rate, blood oxygen, readiness, stress, hydration, steps, or what to do today.";
+  }
+  if (/^(thanks|thank you|thx|okay|ok|cool|great)[!. ]*$/.test(normalized)) {
+    return "You're welcome. I'm here whenever you want to understand a health signal or choose one sensible next step.";
+  }
+  if (/who are you|what are you|your name/.test(normalized)) {
+    return "I'm BALA, a private on-device wellness coach. I explain supported body signals and suggest small, conservative actions for health awareness.";
+  }
+  if (/what can you do|help me|how can you help/.test(normalized)) {
+    return "I can explain sleep, HRV, resting heart rate, SpO2, readiness, stress, hydration, steps, exercise, your saved body profile, and supported lab-report values stored in this browser. Try asking, \"What should I do today?\", \"What is my BMI snapshot?\", or \"What doctor questions should I ask about my report?\"";
+  }
+  const bodyProfile = getStoredBodyProfile();
+  const labReport = getStoredLabReport();
+  const engine = labProfileEngine();
+  if (/bmi|body mass|height|weight|gym plan|yoga plan|workout plan|wellness plan/.test(normalized)) {
+    if (!bodyProfile || !engine) {
+      return "Save your height, weight, goal, and movement style in the Body Profile card first. Then I can show your BMI snapshot and local weekly wellness plan.";
+    }
+    const profileStats = engine.computeBodyProfile(bodyProfile);
+    const plan = engine.buildWellnessPlan(bodyProfile);
+    const bmiText = profileStats.bmi == null
+      ? "Your BMI snapshot is waiting for both height and weight."
+      : `Your current BMI snapshot is ${profileStats.bmi}.`;
+    return `${bmiText} ${profileStats.bmiNote} Your current weekly plan focus is ${plan.headline.toLowerCase()} Top movement blocks: ${plan.movementBlocks.join("; ")} ${plan.coachNote}`;
+  }
+  if (/lab|blood test|report|hba1c|glucose|ldl|hdl|triglycerides|vitamin d|b12|tsh|hemoglobin|ferritin|creatinine|cholesterol|apob|lp\(a\)|lpa|crp|cac/.test(normalized)) {
+    if (!labReport || !Array.isArray(labReport.entries) || !labReport.entries.length) {
+      return "Paste your report text or upload a supported local text, CSV, JSON, XML, or simple HTML table lab file in the Lab Insights card first. Then I can organize the values and doctor questions.";
+    }
+    const summary = labReport.summary?.headline || "Your saved report is ready for review.";
+    const flagged = labReport.summary?.flaggedLabels?.slice(0, 3).join(", ");
+    const actionPlan = labReport.actionPlan || engine?.buildLabActionPlan?.(labReport.entries) || null;
+    const habits = Array.isArray(actionPlan?.habitMoves) ? actionPlan.habitMoves.slice(0, 2).join(" ") : "";
+    const supplements = Array.isArray(actionPlan?.supplementConversations) && actionPlan.supplementConversations.length
+      ? ` Supplement conversation: ${actionPlan.supplementConversations[0]}`
+      : "";
+    const questions = Array.isArray(actionPlan?.followUpQuestions) && actionPlan.followUpQuestions.length
+      ? actionPlan.followUpQuestions.slice(0, 2).join(" ")
+      : Array.isArray(labReport.questions) ? labReport.questions.slice(0, 2).join(" ") : "";
+    return `${actionPlan?.coachSummary || summary}.${flagged ? ` Reported items to review include ${flagged}.` : ""} ${habits} ${questions}${supplements} Use this to prepare for a clinician conversation, not to draw medical conclusions on your own.`;
+  }
+  if (!metrics) {
+    return `${name ? `${name}, ` : ""}add today's metrics or import your Apple Health ZIP, then I can explain your local values.`;
+  }
+  const evidence = metricEvidence(metrics).join(", ") || "the values you recorded";
+  const history = Array.isArray(metrics.history) ? metrics.history.slice(0, -1).slice(-14) : [];
+  const rhrBase = averageValues(history.map((day) => day.rhr));
+  const hrvBase = averageValues(history.map((day) => day.hrv));
+  const baseline = baselineAnalysis(metrics);
+  const weekly = weeklyPatternsAnalysis(metrics);
+  const recentBehavior = getRecentBehaviorEntry();
+  const behaviorText = recentBehavior?.factors?.length ? summarizeBehaviorFactors(recentBehavior) : "";
+
+  if (/how was my week|what patterns|weekly pattern|this week|am i improving|improv|focus on this week|focus this week/.test(normalized)) {
+    if (!weekly.ready) return "Add a few more check-ins to see weekly patterns. With at least 3 valid check-ins, I can summarize recent averages, pattern directions, and one simple focus.";
+    const trendSummary = Object.entries(weekly.trends)
+      .filter(([, trend]) => trend.direction !== "unknown")
+      .map(([key, trend]) => `${baselineFields[key].label}: ${trend.label.toLowerCase()}`)
+      .join("; ");
+    if (/focus/.test(normalized)) {
+      return `${weekly.focus.label}. ${weekly.focus.copy} I based this on up to your latest 7 valid check-ins and your personal baseline.`;
+    }
+    if (/improv/.test(normalized)) {
+      const improving = Object.entries(weekly.trends)
+        .filter(([, trend]) => trend.direction === "improving")
+        .map(([key]) => baselineFields[key].label.toLowerCase());
+      const watchList = Object.entries(weekly.trends)
+        .filter(([, trend]) => trend.direction === "worsening")
+        .map(([key]) => baselineFields[key].label.toLowerCase());
+      return `${improving.length ? `Improving: ${improving.join(", ")}.` : "No strong improvement pattern yet."} ${watchList.length ? `Watch next: ${watchList.join(", ")}.` : ""} ${weekly.focus.copy}`;
+    }
+    return `This week, ${trendSummary || "your baseline is still forming"}. ${weekly.focus.copy}`;
+  }
+
+  if (/sleep|bed|rest/.test(normalized)) {
+    const sleepHours = Number(metrics.sleep || 0);
+    const note = sleepHours ? `You logged about ${sleepHours.toFixed(1)} hours of sleep.` : "Sleep data is limited today.";
+    return `${note} ${baseline.ready ? baseline.byMetric.sleep?.copy || "" : "Keep logging a few more nights so I can compare against your baseline."} ${behaviorText}`.trim();
+  }
+
+  if (/heart|pulse|resting heart rate|rhr/.test(normalized)) {
+    const rhr = Number(metrics.rhr || 0);
+    const note = rhr ? `Your resting heart rate reading is ${Math.round(rhr)} bpm.` : "Resting heart rate data is limited today.";
+    const compare = Number.isFinite(rhrBase) && rhr ? ` Your recent baseline is about ${Math.round(rhrBase)} bpm.` : "";
+    return `${note}${compare} Use this with sleep, recovery, stress, and how you feel, not as a clinical label.`;
+  }
+
+  if (/hrv/.test(normalized)) {
+    const hrv = Number(metrics.hrv || 0);
+    const note = hrv ? `Your HRV reading is ${Math.round(hrv)} ms.` : "HRV data is limited today.";
+    const compare = Number.isFinite(hrvBase) && hrv ? ` Your recent baseline is about ${Math.round(hrvBase)} ms.` : "";
+    return `${note}${compare} HRV is best used as a personal trend signal rather than a pass-fail health verdict.`;
+  }
+
+  if (/oxygen|spo2/.test(normalized)) {
+    const spo2 = Number(metrics.spo2 || 0);
+    const note = spo2 ? `Your recorded oxygen value is ${spo2.toFixed(0)}%.` : "Blood oxygen data is limited today.";
+    return `${note} Use it as context only. If you feel acutely unwell, seek clinical care rather than relying on the app.`;
+  }
+
+  if (/readiness|recover|score/.test(normalized)) {
+    const breakdown = scoreBreakdown(metrics, symptomContext);
+    const lowest = breakdown.parts.slice(0, 2).map((part) => `${part.label.toLowerCase()} ${part.score}`).join(" and ");
+    const context = recentSymptoms.length ? ` Your recent check-in also includes ${symptomText}.` : "";
+    const trend = baseline.ready ? ` Compared with your recent baseline, ${baseline.copy.toLowerCase()}` : " Your 3-check-in baseline is still building.";
+    const weeklyContext = weekly.ready ? ` Your weekly focus is ${weekly.focus.label.toLowerCase()}.` : "";
+    return `Your BALA score is ${breakdown.total}. It is calculated from the signals available today, with the most attention on sleep, HRV, resting heart rate, and activity. The lower contributors are ${lowest || "still building a baseline"}.${trend}${weeklyContext}${context} Use it to pace the day, not as a medical conclusion.`;
+  }
+
+  if (/step|walk|activity|exercise|workout|today|do/.test(normalized)) {
+    const recommendation = buildRecommendation(metrics, symptomContext);
+    return `${recommendation.title}. ${recommendation.copy} I used ${evidence}. Stop activity and seek appropriate care if you feel unwell.`;
+  }
+
+  const recommendation = buildRecommendation(metrics, symptomContext);
+  const symptomContextCopy = recentSymptoms.length ? ` Your recent check-in includes ${symptomText}.` : "";
+  return `${recommendation.title}. ${recommendation.copy} I based this on ${evidence}.${symptomContextCopy} Ask me about any one signal for a more focused explanation.`;
+}
+
 function coachResponse(question, metrics) {
   const normalized = question.toLowerCase().trim();
   const urgentTerms = /\b(chest pain|severe shortness of breath|fainting|emergency|severe symptoms?)\b/;
@@ -3303,6 +4865,7 @@ function updateDashboard(metrics) {
     if (_sc) { _sc.hidden = true; _sc.innerHTML = ''; }
     var _dtc = document.querySelector('#daily-tip-card');
     if (_dtc) { _dtc.hidden = true; _dtc.innerHTML = ''; }
+    renderScoreCompletenessCard(null, null);
     return;
   }
   const currentSource = inferDataSource(metrics);
@@ -3317,7 +4880,7 @@ function updateDashboard(metrics) {
     : scoreStatus(score);
   const scoreRing = document.querySelector(".score-ring");
   scoreRing.querySelector("strong").textContent = score;
-  scoreRing.setAttribute("aria-label", `Bala score ${score} out of 100, ${status.label}`);
+  scoreRing.setAttribute("aria-label", `Bala score ${score} out of 100, ${status.label}. Open score explanation`);
   scoreRing.dataset.level = status.level;
   scoreRing.querySelector(".ring-value").style.strokeDashoffset = String(390 - (390 * score) / 100);
   document.querySelector("#score-icon").textContent = status.icon;
@@ -3332,6 +4895,9 @@ function updateDashboard(metrics) {
     document.querySelector(selector).textContent = checkCopy[index] || "Add another signal for more context";
   });
   renderScoreExplainer(metrics, breakdown);
+  renderB70ScoreDialog(metrics, breakdown, symptomContext, status);
+  renderScoreCompletenessCard(currentSource, breakdown);
+  healB70DialogDom();
 
   // B44: wire BALA Score Engine explainability panel
   if (typeof window !== 'undefined' && window.BALAScoreEngine) {
@@ -4108,7 +5674,7 @@ function b60ScoreGuidanceCard(sourceKey, missingFields) {
 // B63 — Import Trust + Data Review ─────────────────────────────────────────
 // Renders a persistent signal-chip row and meta line below the BALA score.
 // Called after every successful import and on page load for demo mode.
-// NEVER shows: diagnosis, trend claims with < 3 days data, or invented insights.
+// NEVER shows: condition labels, trend claims with < 3 days data, or invented insights.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Signal display order + weight labels for the trust panel */
@@ -4366,6 +5932,94 @@ onboardingForm.addEventListener("submit", (event) => {
   onboardingDialog.close();
   updatePersonalization();
 });
+reboundBodyButton?.addEventListener("click", scrollToBodyProfileCard);
+reboundLabButton?.addEventListener("click", scrollToLabInsightsCard);
+balaTowerBodyButton?.addEventListener("click", scrollToBodyProfileCard);
+balaTowerLabButton?.addEventListener("click", scrollToLabInsightsCard);
+heroBodyLabsButton?.addEventListener("click", () => {
+  document.querySelector("#rebound-launchpad")?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+heroDemoReboundButton?.addEventListener("click", () => {
+  window.location.search = "?demoRebound=1";
+});
+reboundPrimaryButton?.addEventListener("click", () => runBalaNextBestMove(reboundPrimaryButton.dataset.action || "body"));
+balaTowerPrimaryButton?.addEventListener("click", () => runBalaNextBestMove(balaTowerPrimaryButton.dataset.action || "body"));
+reboundDemoLabButton?.addEventListener("click", () => {
+  if (balaLabInput) balaLabInput.value = DEMO_LAB_REPORT_TEXT;
+  analyzeBalaLabText(DEMO_LAB_REPORT_TEXT, "Demo lab report");
+  scrollToLabInsightsCard();
+});
+if (balaProfileForm) {
+  balaProfileForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(balaProfileForm);
+    saveStoredBodyProfile({
+      heightCm: formData.get("heightCm"),
+      weightKg: formData.get("weightKg"),
+      goal: formData.get("goal"),
+      movementStyle: formData.get("movementStyle"),
+      daysPerWeek: formData.get("daysPerWeek"),
+      minutesPerSession: formData.get("minutesPerSession"),
+    });
+    renderBalaProfilePlan();
+    const bodyProfile = labProfileEngine()?.computeBodyProfile(getStoredBodyProfile() || {});
+    if (balaProfileStatus) {
+      balaProfileStatus.textContent = bodyProfile?.bmi != null
+        ? `Your plan was updated locally. Current BMI snapshot: ${bodyProfile.bmi}.`
+        : "Your plan was updated locally. Add both height and weight to calculate BMI.";
+    }
+  });
+}
+if (balaProfileClearButton) {
+  balaProfileClearButton.addEventListener("click", () => {
+    saveStoredBodyProfile(null);
+    balaProfileForm?.reset();
+    if (balaProfileForm?.elements.namedItem("daysPerWeek")) balaProfileForm.elements.namedItem("daysPerWeek").value = "4";
+    if (balaProfileForm?.elements.namedItem("minutesPerSession")) balaProfileForm.elements.namedItem("minutesPerSession").value = "35";
+    renderBalaProfilePlan();
+    if (balaProfileStatus) balaProfileStatus.textContent = "Your local plan was cleared from this browser.";
+  });
+}
+if (balaLabUploadButton && balaLabFile) {
+  balaLabUploadButton.addEventListener("click", () => balaLabFile.click());
+}
+if (balaLabParseButton) {
+  balaLabParseButton.addEventListener("click", () => {
+    analyzeBalaLabText(balaLabInput?.value || "", "Pasted text");
+  });
+}
+if (balaLabClearButton) {
+  balaLabClearButton.addEventListener("click", () => {
+    saveStoredLabReport(null);
+    if (balaLabInput) balaLabInput.value = "";
+    if (balaLabFile) balaLabFile.value = "";
+    renderBalaLabReport();
+    if (balaLabStatus) balaLabStatus.textContent = "The saved lab report was cleared from this browser.";
+  });
+}
+if (balaLabFile) {
+  balaLabFile.addEventListener("change", async () => {
+    const file = balaLabFile.files?.[0];
+    if (!file) return;
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".pdf") || (file.type && file.type.startsWith("image/"))) {
+      if (balaLabStatus) {
+        balaLabStatus.textContent = "PDF and image lab parsing are not live in this stage yet. Export text/CSV/JSON from the report or paste the values here.";
+      }
+      balaLabFile.value = "";
+      return;
+    }
+    try {
+      const text = await file.text();
+      if (balaLabInput) balaLabInput.value = text;
+      analyzeBalaLabText(text, file.name);
+    } catch (error) {
+      if (balaLabStatus) balaLabStatus.textContent = `That file could not be read locally: ${error.message || "unknown error"}.`;
+    } finally {
+      balaLabFile.value = "";
+    }
+  });
+}
 document.querySelector("#devices-button").addEventListener("click", () => {
   document.querySelector("#connections-title").scrollIntoView({ behavior: "smooth", block: "start" });
 });
@@ -4983,6 +6637,14 @@ coachLanguage.value = ["en-US", "hi-IN", "te-IN", "ta-IN"].includes(localStorage
 voiceRepliesEnabled = localStorage.getItem("bala-read-aloud") === "true";
 readAloudToggle.checked = voiceRepliesEnabled;
 setupSpeechRecognition();
+populateBalaProfileForm();
+populateBalaLabInput();
+renderBalaProfilePlan();
+renderBalaLabReport();
+const launchParams = new URLSearchParams(window.location.search);
+if (launchParams.get("demoRebound") === "1" || window.location.hash === "#demo-rebound") {
+  seedDemoReboundStage();
+}
 renderChart("recovery");
 setCurrentDataSource(inferDataSource());
 renderImportSource(importSource.value);
@@ -5068,7 +6730,7 @@ b63InitDemoTrust();
       title: 'Your BALA Score',
       subtitle: 'A calm daily signal — not a clinical label.',
       body: 'The BALA Score reflects patterns from your recent check-ins. A higher score may suggest your body signals are in balance. A lower score may suggest a day to rest or pay attention to recovery.',
-      safeNote: 'This is a guide, not a medical measurement. It cannot diagnose any condition.',
+      safeNote: 'This is a guide, not a medical measurement. It cannot tell you what condition you have.',
     },
     {
       id: 'signals',
@@ -5288,10 +6950,20 @@ b63InitDemoTrust();
   const inputEl       = document.getElementById('bvc-input');
   const chatEl        = document.getElementById('bvc-chat');
   const waveformEl    = document.getElementById('bvc-waveform');
+  const supportNoteEl = document.getElementById('bvc-support-note');
 
   // ── Speech recognition setup ─────────────────────────────────────────────────
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const bvcRec    = SpeechRec ? new SpeechRec() : null;
+  if (!bvcRec) {
+    micBtn.disabled = true;
+    micBtn.title = 'Voice input is not supported in this browser surface';
+    if (supportNoteEl) {
+      supportNoteEl.textContent = 'Mic input is not available in this browser surface right now. Type here instead, or use your device keyboard mic.';
+    }
+  } else if (supportNoteEl) {
+    supportNoteEl.textContent = 'Mic input is available in this browser. You can speak or type, and BALA will stay local-first.';
+  }
   if (bvcRec) {
     bvcRec.lang            = 'en-IN';
     bvcRec.interimResults  = false;
@@ -5317,6 +6989,30 @@ b63InitDemoTrust();
   // ── Fallback responses (no bridge available) ─────────────────────────────────
   function bvcFallback(question) {
     const q = question.toLowerCase();
+    const engine = labProfileEngine();
+    const bodyProfile = getStoredBodyProfile();
+    const labReport = getStoredLabReport();
+    if ((q.includes('bmi') || q.includes('weight') || q.includes('plan') || q.includes('gym') || q.includes('yoga')) && engine && bodyProfile) {
+      const profileStats = engine.computeBodyProfile(bodyProfile);
+      const plan = engine.buildWellnessPlan(bodyProfile);
+      const bmiText = profileStats.bmi == null
+        ? 'Your BMI snapshot is waiting for both height and weight.'
+        : `Your BMI snapshot is ${profileStats.bmi}.`;
+      return `${bmiText} ${plan.headline} Start with ${plan.movementBlocks[0] || 'a steady session this week'}, then keep the habit stack gentle and repeatable.`;
+    }
+    if ((q.includes('supplement') || q.includes('vitamin')) && labReport?.actionPlan?.supplementConversations?.length) {
+      return `BALA can help you collect supplement questions, but it cannot tell you what to take. Start with this conversation: ${labReport.actionPlan.supplementConversations[0]}`;
+    }
+    if ((q.includes('lab') || q.includes('blood') || q.includes('report') || q.includes('hba1c') || q.includes('glucose') || q.includes('ldl')) && labReport?.summary) {
+      const actionPlan = labReport.actionPlan && Array.isArray(labReport.actionPlan.priorities)
+        ? labReport.actionPlan
+        : engine?.buildLabActionPlan?.(labReport.entries || []);
+      const recoveryGuide = buildBalaLabRecoveryGuide(labReport, actionPlan);
+      const flagged = (labReport.summary.flaggedLabels || []).slice(0, 2).join(' and ');
+      const firstQuestion = (labReport.questions || [])[0];
+      const firstMove = recoveryGuide?.blocks?.[0]?.items?.[0];
+      return `${labReport.summary.headline}.${flagged ? ` Reported items to review include ${flagged}.` : ''}${firstMove ? ` This week, start with ${firstMove.toLowerCase()}.` : ''} ${firstQuestion || 'Bring the report to your clinician and review the flagged lines together.'}`;
+    }
     if (q.includes('tired') || q.includes('sleep'))
       return "Your body is asking for rest. Try winding down 30 minutes earlier tonight — even small sleep improvements compound over time.";
     if (q.includes('heart') || q.includes('hrv'))
@@ -5433,26 +7129,8 @@ b63InitDemoTrust();
 
     bvcShowThinking();
 
-    const ctx = bvcGetContext();
     let responseText;
-
-    try {
-      const res = await Promise.race([
-        fetch('http://127.0.0.1:7891/coach', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: question, healthContext: ctx })
-        }),
-        new Promise(function(_, reject) {
-          setTimeout(function() { reject(new Error('timeout')); }, 3000);
-        })
-      ]);
-      if (!res.ok) throw new Error('bridge_error');
-      const data = await res.json();
-      responseText = data.response || bvcFallback(question);
-    } catch(_) {
-      responseText = bvcFallback(question);
-    }
+    responseText = bvcFallback(question);
 
     bvcShowBalaResponse(responseText);
   }
@@ -5460,7 +7138,9 @@ b63InitDemoTrust();
   // ── Event wiring ──────────────────────────────────────────────────────────
   micBtn.addEventListener('click', function() {
     if (!bvcRec) {
-      alert('Voice input is not supported in this browser. Please type your question.');
+      if (supportNoteEl) {
+        supportNoteEl.textContent = 'Mic input is still unavailable here. Type your question below, or use your device keyboard mic.';
+      }
       return;
     }
     if (micBtn.classList.contains('listening')) {

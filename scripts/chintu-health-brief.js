@@ -6,7 +6,8 @@
 // Sends via Telegram. Always exits 0 (safe for Task Scheduler).
 //
 // Required env vars (same as existing Chintu setup):
-//   TELEGRAM_TOKEN + TELEGRAM_CHAT_ID   -- Telegram delivery
+//   TELEGRAM_BOT_TOKEN + CHINTU_TELEGRAM_ALLOWED_CHAT_IDS + CHINTU_TELEGRAM_SEND_ENABLED=1
+//                                        -- Telegram delivery through the shared helper
 //   GROQ_KEY or GROQ_API_KEY            -- Groq AI brief generation (optional,
 //                                          falls back to plain-text digest if absent)
 //
@@ -20,34 +21,23 @@ const https = require('https');
 const os    = require('os');
 const path  = require('path');
 
+const { sendTelegramMessage } = require('./chintu-send-telegram.js');
+
 const SNAPSHOT_PATH = path.join(os.homedir(), 'bala-daily-snapshot.json');
 
 function safeExit() { process.exit(0); }
 
 // ─── Telegram ────────────────────────────────────────────────────────────────
 async function sendTelegram(text) {
-  const token  = process.env.TELEGRAM_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return;          // gate: env vars required
-  const body = JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' });
-  return new Promise((resolve) => {
-    const req = https.request(
-      {
-        hostname: 'api.telegram.org',
-        path: `/bot${token}/sendMessage`,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(body),
-        },
-      },
-      (res) => { res.resume(); res.on('end', resolve); }
-    );
-    req.on('error', resolve);
-    req.setTimeout(9000, () => { req.destroy(); resolve(); });
-    req.write(body);
-    req.end();
-  });
+  return sendTelegramMessage(
+    String(text || '')
+      .replace(/<code>/g, '')
+      .replace(/<\/code>/g, '')
+      .replace(/<b>/g, '')
+      .replace(/<\/b>/g, '')
+      .replace(/<i>/g, '')
+      .replace(/<\/i>/g, '')
+  );
 }
 
 // ─── Groq AI brief ───────────────────────────────────────────────────────────

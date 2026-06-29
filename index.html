@@ -81,6 +81,10 @@
               <button class="hero-coral" id="hero-ask-button" type="button">Ask BALA</button>
               <button id="hero-report-button" type="button">Generate Report</button>
             </div>
+            <div class="hero-subactions" aria-label="Jump to BALA next stage">
+              <button id="hero-body-labs-button" type="button">Open Body + Labs</button>
+              <button id="hero-demo-rebound-button" type="button">Open demo rebound stage</button>
+            </div>
             <p class="hero-privacy"><span aria-hidden="true">●</span> Private by design. No account needed.</p>
           </div>
           <button class="sync-button" id="sync-button" type="button" aria-label="View BALA setup and data source details">
@@ -94,14 +98,15 @@
         </header>
 
         <section class="score-panel" aria-labelledby="score-heading">
-          <div class="score-ring" role="img" aria-label="Bala score 82 out of 100">
+          <button class="score-ring" id="bala-score-button" type="button" aria-label="Bala score 82 out of 100. Open score explanation" aria-haspopup="dialog" aria-controls="bala-score-dialog">
             <svg viewBox="0 0 150 150" aria-hidden="true">
               <circle class="ring-track" cx="75" cy="75" r="62" />
               <circle class="ring-value" cx="75" cy="75" r="62" />
             </svg>
             <span><small>BALA score</small><strong>82</strong><em id="score-status"><b id="score-icon" aria-hidden="true">↑</b> Strong day</em></span>
             <span id="bala-score-delta" style="display:none;font-size:12px;font-weight:600;margin-top:4px;letter-spacing:0.01em;" aria-live="polite"></span>
-          </div>
+            <span class="score-ring-hint" aria-hidden="true">Tap for details</span>
+          </button>
           <div class="score-insight">
             <p class="section-label" id="guide-label">Today's Guide</p>
             <!-- B63: Import Trust panel ─────────────────────────────────── -->
@@ -121,6 +126,7 @@
               <li id="score-check-2">Heart signals are near your pattern</li>
               <li id="score-check-3">Activity is balanced</li>
             </ul>
+            <div id="score-completeness-card" class="score-completeness-card" hidden aria-live="polite"></div>
             <div id="bala-explainability" class="bala-explainability" hidden aria-live="polite"></div>
             <details class="score-explainer" id="score-explainer">
               <summary>Why this score?</summary>
@@ -138,6 +144,63 @@
             See today’s plan
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13m-5-5 5 5-5 5" /></svg>
           </button>
+        </section>
+
+        <section class="rebound-launchpad" id="rebound-launchpad" aria-labelledby="rebound-launchpad-title">
+          <div class="rebound-launchpad-copy">
+            <p class="section-label">Body + Labs</p>
+            <h2 id="rebound-launchpad-title">Catch the next BALA stage faster</h2>
+            <p>Use this quick layer to jump straight into your saved body profile and lab-report flow without hunting through the page. Everything stays local in this browser.</p>
+          </div>
+          <div class="rebound-launchpad-status" aria-live="polite">
+            <span class="rebound-status-chip" id="rebound-body-status">Body profile waiting</span>
+            <span class="rebound-status-chip" id="rebound-lab-status">Lab report waiting</span>
+            <span class="rebound-status-chip rebound-status-chip--soft" id="rebound-next-step">Next: save your body profile</span>
+          </div>
+          <div class="rebound-launchpad-actions">
+            <button id="rebound-primary-btn" class="hero-primary" type="button">Build body profile</button>
+            <button id="rebound-body-btn" type="button">Jump to Body Profile</button>
+            <button id="rebound-lab-btn" type="button">Jump to Lab Insights</button>
+            <button id="rebound-demo-lab-btn" type="button">Try demo lab report</button>
+          </div>
+        </section>
+
+        <section class="bala-control-tower" id="bala-control-tower" aria-labelledby="bala-control-tower-title">
+          <div class="bala-control-tower-copy">
+            <p class="section-label">Rebound Board</p>
+            <h2 id="bala-control-tower-title">See your next move before you scroll</h2>
+            <p>Body profile, lab report, flagged items, and the best next BALA move are summarized here so the page feels lighter and easier to act on.</p>
+          </div>
+          <div class="bala-control-tower-grid">
+            <article class="bala-control-card bala-control-card--metrics" aria-label="Body and lab readiness summary">
+              <div class="bala-control-metric">
+                <span class="bala-control-label">Body profile</span>
+                <strong id="bala-tower-profile-value">Waiting</strong>
+              </div>
+              <div class="bala-control-metric">
+                <span class="bala-control-label">Lab report</span>
+                <strong id="bala-tower-lab-value">Waiting</strong>
+              </div>
+              <div class="bala-control-metric">
+                <span class="bala-control-label">Flagged items</span>
+                <strong id="bala-tower-flagged-value">Waiting</strong>
+              </div>
+              <div class="bala-control-metric">
+                <span class="bala-control-label">Families</span>
+                <strong id="bala-tower-family-value">Waiting</strong>
+              </div>
+            </article>
+            <article class="bala-control-card bala-control-card--next" aria-live="polite">
+              <p class="section-label">Next best move</p>
+              <h3 id="bala-tower-next">Build your body profile</h3>
+              <p id="bala-tower-note">Save your body basics first, then BALA can connect your report to a calmer weekly rebound rhythm.</p>
+              <div class="bala-control-actions">
+                <button id="bala-tower-primary-btn" class="hero-primary" type="button">Build body profile</button>
+                <button id="bala-tower-lab-btn" type="button">Open lab lane</button>
+                <button id="bala-tower-body-btn" type="button">Open body lane</button>
+              </div>
+            </article>
+          </div>
         </section>
 
         <!-- BALA-B56: Daily Coach Tip Card -->
@@ -181,7 +244,7 @@
             <button id="ds-download-btn" class="ds-download-btn" type="button" hidden>Download .txt</button>
           </div>
           <p id="ds-status" class="ds-status" aria-live="polite"></p>
-          <p class="ds-disclaimer">This is a personal wellness log, not a medical record or diagnosis. Share with your doctor as background context only.</p>
+          <p class="ds-disclaimer">This is a personal wellness log, not a clinical record or verdict. Share with your doctor as background context only.</p>
           <a href="summary.html" class="summary-link">View Doctor-Ready Summary &rarr;</a>
         </div>
 
@@ -214,6 +277,9 @@
           <div class="bvc-waveform" id="bvc-waveform" aria-hidden="true" hidden>
             <span></span><span></span><span></span><span></span><span></span>
           </div>
+          <div class="bvc-support-note" id="bvc-support-note" role="status" aria-live="polite">
+            Voice input depends on your current browser surface. If the mic is unavailable here, type your question or use your device keyboard mic.
+          </div>
           <div class="bvc-input-area">
             <label for="bvc-input" class="sr-only">Ask your health question</label>
             <input
@@ -239,6 +305,85 @@
           <p class="bvc-powered">Powered by Chintu · awareness only · not medical advice</p>
         </section>
         <!-- End B65 BALA Voice Coach ──────────────────────────────────────────── -->
+
+        <section class="bala-next-stage" id="bala-next-stage" aria-label="BALA Body Profile and Lab Insights">
+          <div class="bala-next-stage-grid">
+            <article class="next-stage-card" id="body-profile-card" aria-labelledby="body-profile-title">
+              <div class="next-stage-head">
+                <p class="section-label">Body Profile</p>
+                <h2 id="body-profile-title">Build a local weekly wellness plan</h2>
+                <p>Enter your body basics and movement preference. BALA will calculate a broad BMI snapshot and generate a calm weekly gym, walk, or yoga rhythm on this device.</p>
+              </div>
+              <form id="bala-profile-form" class="next-stage-form">
+                <div class="next-stage-form-grid">
+                  <label class="field-stack" for="bala-height-cm">
+                    <span>Height (cm)</span>
+                    <input id="bala-height-cm" name="heightCm" type="number" min="80" max="260" step="0.1" placeholder="170" />
+                  </label>
+                  <label class="field-stack" for="bala-weight-kg">
+                    <span>Weight (kg)</span>
+                    <input id="bala-weight-kg" name="weightKg" type="number" min="20" max="400" step="0.1" placeholder="70" />
+                  </label>
+                  <label class="field-stack" for="bala-goal">
+                    <span>Weekly goal</span>
+                    <select id="bala-goal" name="goal">
+                      <option value="steady_energy">Steady energy</option>
+                      <option value="fat_loss">Fat-loss support</option>
+                      <option value="muscle_gain">Muscle gain support</option>
+                      <option value="recovery">Recovery-first week</option>
+                    </select>
+                  </label>
+                  <label class="field-stack" for="bala-movement-style">
+                    <span>Movement style</span>
+                    <select id="bala-movement-style" name="movementStyle">
+                      <option value="mixed">Mixed routine</option>
+                      <option value="gym">Gym strength</option>
+                      <option value="walk">Walking focus</option>
+                      <option value="yoga">Yoga and mobility</option>
+                    </select>
+                  </label>
+                  <label class="field-stack" for="bala-days-per-week">
+                    <span>Days per week</span>
+                    <input id="bala-days-per-week" name="daysPerWeek" type="number" min="2" max="7" step="1" value="4" />
+                  </label>
+                  <label class="field-stack" for="bala-minutes-per-session">
+                    <span>Minutes per session</span>
+                    <input id="bala-minutes-per-session" name="minutesPerSession" type="number" min="15" max="120" step="5" value="35" />
+                  </label>
+                </div>
+                <div class="next-stage-actions">
+                  <button id="bala-profile-save-btn" class="capture-primary" type="submit">Build my plan</button>
+                  <button id="bala-profile-clear-btn" class="capture-secondary" type="button">Clear plan</button>
+                </div>
+              </form>
+              <div id="bala-profile-status" class="next-stage-status" role="status" aria-live="polite">Everything stays local in this browser. BMI is shown as a broad snapshot only.</div>
+              <div id="bala-profile-summary" class="next-stage-output" aria-live="polite"></div>
+              <div id="bala-plan-output" class="next-stage-output" aria-live="polite"></div>
+            </article>
+
+            <article class="next-stage-card" id="lab-insights-card" aria-labelledby="lab-insights-title">
+              <div class="next-stage-head">
+                <p class="section-label">Lab Insights</p>
+                <h2 id="lab-insights-title">Paste or upload blood-test values</h2>
+                <p>Paste report text or upload a local <code>.txt</code>, <code>.csv</code>, <code>.json</code>, <code>.xml</code>, or simple <code>.html</code> table file. BALA will highlight reported values, group them into review families like cardio, thyroid, kidney, urine, and recovery, and suggest doctor questions without making clinical calls or telling you what to take.</p>
+              </div>
+              <label class="field-stack" for="bala-lab-input">
+                <span>Lab report text</span>
+                <textarea id="bala-lab-input" class="next-stage-textarea" rows="8" placeholder="Example:&#10;HbA1c 6.1 % High 4.0 to 5.6&#10;LDL 142 mg/dL High 0 to 99&#10;Vitamin D 24 ng/mL Low 30 to 100"></textarea>
+              </label>
+              <div class="next-stage-actions">
+                <button id="bala-lab-upload-btn" class="capture-secondary" type="button">Upload lab file</button>
+                <button id="bala-lab-parse-btn" class="capture-primary" type="button">Analyze locally</button>
+                <button id="bala-lab-clear-btn" class="capture-secondary" type="button">Clear</button>
+                <input id="bala-lab-file" type="file" accept=".txt,.csv,.json,.xml,.html,.htm,text/plain,text/csv,application/json,text/xml,application/xml,text/html,application/pdf,image/*" hidden />
+              </div>
+              <p class="next-stage-note">Tip: save your Body Profile too and BALA will blend this report into a more personal weekly rebound rhythm.</p>
+              <div id="bala-lab-status" class="next-stage-status" role="status" aria-live="polite">Live now: pasted text plus .txt, .csv, .json, .xml, and simple .html table files. Cardio, thyroid, kidney, urine, liver, and CBC-style families are supported when values are present. PDF and image parsing are not active in this stage yet.</div>
+              <div id="bala-lab-results" class="next-stage-output" aria-live="polite"></div>
+              <p class="next-stage-footnote">Bring your own context and clinician guidance for any medical decisions. BALA only helps you organize what your report says.</p>
+            </article>
+          </div>
+        </section>
 
         <section class="trust-strip" aria-label="BALA privacy and safety principles">
           <span><i aria-hidden="true">✓</i> Private by design</span>
@@ -723,6 +868,18 @@
       </form>
     </dialog>
 
+    <dialog id="bala-score-dialog" class="score-breakdown-dialog" aria-labelledby="bala-score-dialog-title" aria-describedby="bala-score-dialog-summary">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="Close BALA score explanation">&times;</button>
+        <p class="section-label">BALA score breakdown</p>
+        <h2 id="bala-score-dialog-title">How today's score came together</h2>
+        <div id="bala-score-dialog-summary" class="score-breakdown-summary"></div>
+        <div id="bala-score-dialog-signals" class="score-breakdown-signals"></div>
+        <p class="score-breakdown-note">BALA is a daily awareness guide using the signals you choose to share. It does not diagnose health conditions or replace professional care.</p>
+        <button class="dialog-primary" value="close">Close</button>
+      </form>
+    </dialog>
+
     <dialog id="onboarding-dialog" class="onboarding-dialog">
       <form id="onboarding-form">
         <div class="onboarding-mark" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -984,4 +1141,67 @@
         </div>
         <div class="alcohol-calc-panel" id="alcohol-calc-panel" hidden>
           <p class="alcohol-calc-title">Alcohol reflection — optional check-in</p>
-          <p class="alcohol-calc-subtitle">Estimate the standard-drink equivalent from what you ha
+                    <p class="alcohol-calc-subtitle">Estimate the standard-drink equivalent from what you had. This is only for pattern reflection with sleep or recovery signals, not for BAC, safety-to-drive, or medical decisions.</p>
+          <div class="alcohol-calc-grid">
+            <label class="alcohol-label">Drink type
+              <select name="alcohol_type" id="alcohol-type">
+                <option value="beer">Beer</option>
+                <option value="wine">Wine</option>
+                <option value="spirits">Spirits / Whiskey / Vodka</option>
+                <option value="cocktail">Cocktail / Mixed drink</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label class="alcohol-label">Amount
+              <input type="number" name="alcohol_amount" id="alcohol-amount" min="0" max="2000" step="0.5" placeholder="e.g. 330" />
+            </label>
+            <label class="alcohol-label">Unit
+              <select name="alcohol_unit" id="alcohol-unit">
+                <option value="ml">ml</option>
+                <option value="oz">fl oz</option>
+                <option value="shot">shot(s)</option>
+                <option value="can">can / bottle</option>
+              </select>
+            </label>
+            <label class="alcohol-label">ABV %
+              <input type="number" name="alcohol_abv" id="alcohol-abv" min="0" max="100" step="0.1" placeholder="e.g. 5" />
+            </label>
+          </div>
+          <div class="alcohol-result" id="alcohol-result" hidden>
+            <p class="alcohol-estimate" id="alcohol-estimate"></p>
+            <p class="alcohol-note">Some people notice changes in sleep quality, HRV, hydration, or resting heart rate after alcohol — this helps you track that pattern for yourself.</p>
+            <p class="alcohol-disclaimer">This is an approximate standard-drink estimate for personal reflection only — not medical advice. One US standard drink = 14 g pure alcohol (e.g. 355 ml of 5% beer, 148 ml of 12% wine, or 44 ml of 40% spirits).</p>
+          </div>
+          <button type="button" class="alcohol-calc-btn" id="alcohol-calc-btn">Estimate standard drinks (US)</button>
+        </div>
+        <label class="symptom-note">Optional reflection note<textarea name="note" maxlength="240" placeholder="e.g. long travel day, stress, illness…"></textarea></label>
+        <button class="dialog-primary" type="submit">Save daily factors</button>
+      </form>
+    </dialog>
+
+    <!-- B58: Founder Demo Journey Modal -->
+    <dialog id="journey-modal" class="journey-modal" aria-label="BALA Founder Demo Journey" aria-modal="true">
+      <div class="journey-modal-inner">
+        <div class="journey-modal-header">
+          <div class="journey-step-indicator" id="journey-step-indicator">Step 1 of 7</div>
+          <button class="journey-modal-close" id="journey-modal-close" type="button" aria-label="Close journey">×</button>
+        </div>
+        <div class="journey-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Journey progress">
+          <div class="journey-progress-bar-inner" id="journey-modal-progress" style="width:0%"></div>
+        </div>
+        <div class="journey-step-body" id="journey-step-body" aria-live="polite"></div>
+        <div class="journey-modal-footer">
+          <button class="journey-nav-btn journey-back" id="journey-prev-btn" type="button" hidden>← Back</button>
+          <div class="journey-footer-center">
+            <span class="journey-safe-note" id="journey-safe-note"></span>
+          </div>
+          <button class="journey-nav-btn journey-forward" id="journey-next-btn" type="button">Next →</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="./vendor/fflate.min.js"></script>
+    <script src="./scripts/bala-lab-profile-engine.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

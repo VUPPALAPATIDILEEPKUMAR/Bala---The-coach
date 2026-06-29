@@ -107,6 +107,13 @@ const scannerAllowlist = new Set([
   // Calls api.groq.com for AI brief (GROQ_KEY gated, optional -- falls back to plain digest).
   // Sends via api.telegram.org (TELEGRAM_TOKEN + TELEGRAM_CHAT_ID gated). Health values never logged.
   'chintu-health-brief.js',
+  // C70: Morning operator -- talks to the LOCAL bridge on 127.0.0.1 only, refreshes the founder brief,
+  // and sends a gated Telegram status summary through the existing helper.
+  'chintu-morning-operator.js',
+  // PARKED (phone-layer research) -- iCloud Shared Album API explorer. Not part of the active
+  // Chintu OS runtime. fetch() calls are intentional for future iCloud read support.
+  // See CHINTU_PHONE_LAYER_RESEARCH_PARKED.md for rationale.
+  'chintu-icloud-shared-album.js',
 ]);
 
 const files = fs.readdirSync(scriptsDir).filter((f) => {

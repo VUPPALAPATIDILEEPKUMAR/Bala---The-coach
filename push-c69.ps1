@@ -66,7 +66,7 @@ if ($helpBranch) {
 Write-Host ""
 Write-Host "STEP 4: Brain offline fallback sends HELP_TEXT (not dead-end message)" -ForegroundColor Yellow
 $helpFallback = Select-String -Path scripts\chintu-telegram-poll.js -Pattern "replyText.*HELP_TEXT" -CaseSensitive:$false |
-  Where-Object { $_.Line -match 'Groq brain not available' }
+  Where-Object { $_.Line -match 'Groq brain.*not available|Chintu bridge is offline' }
 if ($helpFallback) {
   Write-Host "  [PASS] Brain offline fallback sends HELP_TEXT" -ForegroundColor Green
 } else {
@@ -124,15 +124,10 @@ $extraFiles = @(
 )
 foreach ($f in $extraFiles) {
   if (Test-Path $f) {
-    $staged = git diff --cached --name-only 2>$null
-    if ($staged -notcontains $f.Replace('\', '/')) {
-      # Only add if modified vs HEAD
-      $modified = git diff --name-only HEAD -- $f 2>$null
-      $untracked = git ls-files --others --exclude-standard -- $f 2>$null
-      if ($modified -or $untracked) {
-        git add $f
-        Write-Host "  staged (extra): $f" -ForegroundColor DarkGray
-      }
+    $fileStatus = git status --porcelain -- $f
+    if ($fileStatus) {
+      git add $f
+      Write-Host "  staged (extra): $f" -ForegroundColor DarkGray
     }
   }
 }
