@@ -15,3 +15,15 @@
 [2026-06-25T11:00:03.553Z]   PASS: run_skill_test
 [2026-06-25T11:00:03.554Z] Commands done. All pass: true
 [2026-06-25T11:00:03.556Z] CONTROL_TOWER_RESUME.md updated
+[2026-06-25T11:00:04.182Z] Committed: [main bd333f9] C48-auto: standard audit suite (dry-run fallback)
+[2026-06-25T11:00:04.313Z] ntfy: {
+  "mode": "dry-run",
+  "topic": "(not set)",
+  "title": "Chintu OS",
+  "message": "Chintu check-in ready. Open your BALA guide when you have a moment.",
+  "priority": 3,
+  "sent": false,
+  "reason": "CHINTU_NTFY_TOPIC not set. Set it to your ntfy.sh topic name."
+}
+[2026-06-25T11:00:04.352Z] Telegram morning push: skipped (emoji is not defined)
+[2026-06-25T11:00:04.353Z] === Autonomous brain run complete ===

@@ -115,3 +115,15 @@ No network egress: FAIL (2 issue(s))
 
 [2026-06-24T11:00:01.960Z] Commands done. All pass: false
 [2026-06-24T11:00:01.962Z] CONTROL_TOWER_RESUME.md updated
+[2026-06-24T11:00:02.470Z] Committed: [main 7d6e803] C48-auto: standard audit suite
+[2026-06-24T11:00:02.611Z] ntfy: {
+  "mode": "dry-run",
+  "topic": "(not set)",
+  "title": "Chintu OS",
+  "message": "Chintu check-in ready. Open your BALA guide when you have a moment.",
+  "priority": 3,
+  "sent": false,
+  "reason": "CHINTU_NTFY_TOPIC not set. Set it to your ntfy.sh topic name."
+}
+[2026-06-24T11:00:03.196Z] Telegram morning push: sent
+[2026-06-24T11:00:03.197Z] === Run complete ===

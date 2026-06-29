@@ -34,6 +34,8 @@ BALA + Chintu multi-brain operating system.
 | `BLOCKERS.md` | Active blockers that gate release or sprint progress |
 | `DECISIONS.md` | Decisions taken, with date and rationale |
 | `DAILY_LOGS/` | Plain-Markdown daily log per session (YYYY-MM-DD.md) |
+| `chat_history/` | Local Telegram/Groq conversation memory files |
+| `telegram_offset.json` | Local Telegram poll checkpoint so updates are not reprocessed |
 
 ## How Claude should use this vault
 
@@ -68,7 +70,7 @@ BALA + Chintu multi-brain operating system.
 
 - Health data (BALA scores, symptoms, exports, raw vitals).
 - Secrets, tokens, credentials.
-- `.env`, `openclaw.json`, cookies, browser sessions, paired-device files.
+- .env, openclaw.json, cookies, browser sessions, paired-device files.
 - Personally identifying info beyond the founder's existing public mention.
 - Anything that should never appear in a public log.
 
@@ -78,3 +80,5 @@ BALA + Chintu multi-brain operating system.
 - Vault edits are docs-only commits; never combined with app changes.
 - Validation must PASS before any vault commit.
 - memory-wiki plugin stays disabled until explicit founder approval.
+
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.

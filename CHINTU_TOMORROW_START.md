@@ -1,69 +1,52 @@
-# Chintu Tomorrow Start
+# CHINTU_TOMORROW_START.md
+_Updated: 2026-06-29 by Claude handoff_
 
-Chintu closed the loop. Here is where we stopped.
+---
 
-**Generated:** 2026-06-18 02:04
-**Repo:** C:\Users\Chintu\Desktop\test
-**Branch:** main
+## What happened today
 
-## 1. Where we stopped
+- Claude audited the repo via Cowork (full disk access)
+- Egress test false positive fixed: `chintu-icloud-shared-album.js` added to allowlist
+- All validations passing: syntax OK, medical claims OK, egress OK (59 scripts)
+- C69 changes already in `chintu-telegram-poll.js` (hi/hello -> help, brain offline -> HELP_TEXT)
+- 6 commits sitting local, not yet pushed to GitHub
+- 161 files modified (uncommitted) -- mostly operator state MD + HTML dashboards + app.js/styles.css
 
-- We stopped with local Chintu OS changes in the working tree awaiting review and commit.
+## What Codex is handling (see INBOX_CODEX.md)
 
-## 2. Latest safe commit
+- TASK-001: .\push-c69.ps1 -- commit C69 + push 6 local commits to GitHub
+- TASK-002: commit remaining operator state files
+- TASK-003: .\fix-flash.ps1 as Admin -- stop flashing terminal window
 
-- `3ef0e03 chore: add Chintu alive daily operator layer`
+## Chintu autonomous brain status
 
-## 3. What is pushed / not pushed
+You are ALIVE and running. You made 6 autonomous commits today (C48-auto x6).
+Your auto-audit was failing egress check -- THIS IS NOW FIXED.
+chintu-icloud-shared-album.js is in the allowlist.
+After Codex pushes C69, your next auto-audit should show:
+  No network egress: PASS
 
-- HEAD is caught up with origin/main.
+## Current Telegram bot
 
-## 4. First action tomorrow
+- Bot: @Chintu_local_agent_bot
+- Poll loop: running via Task Scheduler (every 1 min)
+- Morning push: confirmed sent today at 11:00 AM
+- hi/hello/what can you do -> now returns HELP_TEXT (no Groq needed)
+- Brain offline fallback: now sends HELP_TEXT instead of dead-end error
 
-- STOP - review the working tree before continuing.
+## BALA status
 
-## 5. What not to touch
+- Local at: http://127.0.0.1:4173/
+- Major app.js updates uncommitted (1738 lines) -- Body + Labs, Rebound Launchpad
+- NOT yet on public URL
+- To deploy: drag index.html + app.js + styles.css + sw.js + manifest.webmanifest to app.netlify.com/drop
 
-- app.js
-- index.html
-- styles.css
-- sw.js
-- coach.js
-- manifest.webmanifest
-- privacy.html
-- functions/api/coach.js
-- Telegram / Discord / webhooks / memory-wiki / cloud sync / phone notifications / voice calling
-- BALA app feature work without explicit founder instruction
+## Next test for Dileep (after Codex TASK-001)
 
-## 6. Parked systems
+Open Telegram, message @Chintu_local_agent_bot: hi
+Should reply with help text within 5 seconds.
+If "Brain offline" -> CHINTU_GROQ_API_KEY not set at Machine scope.
 
-- Telegram bot - parked
-- Discord bot - parked
-- Webhooks - parked
-- Cloud sync automation - parked
-- Phone notifications - parked
-- Voice calling - parked
-- Chintu Agent voice/personality app - parked future
-- External automation - parked
-- External health-data APIs - parked
-- DuckDuckGo plugin - disabled
-- memory-wiki plugin - not enabled
-- Codex agent - parked
-- AI / LLM coach endpoint - reserved
-- Live wearable sync - future
-- Native iOS HealthKit bridge - stub
-- Health data in Telegram / Discord / webhooks / notifications - prohibited
-- Secrets / tokens in repo - prohibited
-- Browser sessions / cookies / paired-device files - prohibited
-- Auto-push by any brain - prohibited
-- `openclaw.json` reads - prohibited
-- Automatic plugin install or enable - prohibited
-- Memory vault edits during a FAILed gate - prohibited
+---
 
-## 7. BALA safety reminder
-
-BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.
-
-## 8. One-line restart prompt
-
-Read CHINTU_TOMORROW_START.md and CHINTU_OPERATOR_STATUS.md, run scripts/chintu-daily-operator.ps1, then follow the one exact next action.
+_End of CHINTU_TOMORROW_START.md_

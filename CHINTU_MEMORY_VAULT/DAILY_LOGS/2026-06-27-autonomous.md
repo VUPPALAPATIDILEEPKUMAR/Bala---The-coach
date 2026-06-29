@@ -61,3 +61,15 @@
 [2026-06-27T14:26:28.931Z]   PASS: run_egress_test
 [2026-06-27T14:26:28.931Z] Commands done. All pass: true
 [2026-06-27T14:26:28.933Z] CONTROL_TOWER_RESUME.md updated
+[2026-06-27T14:26:29.583Z] Committed: [main c6a0e96] C48-auto: standard audit suite
+[2026-06-27T14:26:29.768Z] ntfy: {
+  "mode": "dry-run",
+  "topic": "(not set)",
+  "title": "Chintu OS",
+  "message": "Chintu check-in ready. Open your BALA guide when you have a moment.",
+  "priority": 3,
+  "sent": false,
+  "reason": "CHINTU_NTFY_TOPIC not set. Set it to your ntfy.sh topic name."
+}
+[2026-06-27T14:26:29.769Z] Telegram morning push: suppressed by CHINTU_SUPPRESS_AUTONOMOUS_TELEGRAM=1
+[2026-06-27T14:26:29.770Z] === Autonomous brain run complete ===

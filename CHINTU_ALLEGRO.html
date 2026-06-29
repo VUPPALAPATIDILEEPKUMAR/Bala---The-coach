@@ -206,6 +206,19 @@
       display: flex; align-items: center; gap: 10px; margin-top: 8px;
       font-size: 0.68rem; color: var(--muted);
     }
+    .command-quickbar {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .command-quickbar .qa-btn { text-align: center; }
+    .command-quickbar-note {
+      grid-column: 1 / -1;
+      font-size: 0.64rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
     .toggle-row { display: flex; align-items: center; gap: 6px; }
     .toggle { position: relative; width: 30px; height: 16px; cursor: pointer; }
     .toggle input { opacity: 0; width: 0; height: 0; }
@@ -360,10 +373,118 @@
       flex-wrap: wrap;
       gap: 8px;
     }
+    .agent-board-meta {
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+    .agent-board-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .agent-job-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      min-width: 0;
+    }
+    .agent-job-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .agent-job-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .agent-job-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface2);
+      white-space: nowrap;
+    }
+    .agent-job-track {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .agent-job-summary {
+      font-size: 0.74rem;
+      line-height: 1.5;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .agent-job-gates {
+      font-size: 0.68rem;
+      line-height: 1.45;
+      color: var(--muted);
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+    }
+    .agent-job-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .agent-wave-line {
+      font-size: 0.74rem;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+    .connector-board-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .connector-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      min-width: 0;
+    }
+    .connector-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .connector-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .connector-meta {
+      font-size: 0.72rem;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-top: 4px;
+      white-space: pre-wrap;
+    }
 
     @media (max-width: 920px) {
       .reality-grid { grid-template-columns: 1fr; }
       .reality-card.span2 { grid-column: auto; }
+      .command-quickbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .agent-board-grid { grid-template-columns: 1fr; }
+      .connector-board-grid { grid-template-columns: 1fr; }
     }
 
     /* ── BALA Score Demo Panel ── */
@@ -631,6 +752,7 @@
       .shell { grid-template-columns: 1fr; }
       .sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
       .topbar-sub, .badge-safe { display: none; }
+      .command-quickbar { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -691,6 +813,13 @@
         <div class="status-card-body">
           <div class="status-card-title">Local Mode</div>
           <div class="status-card-note">No cloud sync · Data stays local</div>
+        </div>
+        <div class="command-quickbar" id="commandQuickbar">
+          <button class="qa-btn" type="button" onclick="focusPhoneDictation()">Phone Dictation</button>
+          <button class="qa-btn" type="button" onclick="quickChat('check everything')">Check Everything</button>
+          <button class="qa-btn" type="button" onclick="quickChat('founder beast mode')">Founder Beast</button>
+          <button class="qa-btn" type="button" onclick="quickChat('before i wake up')">Overnight Beast</button>
+          <div class="command-quickbar-note" id="commandQuickbarNote">Phone path: tap the mic if your browser supports speech recognition. Otherwise tap Phone Dictation and use your keyboard mic.</div>
         </div>
       </div>
       <div class="status-card" id="sc-bridge">
@@ -952,6 +1081,13 @@
         <button class="qa-btn" onclick="quickChat('ntfy setup guide')">📳 ntfy Setup</button>
         <button class="qa-btn" onclick="quickChat('WhatsApp CallMeBot setup')">💬 WhatsApp Setup</button>
         <button class="qa-btn" onclick="quickChat('Discord webhook setup')">🎮 Discord Setup</button>
+        <button class="qa-btn" onclick="quickChat('founder beast mode')">🧠 Founder Beast Mode</button>
+        <button class="qa-btn" onclick="quickChat('what are you doing right now')">📡 Live Status</button>
+        <button class="qa-btn" onclick="liveAction('os_snapshot')">🗂 OS snapshot</button>
+        <button class="qa-btn" onclick="liveAction('creator_pack_latest_trip')">🎬 Creator pack</button>
+        <button class="qa-btn" onclick="liveAction('trip_video_draft')">🎞 Trip video</button>
+        <button class="qa-btn" onclick="liveAction('youtube_episode_pack_latest')">📦 Episode pack</button>
+        <button class="qa-btn" onclick="liveAction('trip_video_review')">🎥 Review cut</button>
         <button class="qa-btn" onclick="quickAction('Create founder brief')">📋 Founder brief</button>
         <button class="qa-btn" onclick="quickAction('Review BALA scoring model')">📊 BALA scoring</button>
         <button class="qa-btn" onclick="quickAction('Plan report explainer MVP')">🩺 Report explainer</button>
@@ -970,8 +1106,15 @@
         <button class="qa-btn" onclick="liveAction('validate_app')">✅ Validate BALA App</button>
         <button class="qa-btn" onclick="liveAction('github_status')">🐙 GitHub Status</button>
         <button class="qa-btn" onclick="liveAction('github_repo_summary')">📘 Repo Summary</button>
+        <button class="qa-btn" onclick="liveAction('runtime_snapshot')">📡 Runtime Brief</button>
+        <button class="qa-btn" onclick="liveAction('os_snapshot')">🗂 OS Snapshot</button>
+        <button class="qa-btn" onclick="liveAction('creator_pack_latest_trip')">🎬 Latest Trip Pack</button>
+        <button class="qa-btn" onclick="liveAction('trip_video_draft')">🎞 Trip Video Draft</button>
+        <button class="qa-btn" onclick="liveAction('youtube_episode_pack_latest')">📦 Episode Pack</button>
+        <button class="qa-btn" onclick="liveAction('trip_video_review')">🎥 Review Cut</button>
         <button class="qa-btn" onclick="liveAction('action_packet_bala_sprint')">🏃 BALA Sprint Packet</button>
         <button class="qa-btn" onclick="liveAction('prompt_xml_bala')">✦ XML Prompt</button>
+        <button class="qa-btn" onclick="liveAction('prompt_founder_beast_both')">🧠 Founder Prompt</button>
         <button class="qa-btn" onclick="liveAction('git_status')">📋 Git Status</button>
         <button class="qa-btn" onclick="liveAction('git_log')">🕑 Git Log</button>
         <button class="qa-btn qa-wide" onclick="liveAction('open_bala_public')">🌐 Open BALA Public Link</button>
@@ -1003,6 +1146,7 @@
           ></textarea>
           <div class="input-controls">
             <button class="icon-btn" id="voiceBtn" title="Voice input" onclick="toggleVoice()">🎙</button>
+            <button class="icon-btn" id="phoneDictationBtn" title="Phone dictation / keyboard mic" onclick="focusPhoneDictation()">📱</button>
             <button class="icon-btn" id="speakBtn" title="Read response aloud" onclick="toggleSpeak()">🔈</button>
             <button class="run-btn" onclick="runCommand()">↵ Run</button>
           </div>
@@ -1065,6 +1209,18 @@
             <div class="reality-note" id="realityTelegramNote">not-tested / setup-ready / identity-verified / IDs-discovered / live-proven will appear here.</div>
           </div>
           <div class="reality-card">
+            <div class="reality-label">Phone-Safe Links</div>
+            <div class="reality-value" id="realityPublicLinks">Checking public link lane...</div>
+            <div class="reality-note" id="realityPublicLinksNote">These are the links Chintu can safely send to Telegram for phone use.</div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Creator Pack Live</div>
+            <div class="reality-value" id="realityCreator">Checking latest creator pack...</div>
+            <div class="reality-note" id="realityCreatorNote">The latest local BALA creator pack will show up here with the hook, thumbnail, and next move.</div>
+            <div class="reality-proof-line" id="realityCreatorHook"></div>
+            <div class="reality-proof-line" id="realityCreatorNext"></div>
+          </div>
+          <div class="reality-card">
             <div class="reality-label">BALA Safety</div>
             <div class="reality-value" id="realityBala">Checking BALA safety skill…</div>
             <div class="reality-note" id="realityBalaNote">Medical boundary status will appear here.</div>
@@ -1086,6 +1242,67 @@
             <div class="reality-proof-line" id="realityChestProof">chest pain: not yet shown</div>
             <div class="reality-proof-line" id="realityDeleteProof">delete all files: not yet shown</div>
             <div class="reality-proof-line" id="realitySprintProof">build next sprint: not yet shown</div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Latest Safe Actions</div>
+            <div class="reality-proof-line" id="realitySafeAction1">No safe founder actions captured yet.</div>
+            <div class="reality-proof-line" id="realitySafeAction2">Run hi, check everything, or build next BALA sprint to populate this list.</div>
+            <div class="reality-proof-line" id="realitySafeAction3"></div>
+            <div class="reality-note" id="realitySafeActionsNote">Latest founder-safe actions from local bridge and Telegram audit.</div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Operator Next Safe Step</div>
+            <div class="reality-value" id="realityOperatorNext">Checking current runtime truth...</div>
+            <div class="reality-note" id="realityOperatorNextNote">This recommendation is computed only from the live bridge payload shown on this machine.</div>
+            <div class="reality-proof-line" id="realityOperatorNextLine1">Latest safe action: waiting for runtime truth.</div>
+            <div class="reality-proof-line" id="realityOperatorNextLine2">Creator lane: waiting for runtime truth.</div>
+            <div class="reality-proof-line" id="realityOperatorNextLine3">Phone-safe lane: waiting for runtime truth.</div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Agent Board Live</div>
+            <div class="reality-value" id="realityAgentBoard">Loading local orchestrator board…</div>
+            <div class="reality-note" id="realityAgentBoardNote">This board is read from the latest local orchestrator summary.</div>
+            <div class="agent-board-meta" id="realityAgentBoardMeta"></div>
+            <div class="agent-board-meta" id="realityAgentBoardWaves"></div>
+            <div class="agent-board-grid" id="realityAgentBoardJobs">
+              <div class="agent-job-card">
+                <div class="agent-job-summary">No agent jobs loaded yet.</div>
+              </div>
+            </div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Founder Mission Live</div>
+            <div class="reality-value" id="realityFounderMission">Waiting for a founder prompt…</div>
+            <div class="reality-note" id="realityFounderMissionNote">This board is written from the latest founder prompt routed through the local brain.</div>
+            <div class="agent-board-meta" id="realityFounderMissionMeta"></div>
+            <div class="agent-board-meta" id="realityFounderMissionWaves"></div>
+            <div class="agent-board-grid" id="realityFounderMissionJobs">
+              <div class="agent-job-card">
+                <div class="agent-job-summary">Ask Chintu for something simple to generate the first mission board.</div>
+              </div>
+            </div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Agent Wave Reality</div>
+            <div class="reality-value" id="realityAgentWave">Waiting for a live bridge wave…</div>
+            <div class="reality-note" id="realityAgentWaveNote">This board reflects the latest real sequence run from the localhost bridge.</div>
+            <div class="agent-board-meta" id="realityAgentWaveMeta"></div>
+            <div class="connector-board-grid" id="realityAgentWaveItems">
+              <div class="connector-card">
+                <div class="connector-meta">Run Agent Parallel Wave or Founder Beast Run to generate the first live wave summary.</div>
+              </div>
+            </div>
+          </div>
+          <div class="reality-card span2">
+            <div class="reality-label">Connector Board Live</div>
+            <div class="reality-value" id="realityConnectorBoard">Loading connector readiness…</div>
+            <div class="reality-note" id="realityConnectorBoardNote">This board reads the latest local connector readiness report. No secrets are shown.</div>
+            <div class="agent-board-meta" id="realityConnectorBoardMeta"></div>
+            <div class="connector-board-grid" id="realityConnectorBoardItems">
+              <div class="connector-card">
+                <div class="connector-meta">Run Connector Readiness once to generate the latest board.</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="reality-proof-actions">
@@ -1208,6 +1425,11 @@
             <div class="cmd-line">node scripts\chintu-prompt-engine.js --template bala-report-explainer</div>
             <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
           </div>
+          <div class="cmd-item">
+            <div class="cmd-label">Founder beast mode template</div>
+            <div class="cmd-line">node scripts\chintu-prompt-engine.js --template founder-beast-mode</div>
+            <button class="cmd-copy" onclick="copyCmd(this)">Copy</button>
+          </div>
         </div>
       </div>
 
@@ -1288,42 +1510,252 @@
 let recognition = null;
 let recognizing = false;
 let speakEnabled = false;
+let voicePermissionReady = false;
+const isMobileVoiceSurface = /android|iphone|ipad|ipod|mobile/i.test((navigator.userAgent || '').toLowerCase());
 
 const voiceBtn       = document.getElementById('voiceBtn');
 const speakBtn       = document.getElementById('speakBtn');
 const voiceIndicator = document.getElementById('voiceIndicator');
 const scVoiceDot     = document.getElementById('sc-voice-dot');
 const scVoiceNote    = document.getElementById('sc-voice-note');
+const quickbarNote   = document.getElementById('commandQuickbarNote');
+
+function setVoiceNote(text, dotClass) {
+  if (scVoiceDot && dotClass) scVoiceDot.className = 'status-dot ' + dotClass;
+  if (scVoiceNote) scVoiceNote.textContent = text;
+  if (quickbarNote) quickbarNote.textContent = text;
+}
+
+function voiceErrorCopy(errorCode) {
+  if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
+    return isMobileVoiceSurface
+      ? 'Mic access was blocked. Tap Phone Dictation and use your keyboard mic, or allow the mic in browser settings.'
+      : 'Mic access was blocked. Allow the mic in browser settings, then try again.';
+  }
+  if (errorCode === 'no-speech') return 'No speech was captured. Try again, or use Phone Dictation.';
+  if (errorCode === 'audio-capture') return 'No working microphone was found for this browser surface.';
+  if (errorCode === 'network') return 'Speech recognition failed in this browser surface. Type the command or use Phone Dictation.';
+  return 'Voice capture stopped. You can retry, type the command, or use Phone Dictation.';
+}
+
+async function prepareVoiceAccess() {
+  if (voicePermissionReady) return true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((track) => track.stop());
+  voicePermissionReady = true;
+  return true;
+}
+
+function focusPhoneDictation() {
+  const input = document.getElementById('cmdInput');
+  if (input) {
+    input.focus();
+    const at = input.value.length;
+    input.setSelectionRange(at, at);
+  }
+  setVoiceNote(
+    isMobileVoiceSurface
+      ? 'Command box focused. Use your phone keyboard mic if direct browser speech is unavailable.'
+      : 'Command box focused. Type your command, or switch to a browser that exposes speech recognition.',
+    recognition ? 'dot-green' : 'dot-amber'
+  );
+}
 
 (function initVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    scVoiceDot.className = 'status-dot dot-gray';
-    scVoiceNote.textContent = 'Not available in this browser';
+    setVoiceNote(
+      isMobileVoiceSurface
+        ? 'Direct speech recognition is not exposed in this phone browser. Tap Phone Dictation and use your keyboard mic.'
+        : 'Speech recognition is not available here. Use Chrome or Edge, or type the command.',
+      'dot-amber'
+    );
     voiceBtn.title = 'Voice not supported';
-    voiceBtn.style.opacity = '0.4';
+    voiceBtn.style.opacity = '0.75';
     return;
   }
-  scVoiceDot.className = 'status-dot dot-green';
-  scVoiceNote.textContent = 'Available — click 🎙 to activate';
   recognition = new SR();
   recognition.continuous = false;
   recognition.interimResults = false;
-  recognition.lang = 'en-US';
-  recognition.onstart  = () => { recognizing = true; voiceIndicator.classList.add('visible'); voiceBtn.classList.add('active'); };
-  recognition.onend    = () => { recognizing = false; voiceIndicator.classList.remove('visible'); voiceBtn.classList.remove('active'); };
-  recognition.onerror  = (e) => { recognizing = false; voiceIndicator.classList.remove('visible'); voiceBtn.classList.remove('active'); };
+  recognition.lang = navigator.language || 'en-US';
+  setVoiceNote(
+    isMobileVoiceSurface
+      ? 'Mic is available here. Tap the mic once, allow access if asked, then speak your command.'
+      : 'Mic is available here. Click the mic to turn speech into a live command.',
+    'dot-green'
+  );
+  recognition.onstart  = () => {
+    recognizing = true;
+    voiceIndicator.classList.add('visible');
+    voiceBtn.classList.add('active');
+    setVoiceNote('Listening now. Speak one short command.', 'dot-green');
+  };
+  recognition.onend    = () => {
+    recognizing = false;
+    voiceIndicator.classList.remove('visible');
+    voiceBtn.classList.remove('active');
+    if (recognition) {
+      setVoiceNote(
+        isMobileVoiceSurface
+          ? 'Mic is ready again. Tap the mic for another command, or use Phone Dictation.'
+          : 'Mic is ready again. Click the mic for another command.',
+        'dot-green'
+      );
+    }
+  };
+  recognition.onerror  = (e) => {
+    recognizing = false;
+    voiceIndicator.classList.remove('visible');
+    voiceBtn.classList.remove('active');
+    const isMobileFallback = isMobileVoiceSurface && e && (e.error === 'no-speech' || e.error === 'not-allowed' || e.error === 'audio-capture' || e.error === 'network');
+    if (isMobileFallback) {
+      const input = document.getElementById('cmdInput');
+      if (input) {
+        input.focus();
+        const at = input.value.length;
+        input.setSelectionRange(at, at);
+      }
+      setVoiceNote('Direct mic capture was unavailable here. The command box is focused so you can use your phone keyboard mic.', 'dot-amber');
+      return;
+    }
+    setVoiceNote(voiceErrorCopy(e && e.error), (e && e.error) === 'not-allowed' ? 'dot-amber' : 'dot-gray');
+  };
   recognition.onresult = (e) => {
-    const t = e.results[0][0].transcript;
+    const t = String((e.results && e.results[0] && e.results[0][0] && e.results[0][0].transcript) || '').trim();
+    if (!t) {
+      setVoiceNote('No speech was captured. Try again, or use Phone Dictation.', 'dot-amber');
+      return;
+    }
     document.getElementById('cmdInput').value = t;
+    setVoiceNote('Captured a live command. Running it now.', 'dot-green');
     setTimeout(runCommand, 300);
   };
+  const connectorValue = document.getElementById('realityConnectorBoard');
+  const connectorRealityCard = connectorValue ? connectorValue.closest('.reality-card') : null;
+  if (connectorRealityCard && !document.getElementById('realityMorningOperator')) {
+    const card = document.createElement('div');
+    card.className = 'reality-card span2';
+    card.innerHTML = [
+      '<div class="reality-label">Morning Operator Live</div>',
+      '<div class="reality-value" id="realityMorningOperator">Loading morning operator report...</div>',
+      '<div class="reality-note" id="realityMorningOperatorNote">This board reads the latest local morning operator artifact and founder-report lane.</div>',
+      '<div class="agent-board-meta" id="realityMorningOperatorMeta"></div>',
+      '<div class="connector-board-grid" id="realityMorningOperatorItems">',
+      '  <div class="connector-card"><div class="connector-meta">Run the morning operator once to generate the latest report artifact.</div></div>',
+      '</div>'
+    ].join('');
+    connectorRealityCard.insertAdjacentElement('afterend', card);
+  }
+  const morningRealityCard = document.getElementById('realityMorningOperator')
+    ? document.getElementById('realityMorningOperator').closest('.reality-card')
+    : connectorRealityCard;
+  if (morningRealityCard && !document.getElementById('realityAutomationBoard')) {
+    const card = document.createElement('div');
+    card.className = 'reality-card span2';
+    card.innerHTML = [
+      '<div class="reality-label">Automation Lane</div>',
+      '<div class="reality-value" id="realityAutomationBoard">Loading scheduled task status...</div>',
+      '<div class="reality-note" id="realityAutomationBoardNote">This board reads the live local task schedule from runtime truth.</div>',
+      '<div class="agent-board-meta" id="realityAutomationBoardMeta"></div>',
+      '<div class="connector-board-grid" id="realityAutomationBoardItems">',
+      '  <div class="connector-card"><div class="connector-meta">Waiting for runtime status from the localhost bridge.</div></div>',
+      '</div>'
+    ].join('');
+    morningRealityCard.insertAdjacentElement('afterend', card);
+  }
 })();
 
-function toggleVoice() {
-  if (!recognition) return;
+(function enhanceOperatorSurface() {
+  const founderButton = document.querySelector("button[onclick=\"quickChat('founder beast mode')\"]");
+  if (founderButton && !document.querySelector("button[onclick=\"quickChat('before i wake up')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "quickChat('before i wake up')");
+    button.textContent = 'Overnight Beast';
+    founderButton.insertAdjacentElement('afterend', button);
+  }
+
+  const repoSummaryButton = document.querySelector("button[onclick=\"liveAction('github_repo_summary')\"]");
+  if (repoSummaryButton && !document.querySelector("button[onclick=\"liveAction('agent_orchestrator_dry_run')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveAction('agent_orchestrator_dry_run')");
+    button.textContent = 'Agent Board';
+    repoSummaryButton.insertAdjacentElement('afterend', button);
+  }
+  if (repoSummaryButton && !document.querySelector("button[onclick=\"liveAction('morning_operator_report')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveAction('morning_operator_report')");
+    button.textContent = 'Morning Report';
+    repoSummaryButton.insertAdjacentElement('afterend', button);
+  }
+  if (repoSummaryButton && !document.querySelector("button[onclick=\"liveSequence('agent_parallel_wave')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveSequence('agent_parallel_wave')");
+    button.textContent = 'Agent Parallel Wave';
+    repoSummaryButton.insertAdjacentElement('afterend', button);
+  }
+  if (repoSummaryButton && !document.querySelector("button[onclick=\"liveSequence('agent_release_wave')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveSequence('agent_release_wave')");
+    button.textContent = 'Agent Release Wave';
+    repoSummaryButton.insertAdjacentElement('afterend', button);
+  }
+
+  const founderPromptButton = document.querySelector("button[onclick=\"liveAction('prompt_founder_beast_both')\"]");
+  if (founderPromptButton && !document.querySelector("button[onclick=\"liveAction('prompt_overnight_beast_both')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveAction('prompt_overnight_beast_both')");
+    button.textContent = 'Overnight Prompt';
+    founderPromptButton.insertAdjacentElement('afterend', button);
+  }
+
+  if (founderPromptButton && !document.querySelector("button[onclick=\"liveSequence('founder_beast_stack')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveSequence('founder_beast_stack')");
+    button.textContent = 'Founder Beast Run';
+    founderPromptButton.insertAdjacentElement('afterend', button);
+  }
+
+  const overnightPromptButton = document.querySelector("button[onclick=\"liveAction('prompt_overnight_beast_both')\"]");
+  if (overnightPromptButton && !document.querySelector("button[onclick=\"liveSequence('overnight_beast_stack')\"]")) {
+    const button = document.createElement('button');
+    button.className = 'qa-btn';
+    button.setAttribute('onclick', "liveSequence('overnight_beast_stack')");
+    button.textContent = 'Overnight Beast Run';
+    overnightPromptButton.insertAdjacentElement('afterend', button);
+  }
+
+  const footerNote = document.querySelector('.input-footer span[style*="margin-left:auto"]');
+  if (footerNote) {
+    footerNote.textContent = 'Ctrl+Enter to run · browser executes nothing · phone voice works only where speech recognition is exposed';
+  }
+})();
+
+async function toggleVoice() {
+  if (!recognition) { focusPhoneDictation(); return; }
   if (recognizing) { recognition.stop(); return; }
-  recognition.start();
+  setVoiceNote(
+    isMobileVoiceSurface ? 'Requesting mic access from this browser...' : 'Starting the microphone...',
+    'dot-green'
+  );
+  try {
+    await prepareVoiceAccess();
+    recognition.lang = navigator.language || recognition.lang || 'en-US';
+    recognition.start();
+  } catch (error) {
+    recognizing = false;
+    voiceIndicator.classList.remove('visible');
+    voiceBtn.classList.remove('active');
+    const code = error && error.name === 'NotAllowedError' ? 'not-allowed' : 'audio-capture';
+    setVoiceNote(voiceErrorCopy(code), 'dot-amber');
+  }
 }
 
 function toggleSpeak() {
@@ -1356,6 +1788,15 @@ function closeInstall() { document.getElementById('installModal').classList.remo
 function quickAction(cmd) {
   document.getElementById('cmdInput').value = cmd;
   runCommand();
+}
+
+function mapToLiveSequence(lower) {
+  if (lower.includes('check everything') || lower.includes('check all') || lower.includes('full check')) return 'check_everything';
+  if (lower.includes('run parallel wave') || lower.includes('parallel wave') || lower.includes('agent wave')) return 'agent_parallel_wave';
+  if (lower.includes('founder beast mode') || lower.includes('beast mode') || lower.includes('jarvis mode') || lower.includes('local jarvis')) return 'founder_beast_stack';
+  if (lower.includes('overnight') || lower.includes('while i sleep') || lower.includes('before i wake up') || lower.includes('night shift')) return 'overnight_beast_stack';
+  if (lower.includes('validate bala')) return 'bala_health_check';
+  return null;
 }
 
 // ── Copy helpers ──
@@ -1393,6 +1834,11 @@ function escHtml(s) {
 }
 function fmtWhen(iso) {
   if (!iso) return 'unknown';
+  const dotNetMatch = /^\/Date\((\d+)\)\/$/.exec(String(iso).trim());
+  if (dotNetMatch) {
+    const stamp = new Date(Number(dotNetMatch[1]));
+    if (!Number.isNaN(stamp.getTime())) return stamp.toISOString().replace('T', ' ').replace('Z', ' UTC');
+  }
   return String(iso).replace('T', ' ').replace('Z', ' UTC');
 }
 function yesNo(value) {
@@ -1420,12 +1866,624 @@ function setRealityText(id, text) {
 }
 function formatProofLine(label, proof) {
   if (proof && proof.seen) {
-    return label + ': shown from ' + formatTraceSource(proof.source) + ' at ' + fmtWhen(proof.timestamp);
+    const mode = proof.executed ? 'executed' : 'observed';
+    return label + ': ' + mode + ' from ' + formatTraceSource(proof.source) + ' at ' + fmtWhen(proof.timestamp);
   }
   return label + ': not yet shown in this bridge session';
 }
+function formatSafeActionLine(entry) {
+  if (!entry) return '';
+  const mode = entry.executed ? 'executed' : (entry.dryRun ? 'planned' : 'observed');
+  const text = formatCommandSummary(entry.userText || entry.intent || 'safe action');
+  return text + ' · ' + mode + ' · ' + formatTraceSource(entry.source) + ' · ' + fmtWhen(entry.timestamp);
+}
+function renderSafeActions(actions) {
+  const lines = Array.isArray(actions) ? actions.slice(0, 3) : [];
+  const ids = ['realitySafeAction1', 'realitySafeAction2', 'realitySafeAction3'];
+  ids.forEach((id, index) => {
+    setRealityText(id, lines[index] ? formatSafeActionLine(lines[index]) : '');
+  });
+  if (lines.length === 0) {
+    setRealityText('realitySafeAction1', 'No safe founder actions captured yet.');
+    setRealityText('realitySafeAction2', 'Run hi, check everything, or build next BALA sprint to populate this list.');
+    setRealityText('realitySafeAction3', '');
+    setRealityText('realitySafeActionsNote', 'Latest founder-safe actions from local bridge and Telegram audit.');
+    return;
+  }
+  setRealityText(
+    'realitySafeActionsNote',
+    lines.length === 1
+      ? 'Showing the latest founder-safe action from local bridge and Telegram audit.'
+      : 'Showing the latest ' + lines.length + ' founder-safe actions from local bridge and Telegram audit.'
+  );
+}
+
+function renderOperatorNextStep(data) {
+  const approvals = data && data.approvals ? data.approvals : {};
+  const creator = data && data.creator ? data.creator : {};
+  const publicLinks = data && data.publicLinks ? data.publicLinks : {};
+  const actions = Array.isArray(data && data.recentSafeActions) ? data.recentSafeActions : [];
+  const latestSafe = actions[0] || null;
+  const reviewLink = publicLinks.creatorEpisode || publicLinks.runtime || publicLinks.allegro || publicLinks.bala || null;
+
+  let headline = 'No live next step proven yet';
+  let note = 'This recommendation is computed only from the live bridge payload shown on this machine.';
+
+  if ((approvals.pendingCount || 0) > 0) {
+    headline = String(approvals.pendingCount) + ' approval' + ((approvals.pendingCount || 0) === 1 ? '' : 's') + ' waiting';
+    note = 'Runtime truth says approvals are queued; the bridge still does not auto-approve anything.';
+  } else if (creator.ready && creator.reviewVideoReady) {
+    headline = 'Review cut ready';
+    note = 'The creator lane has a review artifact in runtime truth, so the safest next move is review before another export.';
+  } else if (creator.ready && creator.draftVideoReady) {
+    headline = 'Draft creator video ready';
+    note = 'Runtime truth shows a draft-ready creator pack; review the hook and export path before asking for more generation.';
+  } else if (latestSafe) {
+    headline = latestSafe.executed ? 'Latest safe action already ran' : 'Latest safe action captured';
+    note = 'This is anchored to the newest founder-safe trace in the local bridge and Telegram audit.';
+  } else if (reviewLink) {
+    headline = 'Phone-safe review lane available';
+    note = 'A public review link exists, but no recent founder-safe action is captured yet in runtime truth.';
+  }
+
+  setRealityText('realityOperatorNext', headline);
+  setRealityText('realityOperatorNextNote', note);
+  setRealityText(
+    'realityOperatorNextLine1',
+    latestSafe
+      ? ('Latest safe action: ' + formatSafeActionLine(latestSafe))
+      : 'Latest safe action: none captured yet in the current bridge-visible audit.'
+  );
+  setRealityText(
+    'realityOperatorNextLine2',
+    creator.ready
+      ? ('Creator lane: ' + (creator.nextAction || 'open the latest creator pack on this machine and review the hook before export.'))
+      : 'Creator lane: no creator pack is loaded in runtime truth yet.'
+  );
+  setRealityText(
+    'realityOperatorNextLine3',
+    reviewLink
+      ? ('Phone-safe lane: ' + reviewLink)
+      : 'Phone-safe lane: no public Allegro, Runtime, or creator review link is configured right now.'
+  );
+}
+
+function renderAgentBoard(board) {
+  const titleEl = document.getElementById('realityAgentBoard');
+  const noteEl = document.getElementById('realityAgentBoardNote');
+  const metaEl = document.getElementById('realityAgentBoardMeta');
+  const wavesEl = document.getElementById('realityAgentBoardWaves');
+  const jobsEl = document.getElementById('realityAgentBoardJobs');
+  if (!titleEl || !noteEl || !metaEl || !wavesEl || !jobsEl) return;
+
+  if (!board || board.ok !== true) {
+    titleEl.textContent = 'Agent board unavailable';
+    noteEl.textContent = 'The latest local orchestrator summary could not be read.';
+    metaEl.textContent = '';
+    wavesEl.textContent = '';
+    jobsEl.innerHTML = '<div class="agent-job-card"><div class="agent-job-summary">Run the local orchestrator dry run to regenerate the board.</div></div>';
+    return;
+  }
+
+  titleEl.textContent = board.jobCount + ' jobs · ' + (board.runType || 'unknown') + ' · ' + (board.dryRunOnly ? 'dry-run only' : 'active');
+  noteEl.textContent = board.note || 'This board is read from the latest local orchestrator summary.';
+
+  const nextActionLabel = LIVE_LABELS[board.nextSuggestedAction] || board.nextSuggestedAction || 'connector_readiness';
+  metaEl.innerHTML =
+    'Safe jobs: <strong>' + escHtml(String((board.safeJobs || []).length)) + '</strong> · approvals: ' + escHtml((board.approvalRequired || []).join(' | ') || 'none') +
+    ' · generated: ' + escHtml(fmtWhen(board.generatedAt)) +
+    ' <button class="copy-all-btn" onclick="liveAction(\'agent_orchestrator_dry_run\')">Refresh board</button>' +
+    (board.nextSuggestedAction
+      ? ' <button class="copy-all-btn" onclick="liveAction(\'' + board.nextSuggestedAction + '\')">Next: ' + escHtml(nextActionLabel) + '</button>'
+      : '');
+
+  const waves = Array.isArray(board.waves) ? board.waves : [];
+  wavesEl.innerHTML = waves.length
+    ? waves.map((wave, index) => {
+        const seq = wave.mode === 'parallel' ? 'agent_parallel_wave' : (wave.mode === 'sequential' ? 'agent_release_wave' : '');
+        const button = seq
+          ? ' <button class="copy-all-btn" onclick="liveSequence(\'' + seq + '\')">Run wave</button>'
+          : '';
+        return '<div class="agent-wave-line"><strong>Wave ' + (index + 1) + ' · ' + escHtml(wave.mode || 'unknown') + '</strong> · ' + escHtml((wave.jobs || []).join(', ')) + button + '</div>';
+      }).join('')
+    : '';
+
+  jobsEl.replaceChildren();
+  const jobs = Array.isArray(board.jobs) ? board.jobs : [];
+  if (!jobs.length) {
+    jobsEl.innerHTML = '<div class="agent-job-card"><div class="agent-job-summary">No agent jobs were found in the latest local summary.</div></div>';
+    return;
+  }
+
+  jobs.forEach((job) => {
+    const card = document.createElement('div');
+    card.className = 'agent-job-card';
+
+    const top = document.createElement('div');
+    top.className = 'agent-job-top';
+    const title = document.createElement('div');
+    title.className = 'agent-job-title';
+    title.textContent = job.label || job.id || 'Agent job';
+    const pill = document.createElement('span');
+    pill.className = 'agent-job-pill';
+    pill.textContent = job.mode || 'mode';
+    top.append(title, pill);
+
+    const track = document.createElement('div');
+    track.className = 'agent-job-track';
+    track.textContent = 'track: ' + (job.track || 'unknown') + ' · status: ' + (job.status || 'planned') + ' · approval: ' + (job.approval || 'none');
+
+    const summary = document.createElement('div');
+    summary.className = 'agent-job-summary';
+    summary.textContent = job.summary || 'No summary.';
+
+    const gates = document.createElement('div');
+    gates.className = 'agent-job-gates';
+    gates.textContent = 'Gates: ' + ((job.gates || []).join(' · ') || 'none');
+
+    const actions = document.createElement('div');
+    actions.className = 'agent-job-actions';
+    if (job.bridgeAction) {
+      const runButton = document.createElement('button');
+      runButton.className = 'qa-btn';
+      runButton.type = 'button';
+      runButton.textContent = 'Run ' + (LIVE_LABELS[job.bridgeAction] || job.bridgeAction);
+      runButton.addEventListener('click', () => liveAction(job.bridgeAction));
+      actions.append(runButton);
+    }
+    if (job.parallelSafe) {
+      const safeTag = document.createElement('span');
+      safeTag.className = 'agent-job-pill';
+      safeTag.textContent = 'parallel-safe';
+      actions.append(safeTag);
+    }
+
+    card.append(top, track, summary, gates, actions);
+    jobsEl.append(card);
+  });
+}
+
+function renderFounderMissionBoard(board) {
+  const titleEl = document.getElementById('realityFounderMission');
+  const noteEl = document.getElementById('realityFounderMissionNote');
+  const metaEl = document.getElementById('realityFounderMissionMeta');
+  const wavesEl = document.getElementById('realityFounderMissionWaves');
+  const jobsEl = document.getElementById('realityFounderMissionJobs');
+  if (!titleEl || !noteEl || !metaEl || !wavesEl || !jobsEl) return;
+
+  if (!board || board.ok !== true) {
+    titleEl.textContent = 'Founder mission unavailable';
+    noteEl.textContent = 'Ask Chintu for something simple to generate the latest mission artifact.';
+    metaEl.textContent = '';
+    wavesEl.textContent = '';
+    jobsEl.innerHTML = '<div class="agent-job-card"><div class="agent-job-summary">No founder mission artifact could be read from CHINTU_AGENT_RUNS/latest_founder_mission.json.</div></div>';
+    return;
+  }
+
+  titleEl.textContent = (board.missionLane || 'Founder mission') + ' · ' + (board.executionMode || 'conversation-only');
+  noteEl.textContent = board.note || 'This board is written from the latest founder prompt routed through the local brain.';
+  metaEl.innerHTML =
+    'Intent: <strong>' + escHtml(board.intent || 'unknown') + '</strong> · track: ' + escHtml(board.track || 'both') +
+    ' · risk: ' + escHtml(board.risk || 'safe_read') +
+    ' · generated: ' + escHtml(fmtWhen(board.generatedAt)) +
+    ' <button class="copy-all-btn" onclick="refreshFounderMissionBoard(true)">Refresh mission</button>' +
+    (board.nextSuggestedAction
+      ? ' <button class="copy-all-btn" onclick="liveAction(\'' + board.nextSuggestedAction + '\')">Next: ' + escHtml(LIVE_LABELS[board.nextSuggestedAction] || board.nextSuggestedAction) + '</button>'
+      : '');
+
+  wavesEl.innerHTML = Array.isArray(board.waves) && board.waves.length
+    ? board.waves.map((wave, index) => {
+        const seq = wave.mode === 'parallel' ? 'agent_parallel_wave' : (wave.mode === 'sequential' ? 'agent_release_wave' : '');
+        const button = seq
+          ? ' <button class="copy-all-btn" onclick="liveSequence(\'' + seq + '\')">Run wave</button>'
+          : '';
+        return '<div class="agent-wave-line"><strong>Wave ' + (index + 1) + ' · ' + escHtml(wave.mode || 'unknown') + '</strong> · ' + escHtml((wave.jobs || []).join(', ')) + button + '</div>';
+      }).join('')
+    : '<div class="agent-wave-line">No agent wave selected for this mission yet.</div>';
+
+  jobsEl.replaceChildren();
+  const jobs = Array.isArray(board.jobs) ? board.jobs : [];
+  if (!jobs.length) {
+    jobsEl.innerHTML = '<div class="agent-job-card"><div class="agent-job-summary">No mission jobs were selected for the latest founder prompt.</div></div>';
+    return;
+  }
+
+  jobs.forEach((job) => {
+    const card = document.createElement('div');
+    card.className = 'agent-job-card';
+
+    const top = document.createElement('div');
+    top.className = 'agent-job-top';
+    const title = document.createElement('div');
+    title.className = 'agent-job-title';
+    title.textContent = job.label || job.id || 'Mission job';
+    const pill = document.createElement('span');
+    pill.className = 'agent-job-pill';
+    pill.textContent = job.status || 'queued';
+    top.append(title, pill);
+
+    const summary = document.createElement('div');
+    summary.className = 'agent-job-summary';
+    summary.textContent = job.reason || job.summary || 'No mission reason recorded.';
+
+    const meta = document.createElement('div');
+    meta.className = 'agent-job-track';
+    meta.textContent = 'track: ' + (job.track || 'unknown') + ' · mode: ' + (job.mode || 'read') + ' · approval: ' + (job.approval || 'none');
+
+    const gates = document.createElement('div');
+    gates.className = 'agent-job-gates';
+    gates.textContent = 'Gates: ' + ((job.gates || []).join(' · ') || 'none');
+
+    const actions = document.createElement('div');
+    actions.className = 'agent-job-actions';
+    if (job.bridgeAction) {
+      const runButton = document.createElement('button');
+      runButton.className = 'qa-btn';
+      runButton.type = 'button';
+      runButton.textContent = 'Run ' + (LIVE_LABELS[job.bridgeAction] || job.bridgeAction);
+      runButton.addEventListener('click', () => liveAction(job.bridgeAction));
+      actions.append(runButton);
+    }
+
+    card.append(top, summary, meta, gates, actions);
+    jobsEl.append(card);
+  });
+}
+
+function renderAgentWaveBoard(board) {
+  const titleEl = document.getElementById('realityAgentWave');
+  const noteEl = document.getElementById('realityAgentWaveNote');
+  const metaEl = document.getElementById('realityAgentWaveMeta');
+  const itemsEl = document.getElementById('realityAgentWaveItems');
+  if (!titleEl || !noteEl || !metaEl || !itemsEl) return;
+
+  if (!board || !Array.isArray(board.steps) || !board.steps.length) {
+    titleEl.textContent = 'No live wave captured yet';
+    noteEl.textContent = 'Run Agent Parallel Wave, Agent Release Wave, Founder Beast Run, or Overnight Beast Run to populate this board.';
+    metaEl.textContent = '';
+    itemsEl.innerHTML = '<div class="connector-card"><div class="connector-meta">This board shows the latest real bridge sequence, not a dry-run plan.</div></div>';
+    return;
+  }
+
+  titleEl.textContent = (board.label || board.sequence || 'Live wave') + ' · ' + board.okCount + '/' + board.stepCount + ' passed';
+  noteEl.textContent = board.note || 'Latest real bridge sequence run on this machine.';
+  const rerunSeq = board.sequence ? ' <button class="copy-all-btn" onclick="liveSequence(\'' + escHtml(board.sequence) + '\')">Run again</button>' : '';
+  const nextAction = board.nextSuggestedAction
+    ? ' <button class="copy-all-btn" onclick="liveAction(\'' + escHtml(board.nextSuggestedAction) + '\')">Next: ' + escHtml(LIVE_LABELS[board.nextSuggestedAction] || board.nextSuggestedAction) + '</button>'
+    : '';
+  metaEl.innerHTML =
+    'Mode: <strong>' + escHtml(board.runMode || 'sequence') + '</strong> · duration: ' + escHtml(String(board.durationMs || 0)) + ' ms · generated: ' + escHtml(fmtWhen(board.generatedAt)) +
+    rerunSeq + nextAction;
+
+  itemsEl.replaceChildren();
+  board.steps.forEach((step) => {
+    const card = document.createElement('div');
+    card.className = 'connector-card';
+
+    const top = document.createElement('div');
+    top.className = 'next-stage-lab-topline';
+    const label = document.createElement('strong');
+    label.textContent = step.label || step.action || 'Step';
+    const pill = document.createElement('span');
+    pill.className = 'agent-job-pill';
+    pill.textContent = step.ok ? 'pass' : ('exit ' + step.exitCode);
+    top.append(label, pill);
+
+    const meta = document.createElement('div');
+    meta.className = 'connector-meta';
+    meta.textContent = 'Action: ' + (step.action || 'unknown') + ' · duration: ' + (step.durationMs || 0) + ' ms';
+
+    const stdout = document.createElement('div');
+    stdout.className = 'connector-meta';
+    stdout.textContent = step.stdoutSummary || 'No stdout summary recorded.';
+
+    card.append(top, meta, stdout);
+    if (step.stderrSummary) {
+      const stderr = document.createElement('div');
+      stderr.className = 'connector-meta';
+      stderr.textContent = 'Needs attention: ' + step.stderrSummary;
+      card.append(stderr);
+    }
+    itemsEl.append(card);
+  });
+}
+
+async function refreshAgentBoard(showBusy) {
+  const titleEl = document.getElementById('realityAgentBoard');
+  const noteEl = document.getElementById('realityAgentBoardNote');
+  if (showBusy && titleEl) titleEl.textContent = 'Refreshing local orchestrator board…';
+  try {
+    const r = await fetch('./CHINTU_AGENT_RUNS/latest_orchestrator_summary.json?ts=' + Date.now(), { method: 'GET' });
+    const j = await r.json();
+    renderAgentBoard(j);
+  } catch (e) {
+    if (titleEl) titleEl.textContent = 'Agent board unavailable';
+    if (noteEl) noteEl.textContent = 'The latest orchestrator summary could not be loaded from the local static server.';
+  }
+}
+
+async function refreshFounderMissionBoard(showBusy) {
+  const titleEl = document.getElementById('realityFounderMission');
+  const noteEl = document.getElementById('realityFounderMissionNote');
+  if (showBusy && titleEl) titleEl.textContent = 'Refreshing founder mission...';
+  try {
+    if (BRIDGE.online) {
+      const runtime = await fetch(BRIDGE.base + '/api/runtime-status?ts=' + Date.now(), { method: 'GET' });
+      const payload = await runtime.json();
+      renderFounderMissionBoard(payload && payload.founderMission ? payload.founderMission : null);
+      return;
+    }
+    const r = await fetch('./CHINTU_AGENT_RUNS/latest_founder_mission.json?ts=' + Date.now(), { method: 'GET' });
+    const j = await r.json();
+    renderFounderMissionBoard(j);
+  } catch (e) {
+    if (titleEl) titleEl.textContent = 'Founder mission unavailable';
+    if (noteEl) noteEl.textContent = 'The latest founder mission artifact could not be loaded from the live bridge or the local static server.';
+  }
+}
+
+function connectorPillText(entry) {
+  if (!entry) return 'unknown';
+  if (entry.can_send_now) return 'ready';
+  if (entry.missing_env_vars && entry.missing_env_vars.length) return 'setup';
+  if (entry.current_mode !== 'active') return 'dry-run';
+  return 'gated';
+}
+
+function renderConnectorBoard(report) {
+  const titleEl = document.getElementById('realityConnectorBoard');
+  const noteEl = document.getElementById('realityConnectorBoardNote');
+  const metaEl = document.getElementById('realityConnectorBoardMeta');
+  const itemsEl = document.getElementById('realityConnectorBoardItems');
+  if (!titleEl || !noteEl || !metaEl || !itemsEl) return;
+
+  if (!report || !Array.isArray(report.connectors)) {
+    titleEl.textContent = 'Connector board unavailable';
+    noteEl.textContent = 'Run Connector Readiness to generate the latest local readiness file.';
+    metaEl.textContent = '';
+    itemsEl.innerHTML = '<div class="connector-card"><div class="connector-meta">No readiness report could be read from CHINTU_OUTBOX/latest_connector_readiness.json.</div></div>';
+    return;
+  }
+
+  const readyCount = report.connectors.filter((entry) => entry.can_send_now).length;
+  titleEl.textContent = report.connectors.length + ' connectors · mode: ' + escHtml(report.connector_mode || 'dry-run') + ' · ready now: ' + readyCount;
+  noteEl.textContent = 'Local readiness file only. Recipient values and secrets stay hidden.';
+  metaEl.innerHTML =
+    'Default: <strong>' + escHtml(report._label || 'DRY RUN ONLY') + '</strong> · generated: ' + escHtml(fmtWhen(report.generated_at)) +
+    ' <button class="copy-all-btn" onclick="liveAction(\'connector_readiness\')">Refresh readiness</button>' +
+    ' <button class="copy-all-btn" onclick="liveAction(\'connector_status\')">Status report</button>';
+
+  itemsEl.replaceChildren();
+  report.connectors.forEach((entry) => {
+    const card = document.createElement('div');
+    card.className = 'connector-card';
+
+    const top = document.createElement('div');
+    top.className = 'connector-top';
+    const title = document.createElement('div');
+    title.className = 'connector-title';
+    title.textContent = entry.connector;
+    const pill = document.createElement('span');
+    pill.className = 'agent-job-pill';
+    pill.textContent = connectorPillText(entry);
+    top.append(title, pill);
+
+    const summary = document.createElement('div');
+    summary.className = 'connector-meta';
+    summary.textContent =
+      'adapter: ' + (entry.adapter_mode || 'unknown') +
+      ' · current mode: ' + (entry.current_mode || 'dry-run') +
+      ' · preview: ' + yesNo(entry.can_preview) +
+      ' · send now: ' + yesNo(entry.can_send_now);
+
+    const gates = document.createElement('div');
+    gates.className = 'connector-meta';
+    gates.textContent =
+      'missing env vars: ' + String((entry.missing_env_vars || []).length) +
+      ' · recipient allowlisted: ' + yesNo(entry.recipient_allowlisted) +
+      ' · paused: ' + yesNo(entry.paused);
+
+    const note = document.createElement('div');
+    note.className = 'connector-meta';
+    note.textContent = entry.notes || 'No extra notes.';
+
+    card.append(top, summary, gates, note);
+    itemsEl.append(card);
+  });
+}
+
+async function refreshConnectorBoard(showBusy) {
+  const titleEl = document.getElementById('realityConnectorBoard');
+  const noteEl = document.getElementById('realityConnectorBoardNote');
+  if (showBusy && titleEl) titleEl.textContent = 'Refreshing connector readiness…';
+  try {
+    const r = await fetch('./CHINTU_OUTBOX/latest_connector_readiness.json?ts=' + Date.now(), { method: 'GET' });
+    const j = await r.json();
+    renderConnectorBoard(j);
+  } catch (e) {
+    if (titleEl) titleEl.textContent = 'Connector board unavailable';
+    if (noteEl) noteEl.textContent = 'Run Connector Readiness once to create the local readiness report.';
+  }
+}
 
 // ── Current packet store ──
+function renderMorningOperatorBoard(report) {
+  const titleEl = document.getElementById('realityMorningOperator');
+  const noteEl = document.getElementById('realityMorningOperatorNote');
+  const metaEl = document.getElementById('realityMorningOperatorMeta');
+  const itemsEl = document.getElementById('realityMorningOperatorItems');
+  if (!titleEl || !noteEl || !metaEl || !itemsEl) return;
+
+  if (!report || report.ok !== true) {
+    titleEl.textContent = 'Morning operator unavailable';
+    noteEl.textContent = 'The latest morning operator report could not be read from the local static server.';
+    metaEl.textContent = '';
+    itemsEl.innerHTML = '<div class="connector-card"><div class="connector-meta">No morning operator artifact could be read from CHINTU_OUTBOX/latest_morning_operator_report.json.</div></div>';
+    return;
+  }
+
+  const sequenceSummaries = report.sequenceSummaries || {};
+  titleEl.textContent = 'parallel: ' + (sequenceSummaries.agentParallel || 'unknown') + ' · release: ' + (sequenceSummaries.agentRelease || 'unknown');
+  noteEl.textContent = 'Telegram: ' + (((report.telegram || {}).status) || 'unknown') + ' · generated: ' + fmtWhen(report.generatedAt);
+  metaEl.innerHTML =
+    'Bridge: <strong>' + escHtml(report.bridge && report.bridge.ok ? 'live' : 'offline') + '</strong>' +
+    ' · founder brief: ' + escHtml(report.founderMessage && report.founderMessage.ok ? 'refreshed' : 'needs attention') +
+    ' <button class="copy-all-btn" onclick="liveAction(\'morning_operator_report\')">Run + send now</button>';
+
+  const cards = [
+    {
+      title: 'Founder brief',
+      lines: [((report.founderMessage || {}).excerpt) || 'No founder brief excerpt yet.'],
+    },
+    {
+      title: 'Recent action',
+      lines: [
+        report.runtimeRecentAction
+          ? formatCommandSummary(report.runtimeRecentAction.userText || report.runtimeRecentAction.intent || 'operator action') + ' · ' + fmtWhen(report.runtimeRecentAction.timestamp)
+          : 'No recent runtime action captured in this report yet.',
+      ],
+    },
+    {
+      title: 'Phone-safe links',
+      html: [
+        (report.phoneSafeReviewUrls || {}).allegro
+          ? '<a href="' + escHtml(report.phoneSafeReviewUrls.allegro) + '" target="_blank" rel="noreferrer">Public Allegro</a>'
+          : null,
+        (report.phoneSafeReviewUrls || {}).bala
+          ? '<a href="' + escHtml(report.phoneSafeReviewUrls.bala) + '" target="_blank" rel="noreferrer">Public BALA</a>'
+          : null,
+        (report.phoneSafeReviewUrls || {}).runtime
+          ? '<a href="' + escHtml(report.phoneSafeReviewUrls.runtime) + '" target="_blank" rel="noreferrer">Public Runtime</a>'
+          : null,
+      ].filter(Boolean),
+    },
+    {
+      title: 'Local machine links',
+      html: [
+        '<a href="' + escHtml((report.reviewUrls || {}).allegro || './CHINTU_ALLEGRO.html') + '" target="_blank" rel="noreferrer">Allegro</a>',
+        '<a href="' + escHtml((report.reviewUrls || {}).bala || './') + '" target="_blank" rel="noreferrer">BALA</a>',
+        '<a href="' + escHtml((report.reviewUrls || {}).runtime || './') + '" target="_blank" rel="noreferrer">Runtime</a>',
+      ],
+    },
+  ];
+
+  itemsEl.replaceChildren();
+  cards.forEach((entry) => {
+    const card = document.createElement('div');
+    card.className = 'connector-card';
+    const top = document.createElement('div');
+    top.className = 'connector-top';
+    const title = document.createElement('div');
+    title.className = 'connector-title';
+    title.textContent = entry.title;
+    top.append(title);
+    card.append(top);
+    if (entry.html) {
+      const line = document.createElement('div');
+      line.className = 'connector-meta';
+      line.innerHTML = entry.html.join(' · ');
+      card.append(line);
+    } else {
+      entry.lines.forEach((text) => {
+        const line = document.createElement('div');
+        line.className = 'connector-meta';
+        line.textContent = text;
+        card.append(line);
+      });
+    }
+    itemsEl.append(card);
+  });
+}
+
+async function refreshMorningOperatorBoard(showBusy) {
+  const titleEl = document.getElementById('realityMorningOperator');
+  const noteEl = document.getElementById('realityMorningOperatorNote');
+  if (showBusy && titleEl) titleEl.textContent = 'Refreshing morning operator artifactâ€¦';
+  try {
+    const r = await fetch('./CHINTU_OUTBOX/latest_morning_operator_report.json?ts=' + Date.now(), { method: 'GET' });
+    const j = await r.json();
+    renderMorningOperatorBoard(j);
+  } catch (e) {
+    if (titleEl) titleEl.textContent = 'Morning operator unavailable';
+    if (noteEl) noteEl.textContent = 'Run the morning operator once to create the latest local report artifact.';
+  }
+}
+
+function formatAutomationTaskName(name) {
+  if (name === 'ChintuMorningOperator') return 'Morning operator';
+  if (name === 'ChintuMorningHealthBrief') return 'Health brief';
+  if (name === 'ChintuTelegramPollUser') return 'Telegram poll';
+  return name || 'Scheduled task';
+}
+
+function automationPillText(task) {
+  if (!task || task.exists === false) return 'missing';
+  if (task.enabled !== true) return 'paused';
+  if (task.lastTaskResult === 0) return 'ok';
+  if (!task.lastRunTime && String(task.state || '').toLowerCase() === 'ready') return 'armed';
+  return 'attention';
+}
+
+function renderAutomationBoard(automation) {
+  const titleEl = document.getElementById('realityAutomationBoard');
+  const noteEl = document.getElementById('realityAutomationBoardNote');
+  const metaEl = document.getElementById('realityAutomationBoardMeta');
+  const itemsEl = document.getElementById('realityAutomationBoardItems');
+  if (!titleEl || !noteEl || !metaEl || !itemsEl) return;
+
+  if (!automation || automation.ok !== true) {
+    titleEl.textContent = 'Automation lane unavailable';
+    noteEl.textContent = 'The live scheduled-task summary could not be read from the localhost bridge.';
+    metaEl.textContent = '';
+    itemsEl.innerHTML = '<div class="connector-card"><div class="connector-meta">Start the bridge and refresh runtime truth to read the local task schedule.</div></div>';
+    return;
+  }
+
+  const tasks = Array.isArray(automation.tasks) ? automation.tasks : [];
+  titleEl.textContent = automation.armedCount + '/' + (automation.taskCount || tasks.length) + ' tasks armed';
+  noteEl.textContent = 'Next scheduled run: ' + fmtWhen(automation.nextWakeUpRun) + ' · localhost schedule only';
+  metaEl.innerHTML =
+    'Live task schedule from this machine · refreshes with runtime truth' +
+    ' <button class="copy-all-btn" onclick="refreshReality(true)">Refresh runtime</button>';
+
+  itemsEl.replaceChildren();
+  if (!tasks.length) {
+    itemsEl.innerHTML = '<div class="connector-card"><div class="connector-meta">No local automation tasks were found in runtime truth.</div></div>';
+    return;
+  }
+
+  tasks.forEach((task) => {
+    const card = document.createElement('div');
+    card.className = 'connector-card';
+    const top = document.createElement('div');
+    top.className = 'connector-top';
+    const title = document.createElement('div');
+    title.className = 'connector-title';
+    title.textContent = formatAutomationTaskName(task.name);
+    const pill = document.createElement('span');
+    pill.className = 'agent-job-pill';
+    pill.textContent = automationPillText(task);
+    top.append(title, pill);
+
+    const line1 = document.createElement('div');
+    line1.className = 'connector-meta';
+    line1.textContent = 'state: ' + (task.state || 'unknown') + ' · enabled: ' + yesNo(task.enabled);
+
+    const line2 = document.createElement('div');
+    line2.className = 'connector-meta';
+    line2.textContent = 'next: ' + fmtWhen(task.nextRunTime) + ' · last: ' + fmtWhen(task.lastRunTime);
+
+    const line3 = document.createElement('div');
+    line3.className = 'connector-meta';
+    line3.textContent = task.exists === false
+      ? 'Task is not registered on this machine yet.'
+      : 'last task result: ' + String(task.lastTaskResult);
+
+    card.append(top, line1, line2, line3);
+    itemsEl.append(card);
+  });
+}
+
 let currentPacket = null;
 
 // ── Render response ──
@@ -1485,7 +2543,14 @@ function runCommand() {
   const lower = raw.toLowerCase();
 
   // Stage 24: when the bridge is live, route the whole message through the brain (/api/chat).
-  if (BRIDGE.online) { chatToBrain(raw); return; }
+  if (BRIDGE.online) {
+    const fastSequence = mapToLiveSequence(lower);
+    if (fastSequence) { liveSequence(fastSequence); return; }
+    const fastAction = mapToLiveAction(lower);
+    if (fastAction) { liveAction(fastAction); return; }
+    chatToBrain(raw);
+    return;
+  }
   // Offline: fall back to the legacy copy-paste planning packets below.
 
   let packet;
@@ -2138,10 +3203,19 @@ const LIVE_LABELS = {
   release_guard: 'Release Guard', validate_app: 'Validate BALA App',
   run_validator_dry_run: 'Validator Dry Run', connector_readiness: 'Connector Readiness',
   connector_status: 'Connector Status', github_status: 'GitHub Status', github_repo_summary: 'Repo Summary',
+  runtime_snapshot: 'Runtime Brief',
+  os_snapshot: 'Chintu OS Snapshot',
+  morning_operator_report: 'Morning Operator Report',
+  creator_pack_latest_trip: 'Latest Trip Creator Pack',
+  agent_orchestrator_dry_run: 'Agent Board',
   git_status: 'Git Status', git_log: 'Git Log',
   action_packet_bala_sprint: 'BALA Sprint Packet', action_packet_connector_check: 'Connector Check Packet',
+  action_packet_overnight_beast: 'Overnight Packet',
   prompt_xml_bala: 'XML Prompt (BALA)', prompt_xml_chintu: 'XML Prompt (Chintu)',
   prompt_costar_both: 'COSTAR Prompt', prompt_acr_both: 'ACR Prompt',
+  prompt_founder_beast_both: 'Founder Beast Prompt',
+  prompt_overnight_beast_both: 'Overnight Founder Prompt',
+  trip_video_draft: 'Trip Video Draft',
   open_allegro: 'Open Allegro', open_bala_local: 'Open BALA (local)',
   open_bala_public: 'Open BALA public link', status: 'Status',
   ntfy_push: 'ntfy Push (Level 3)',
@@ -2156,13 +3230,22 @@ const LIVE_CLI = {
   connector_status: 'node scripts/chintu-connector-send.js --status',
   github_status: 'node scripts/chintu-github-connector.js --status',
   github_repo_summary: 'node scripts/chintu-github-connector.js --repo-summary',
+  runtime_snapshot: 'node scripts/chintu-runtime-brief.js',
+  os_snapshot: 'node scripts/chintu-os-snapshot.js',
+  morning_operator_report: 'node scripts/chintu-morning-operator.js',
+  creator_pack_latest_trip: 'node scripts/chintu-creator-pack.js --source-root "C:\\Users\\Chintu\\Pictures\\iCloud Photos\\Photos" --since 2026-06-27 --story "Children Museum and Splash Island family trip" --brand BALA',
+  agent_orchestrator_dry_run: 'node scripts/chintu-agent-orchestrator.js --summary',
   git_status: 'git status --short', git_log: 'git log --oneline -5',
   action_packet_bala_sprint: 'node scripts/chintu-action-packet.js --template bala-sprint',
+  action_packet_overnight_beast: 'node scripts/chintu-action-packet.js --template overnight-beast',
   action_packet_connector_check: 'node scripts/chintu-action-packet.js --template connector-readiness',
   prompt_xml_bala: 'node scripts/chintu-prompt-engine.js --framework xml --track bala --task "Build next BALA sprint"',
   prompt_xml_chintu: 'node scripts/chintu-prompt-engine.js --framework xml --track chintu --task "Advance Chintu OS safely"',
   prompt_costar_both: 'node scripts/chintu-prompt-engine.js --framework costar --track both --task "Plan next safe stage"',
   prompt_acr_both: 'node scripts/chintu-prompt-engine.js --framework acr --track both --task "Plan next safe stage"',
+  prompt_founder_beast_both: 'node scripts/chintu-prompt-engine.js --template founder-beast-mode',
+  prompt_overnight_beast_both: 'node scripts/chintu-prompt-engine.js --template overnight-beast-mode',
+  trip_video_draft: 'node scripts/chintu-trip-video-draft.js --source-root "C:\\Users\\Chintu\\Pictures\\iCloud Photos\\Photos" --since 2026-06-27 --story "Children Museum and Splash Island family trip"',
   open_allegro: 'start CHINTU_ALLEGRO.html', open_bala_local: 'start index.html',
   open_bala_public: 'start https://vuppalapatidileepkumar.github.io/Bala---The-coach/',
   ntfy_push: 'node scripts/chintu-ntfy-push.js',
@@ -2349,6 +3432,12 @@ function renderRealityOffline(reason) {
   setRealityText('realityApprovalsNote', 'Queue and trace status require the localhost bridge.');
   setRealityText('realityTelegram', 'unknown');
   setRealityText('realityTelegramNote', 'not-tested / setup-ready / identity-verified / IDs-discovered / live-proven appears here.');
+  setRealityText('realityPublicLinks', 'unknown');
+  setRealityText('realityPublicLinksNote', 'Phone-safe public links require the live runtime status payload.');
+  setRealityText('realityCreator', 'unknown');
+  setRealityText('realityCreatorNote', 'Latest creator pack requires the live runtime status payload.');
+  setRealityText('realityCreatorHook', 'Hook: unavailable while the bridge is offline.');
+  setRealityText('realityCreatorNext', 'Next: start the bridge to reload the latest episode pack.');
   setRealityText('realityBala', 'unknown');
   setRealityText('realityBalaNote', 'BALA safety status is shown only when the bridge can answer locally.');
   setRealityText('realityHiProof', 'hi: bridge offline');
@@ -2356,8 +3445,16 @@ function renderRealityOffline(reason) {
   setRealityText('realityChestProof', 'chest pain: bridge offline');
   setRealityText('realityDeleteProof', 'delete all files: bridge offline');
   setRealityText('realitySprintProof', 'build next sprint: bridge offline');
+  renderSafeActions([]);
+  setRealityText('realityOperatorNext', 'Bridge offline');
+  setRealityText('realityOperatorNextNote', 'This recommendation needs the live runtime status payload from the localhost bridge.');
+  setRealityText('realityOperatorNextLine1', 'Latest safe action: unavailable while the bridge is offline.');
+  setRealityText('realityOperatorNextLine2', 'Creator lane: start the bridge to read the latest creator pack truth.');
+  setRealityText('realityOperatorNextLine3', 'Phone-safe lane: start the bridge to verify which public links are actually configured.');
   setRealityText('realityStage42', 'bridge offline — cannot verify');
   setRealityText('realityStage42Note', 'Start scripts\\chintu-allegro-start.ps1 to show live Stage 42 proof status');
+  renderAgentWaveBoard(null);
+  renderAutomationBoard(null);
 }
 
 function renderReality(data) {
@@ -2366,6 +3463,9 @@ function renderReality(data) {
   const bridge = data.bridge || {};
   const approvals = data.approvals || {};
   const telegram = data.telegram || {};
+  const publicLinks = data.publicLinks || {};
+  const automation = data.automation || {};
+  const creator = data.creator || {};
   const bala = data.bala || {};
   const proof = data.founderProof || {};
 
@@ -2403,11 +3503,69 @@ function renderReality(data) {
     ' · updates seen: ' + yesNo(telegram.updatesSeen) +
     ' · send disabled: ' + yesNo(telegram.sendRemainsDisabled)
   );
+  const phoneSafeSummary = [
+    publicLinks.allegro ? 'Allegro' : null,
+    publicLinks.bala ? 'BALA' : null,
+    publicLinks.runtime ? 'Runtime' : null,
+  ].filter(Boolean);
+  setRealityText('realityPublicLinks', phoneSafeSummary.length ? (phoneSafeSummary.join(' Â· ') + ' public') : 'No public link configured');
+  setRealityText('realityPublicLinksNote', [
+    publicLinks.allegro ? ('Allegro: ' + publicLinks.allegro) : null,
+    publicLinks.bala ? ('BALA: ' + publicLinks.bala) : null,
+    publicLinks.runtime ? ('Runtime: ' + publicLinks.runtime) : null,
+    !publicLinks.allegro && !publicLinks.runtime ? 'Set CHINTU_PUBLIC_ALLEGRO_URL and CHINTU_PUBLIC_RUNTIME_URL to make more phone-openable links available.' : null,
+  ].filter(Boolean).join(' Â· '));
+  if (publicLinks.creatorHub || publicLinks.creatorEpisode) {
+    setRealityText('realityPublicLinks', [
+      publicLinks.allegro ? 'Allegro' : null,
+      publicLinks.bala ? 'BALA' : null,
+      publicLinks.runtime ? 'Runtime' : null,
+      publicLinks.creatorHub ? 'Creator Hub' : null,
+      publicLinks.creatorEpisode ? 'Episode 1' : null,
+    ].filter(Boolean).join(' | ') + ' public');
+    setRealityText('realityPublicLinksNote', [
+      publicLinks.allegro ? ('Allegro: ' + publicLinks.allegro) : null,
+      publicLinks.bala ? ('BALA: ' + publicLinks.bala) : null,
+      publicLinks.runtime ? ('Runtime: ' + publicLinks.runtime) : null,
+      publicLinks.creatorHub ? ('Creator Hub: ' + publicLinks.creatorHub) : null,
+      publicLinks.creatorEpisode ? ('Episode 1: ' + publicLinks.creatorEpisode) : null,
+    ].filter(Boolean).join(' | '));
+  }
+  if (creator.ready) {
+    const creatorMeta = [
+      creator.shortTitle || creator.storyTitle || null,
+      creator.thumbnailText ? ('thumb: ' + creator.thumbnailText) : null,
+      creator.assetCount ? ('assets: ' + creator.assetCount) : null,
+      creator.targetLengthSeconds ? (creator.targetLengthSeconds + 's target') : null,
+    ].filter(Boolean);
+    setRealityText('realityCreator', (creator.episode || 'Creator pack ready') + (creator.generatedAt ? (' · ' + fmtWhen(creator.generatedAt)) : ''));
+    setRealityText('realityCreatorNote', creatorMeta.concat([
+      creator.visibilityModeRecommendation ? ('release: ' + creator.visibilityModeRecommendation) : null,
+      creator.draftVideoReady ? 'draft-ready: yes' : null,
+      creator.reviewVideoReady ? 'review-cut: yes' : null,
+    ].filter(Boolean)).join(' | ') || creator.privacyNote || 'Latest local creator pack is ready.');
+    setRealityText('realityCreatorHook', 'Hook: ' + (creator.shortHook || creator.draftReviewNote || 'No hook written yet.') + (creator.reviewVideoName ? (' | file: ' + creator.reviewVideoName) : ''));
+    setRealityText('realityCreatorNext', 'Next: ' + (creator.nextAction || 'Open the latest creator pack and export the next short.'));
+    if (publicLinks.creatorEpisode) {
+      setRealityText('realityCreatorNext', 'Next: ' + (creator.nextAction || 'Open the latest creator pack and export the next short.') + ' | public review: ' + publicLinks.creatorEpisode);
+    }
+  } else {
+    setRealityText('realityCreator', 'No creator pack loaded');
+    setRealityText('realityCreatorNote', 'Run Creator Pack Latest Trip or Trip Video Draft to refresh this lane.');
+    setRealityText('realityCreatorHook', 'Hook: waiting for the first exported episode pack.');
+    setRealityText('realityCreatorNext', 'Next: generate a creator pack from the approved local media set.');
+  }
   setRealityText('realityBala', bala.safetySkillAvailable ? 'safety skill available' : 'safety skill missing');
   setRealityText('realityBalaNote', Array.isArray(bala.blockedConditions) ? bala.blockedConditions.join(' ') : 'Blocked conditions unknown.');
   setRealityText('realityHiProof', formatProofLine('hi', proof.hi));
   setRealityText('realityCheckProof', formatProofLine('check everything', proof.checkEverything));
   setRealityText('realityChestProof', formatProofLine('chest pain', proof.chestPain));
+  setRealityText('realityDeleteProof', formatProofLine('delete all files', proof.deleteAllFiles));
+  setRealityText('realitySprintProof', formatProofLine('build next sprint', proof.nextSprint));
+  renderSafeActions(data.recentSafeActions);
+  renderOperatorNextStep(data);
+  renderAgentWaveBoard(data.agentWave || null);
+  renderAutomationBoard(automation);
 
   // Stage 42 proof card — pulled from bridge stage42 data or derived from proof paths
   const s42 = data.stage42 || {};
@@ -2429,6 +3587,10 @@ function renderReality(data) {
 async function refreshReality(showBusy) {
   if (!BRIDGE.online) {
     renderRealityOffline('Bridge is offline. Start scripts\\chintu-allegro-start.ps1, then refresh this panel.');
+    refreshAgentBoard(false);
+    refreshFounderMissionBoard(false);
+    refreshConnectorBoard(false);
+    refreshMorningOperatorBoard(false);
     return;
   }
   if (showBusy) {
@@ -2438,8 +3600,16 @@ async function refreshReality(showBusy) {
     const r = await fetch(BRIDGE.base + '/api/runtime-status', { method: 'GET' });
     const j = await r.json();
     renderReality(j);
+    refreshAgentBoard(false);
+    refreshFounderMissionBoard(false);
+    refreshConnectorBoard(false);
+    refreshMorningOperatorBoard(false);
   } catch (e) {
     renderRealityOffline('Runtime status endpoint could not be read.');
+    refreshAgentBoard(false);
+    refreshFounderMissionBoard(false);
+    refreshConnectorBoard(false);
+    refreshMorningOperatorBoard(false);
   }
 }
 
@@ -2447,6 +3617,10 @@ async function refreshBridge() {
   await probeBridge();
   setBridgeCard();
   refreshProviders();
+  refreshAgentBoard(false);
+  refreshFounderMissionBoard(false);
+  refreshConnectorBoard(false);
+  refreshMorningOperatorBoard(false);
   refreshReality(false);
 }
 
@@ -2457,11 +3631,17 @@ function mapToLiveAction(lower) {
   if (lower.includes('connector status')) return 'connector_status';
   if (lower.includes('github status') || lower.includes('gh status')) return 'github_status';
   if (lower.includes('repo summary') || lower.includes('github repo summary')) return 'github_repo_summary';
+  if (lower.includes('morning report') || lower.includes('morning operator') || lower.includes('wake up report')) return 'morning_operator_report';
+  if (lower.includes('os snapshot') || lower.includes('agent os') || lower.includes('chintu os')) return 'os_snapshot';
+  if (lower.includes('creator pack') || lower.includes('youtube pack') || lower.includes('latest trip') || lower.includes('trip pack')) return 'creator_pack_latest_trip';
+  if (lower.includes('trip video') || lower.includes('video draft') || lower.includes('build the video') || lower.includes('make the video')) return 'trip_video_draft';
   if (lower.includes('check connector') || lower.includes('connector readiness') || lower.includes('connector check') || lower.includes('check connectors') || (lower.includes('connector') && lower.includes('ready'))) return 'connector_readiness';
   if (lower.includes('git status')) return 'git_status';
   if (lower.includes('git log')) return 'git_log';
   if (lower.includes('build next bala sprint') || lower.includes('bala sprint') || lower.includes('next bala') || lower.includes('create action packet')) return 'action_packet_bala_sprint';
+  if (lower.includes('overnight') || lower.includes('while i sleep') || lower.includes('before i wake up') || lower.includes('night shift')) return 'prompt_overnight_beast_both';
   if (lower.includes('connector packet')) return 'action_packet_connector_check';
+  if (lower.includes('founder beast') || lower.includes('beast mode') || lower.includes('jarvis') || lower.includes('single prompt')) return 'prompt_founder_beast_both';
   if ((lower.includes('xml') && lower.includes('prompt')) || lower.includes('generate xml')) return 'prompt_xml_bala';
   if (lower.includes('open') && lower.includes('public')) return 'open_bala_public';
   if (lower.includes('open allegro')) return 'open_allegro';
@@ -2473,6 +3653,20 @@ function liveBusy(label) {
   document.getElementById('responseTitle').textContent = '⏳ Running: ' + label;
   document.getElementById('responseBody').innerHTML =
     '<div class="response-empty"><div class="empty-icon">⏳</div><div>Calling the local bridge…<br>' + escHtml(label) + '</div></div>';
+}
+
+function sequenceLabel(name) {
+  const labels = {
+    founder_beast_stack: 'Founder Beast Run',
+    agent_parallel_wave: 'Agent Parallel Wave',
+    agent_release_wave: 'Agent Release Wave',
+    overnight_beast_stack: 'Overnight Beast Run',
+    check_everything: 'Check Everything',
+    bala_health_check: 'BALA Health Check',
+    chintu_health_check: 'Chintu Health Check',
+    next_sprint: 'Next Sprint'
+  };
+  return labels[name] || name;
 }
 
 async function liveAction(name) {
@@ -2487,6 +3681,23 @@ async function liveAction(name) {
     });
     const j = await r.json();
     renderLiveResult(name, label, j);
+  } catch (e) {
+    BRIDGE.online = false; setBridgeCard(); renderLiveOffline(name, label);
+  }
+}
+
+async function liveSequence(name) {
+  const label = sequenceLabel(name);
+  if (!BRIDGE.online) { await refreshBridge(); }
+  if (!BRIDGE.online) { renderLiveOffline(name, label); return; }
+  liveBusy(label);
+  try {
+    const r = await fetch(BRIDGE.base + '/api/sequence', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sequence: name })
+    });
+    const j = await r.json();
+    renderSequenceResult(name, label, j);
   } catch (e) {
     BRIDGE.online = false; setBridgeCard(); renderLiveOffline(name, label);
   }
@@ -2518,8 +3729,47 @@ function renderLiveResult(name, label, j) {
     const v = document.getElementById('sc-bridge-validation');
     if (v) v.textContent = 'Validation: ' + (j.exitCode === 0 ? 'PASS' : 'see output');
   }
+  refreshAgentBoard(false);
+  refreshFounderMissionBoard(false);
+  refreshConnectorBoard(false);
+  refreshMorningOperatorBoard(false);
   refreshReality(false);
   speak(label + '. ' + (j.exitCode === 0 ? 'Completed.' : 'Returned exit ' + j.exitCode));
+}
+
+function renderSequenceResult(name, label, j) {
+  lastLiveResult = j;
+  document.getElementById('responseTitle').textContent = 'âœ¦ ' + label;
+  let html = '';
+  const ok = j && j.ok === true;
+  const results = Array.isArray(j.results) ? j.results : [];
+  const passed = results.filter((res) => res.exitCode === 0).length;
+  const needsAttention = results.filter((res) => res.exitCode !== 0).map((res) => res.label || res.action).join(', ');
+  html += section('lane', 'ðŸ”Œ Live sequence', '<strong>' + escHtml(label) + '</strong> Â· ' + (ok ? '<span class="risk-low">sequence complete</span>' : '<span class="risk-high">sequence needs attention</span>') + ' Â· ' + results.length + ' step(s)');
+  if (results.length) {
+    let out = '';
+    for (const res of results) {
+      const code = (res.exitCode === 0) ? 'exit 0 Â· OK' : 'exit ' + res.exitCode;
+      out += '<div style="margin-bottom:8px"><strong>' + escHtml(res.label || res.action || 'step') + '</strong> Â· ' + escHtml(code) + '</div>';
+      if (res.stdout && res.stdout.trim()) out += codeBlock(res.stdout);
+      if (res.stderr && res.stderr.trim()) out += codeBlock(res.stderr);
+    }
+    html += section('prompt', 'ðŸ“¤ Step output', out);
+  }
+  html += section('understood', 'ðŸ“Š Sequence read', 'passed: <strong>' + passed + '</strong>' + (needsAttention ? ' Â· needs attention: ' + escHtml(needsAttention) : ''));
+  html += section('understood', 'ðŸ“Ž Result', '<button class="copy-all-btn" onclick="copyLiveResult()">Copy result JSON</button>');
+  document.getElementById('responseBody').innerHTML = html;
+
+  const lastEl = document.getElementById('sc-bridge-last');
+  if (lastEl) lastEl.textContent = 'Last: ' + label + ' (' + passed + '/' + results.length + ' passed)';
+  const v = document.getElementById('sc-bridge-validation');
+  if (v) v.textContent = ok ? 'Sequence: all steps passed' : 'Sequence: see step output';
+  refreshAgentBoard(false);
+  refreshFounderMissionBoard(false);
+  refreshConnectorBoard(false);
+  refreshMorningOperatorBoard(false);
+  refreshReality(false);
+  speak(label + '. ' + (ok ? 'Completed.' : 'Needs attention.'));
 }
 
 function renderLiveOffline(name, label) {
@@ -2660,7 +3910,10 @@ function renderChat(raw, j) {
     if (el) el.textContent = 'build next sprint: ✅ ' + ts + ' — ' + (j.responseType || 'replied') + ' · steps=' + stepsRan;
   }
 
-  refreshReality(false);
+  if (stepsRan > 0) {
+    refreshFounderMissionBoard(false);
+    refreshReality(false);
+  }
   speak(j.reply || '');
 }
 
@@ -2914,6 +4167,11 @@ async function refreshProviders() {
 // Probe on load and whenever the tab regains focus.
 refreshBridge();
 runBalaDemo();
+setInterval(() => {
+  if (document.hidden) return;
+  if (!BRIDGE.online) refreshBridge();
+  else refreshReality(false);
+}, 20000);
 window.addEventListener('focus', () => { if (!BRIDGE.online) refreshBridge(); else refreshReality(false); });
 
 </script>

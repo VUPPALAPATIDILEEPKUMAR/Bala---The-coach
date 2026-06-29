@@ -1,5 +1,6 @@
 # BALA Your Coach — Live Product State
 _Last updated: 2026-06-23 — Sprint B63_
+**Status:** planning reference only
 
 ---
 
@@ -92,3 +93,5 @@ BALA must never claim to:
 For urgent symptoms (chest pain, trouble breathing, fainting, stroke-like): direct to emergency services immediately. No BALA score.
 
 **Test guard:** `node scripts/chintu-medical-claims.test.js` — scans 179 files, 9 patterns. Must pass on every commit.
+
+BALA is a health-awareness companion. It does not diagnose, treat, predict, prevent, replace doctors, or provide emergency monitoring.
