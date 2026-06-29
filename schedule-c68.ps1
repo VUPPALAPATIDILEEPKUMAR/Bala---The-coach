@@ -13,6 +13,31 @@ $taskDesc   = 'C68: BALA morning health brief via Groq + Telegram. Reads bala-da
 $repoRoot   = $PSScriptRoot
 $scriptPath = Join-Path $repoRoot 'scripts\chintu-health-brief.js'
 
+function Test-IsAdministrator {
+  $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+  $principal = New-Object Security.Principal.WindowsPrincipal($currentIdentity)
+  return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Test-MorningBriefTaskConfigured {
+  param([object]$Task, [string]$ExpectedVbsPath)
+  if (-not $Task -or -not $Task.Actions -or $Task.Actions.Count -lt 1) {
+    return $false
+  }
+  $action = $Task.Actions[0]
+  if ($action.Execute -notmatch 'wscript(\.exe)?$') {
+    return $false
+  }
+  if ($action.Arguments -notmatch [Regex]::Escape($ExpectedVbsPath)) {
+    return $false
+  }
+  $dailyTrigger = $Task.Triggers | Where-Object { $_.CimClass.CimClassName -match 'Daily' } | Select-Object -First 1
+  if (-not $dailyTrigger) {
+    return $false
+  }
+  return $dailyTrigger.StartBoundary -match 'T07:00:00'
+}
+
 # Resolve node.exe path -- PS5 compatible (no ?. operator)
 $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
 $nodeExe = if ($nodeCmd) { $nodeCmd.Source } else { 'node' }
@@ -33,7 +58,23 @@ Write-Host ""
 Write-Host "  VBS launcher: $vbsPath" -ForegroundColor DarkGray
 
 # Remove existing task if present
-if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+$existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+Write-Host "  Existing task: $(if ($existingTask) { 'found' } else { 'not found' })" -ForegroundColor DarkGray
+$isAdmin = Test-IsAdministrator
+$alreadyConfigured = Test-MorningBriefTaskConfigured -Task $existingTask -ExpectedVbsPath $vbsPath
+if ($alreadyConfigured) {
+  Write-Host "  [PASS] Task already uses the hidden 7:00 AM launcher" -ForegroundColor Green
+  if (-not $isAdmin) {
+    Write-Host "  Current shell is not elevated, but no re-registration is needed." -ForegroundColor DarkGray
+    exit 0
+  }
+}
+if (-not $isAdmin) {
+  Write-Host "  [FAIL] Administrator rights are required to register or update this scheduled task." -ForegroundColor Red
+  exit 1
+}
+
+if ($existingTask) {
   Write-Host "  Removing existing task: $taskName" -ForegroundColor DarkGray
   Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 }
@@ -54,9 +95,15 @@ Register-ScheduledTask `
   -RunLevel    Limited `
   -Force | Out-Null
 
-Write-Host "  [PASS] Task registered: $taskName" -ForegroundColor Green
-Write-Host "  Schedule: daily at 7:00 AM (silent -- no window flash)" -ForegroundColor DarkGray
-Write-Host "  Launcher: wscript.exe -> VBS -> node (hidden)" -ForegroundColor DarkGray
+$updatedTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+if (Test-MorningBriefTaskConfigured -Task $updatedTask -ExpectedVbsPath $vbsPath) {
+  Write-Host "  [PASS] Task registered: $taskName" -ForegroundColor Green
+  Write-Host "  Schedule: daily at 7:00 AM (silent -- no window flash)" -ForegroundColor DarkGray
+  Write-Host "  Launcher: wscript.exe -> VBS -> node (hidden)" -ForegroundColor DarkGray
+} else {
+  Write-Host "  [FAIL] Task did not verify with the expected 7:00 AM hidden-launcher configuration." -ForegroundColor Red
+  exit 1
+}
 Write-Host ""
 Write-Host "  Test now (silent): wscript.exe `"$vbsPath`""
 Write-Host "  Test now (visible): node `"$scriptPath`""

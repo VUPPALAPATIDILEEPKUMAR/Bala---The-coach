@@ -18,6 +18,24 @@ $taskPath   = '\Chintu\'
 $scriptPath = Join-Path $repoRoot 'scripts\chintu-telegram-poll.js'
 $vbsPath    = Join-Path $repoRoot 'scripts\run-poll-hidden.vbs'
 
+function Test-IsAdministrator {
+  $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+  $principal = New-Object Security.Principal.WindowsPrincipal($currentIdentity)
+  return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Test-TaskUsesHiddenLauncher {
+  param([object]$Task)
+  if (-not $Task -or -not $Task.Actions -or $Task.Actions.Count -lt 1) {
+    return $false
+  }
+  $taskAction = $Task.Actions[0]
+  return (
+    $taskAction.Execute -match 'wscript(\.exe)?$' -and
+    $taskAction.Arguments -match [Regex]::Escape($vbsPath)
+  )
+}
+
 Write-Host ""
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "  C69: Fix Flashing Telegram Poll Window" -ForegroundColor Cyan
@@ -70,6 +88,32 @@ if ($existingTask) {
   Write-Host "  No existing task found -- will create fresh" -ForegroundColor DarkGray
 }
 
+# -- Step 4b: Require elevation only when task still needs changes ----------
+Write-Host ""
+Write-Host "STEP 4b: Check elevation / current task state" -ForegroundColor Yellow
+$isAdmin = Test-IsAdministrator
+$alreadyHidden = Test-TaskUsesHiddenLauncher -Task $existingTask
+if ($alreadyHidden) {
+  Write-Host "  [PASS] Task already uses wscript.exe + VBS hidden launcher" -ForegroundColor Green
+  if (-not $isAdmin) {
+    Write-Host "  Current shell is not elevated, but no re-registration is needed." -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "================================================" -ForegroundColor Cyan
+    Write-Host "  C69 DONE -- Window flash already fixed" -ForegroundColor Cyan
+    Write-Host "================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  VBS launcher: $vbsPath"
+    Write-Host "  Task:         $taskPath$taskName"
+    Write-Host ""
+    exit 0
+  }
+}
+if (-not $isAdmin) {
+  Write-Host "  [FAIL] Administrator rights are required to re-register Task Scheduler entries." -ForegroundColor Red
+  Write-Host "  Re-run this script from Admin PowerShell only if the task still needs updating." -ForegroundColor Yellow
+  exit 1
+}
+
 # -- Step 5: Remove old task -------------------------------------------------
 Write-Host ""
 Write-Host "STEP 5: Remove old task (to update action)" -ForegroundColor Yellow
@@ -120,20 +164,20 @@ Register-ScheduledTask `
   -Description "Chintu C69 -- Telegram poll. Runs silently via VBS (no window flash). Every 1 min + AtLogon. CHINTU_GROQ_API_KEY must be set at Machine scope for brain chat." `
   -Force | Out-Null
 
-Write-Host "  [PASS] Task re-registered: $taskName (VBS launcher, silent)" -ForegroundColor Green
-
 # -- Step 7: Verify new action -----------------------------------------------
 Write-Host ""
 Write-Host "STEP 7: Verify new task action" -ForegroundColor Yellow
 $updatedTask = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
 if ($updatedTask) {
   $taskAction = $updatedTask.Actions[0]
-  if ($taskAction.Execute -match 'wscript' -or $taskAction.Arguments -match 'vbs') {
+  if (Test-TaskUsesHiddenLauncher -Task $updatedTask) {
+    Write-Host "  [PASS] Task re-registered: $taskName (VBS launcher, silent)" -ForegroundColor Green
     Write-Host "  [PASS] Action uses wscript.exe + VBS (silent)" -ForegroundColor Green
   } else {
-    Write-Host "  [WARN] Action may not be VBS -- check manually:" -ForegroundColor Yellow
+    Write-Host "  [FAIL] Action does not match the expected hidden launcher:" -ForegroundColor Red
     Write-Host "    Execute:   $($taskAction.Execute)"
     Write-Host "    Arguments: $($taskAction.Arguments)"
+    exit 1
   }
   Write-Host "  Triggers: $($updatedTask.Triggers.Count) (expect 2: repeat + logon)" -ForegroundColor DarkGray
 } else {
