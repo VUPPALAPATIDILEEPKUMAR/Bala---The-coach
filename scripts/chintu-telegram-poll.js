@@ -35,7 +35,10 @@
 const fs         = require('fs');
 const path       = require('path');
 const https      = require('https');
+const crypto     = require('crypto');
 const { execSync } = require('child_process');
+const { probeLocalBridge, executeLocalBridgeChat } = require('./chintu-telegram-runner.js');
+const { sanitizeTelegramText } = require('./chintu-send-telegram.js');
 
 // C52: Groq conversational brain (optional -- graceful skip if key missing)
 let chatWithGroq;
@@ -78,6 +81,9 @@ const offsetFile = path.join(vaultDir, 'telegram_offset.json');
 const logDir     = path.join(vaultDir, 'DAILY_LOGS');
 const logFile    = path.join(logDir, new Date().toISOString().slice(0, 10) + '-telegram-poll.md');
 const auditFile  = path.join(repoRoot, 'CHINTU_OUTBOX', 'telegram_poll_audit.jsonl');
+const loopGuardFile = path.join(vaultDir, 'telegram_loop_guard.json');
+const LOOP_GUARD_TTL_MS = 90 * 60 * 1000;
+const LOOP_GUARD_MAX_ENTRIES = 48;
 
 // ── SAFE_COMMANDS allowlist ────────────────────────────────────────────────
 // C51: expanded with power commands (push, diff, brain, bala-audit).
@@ -269,6 +275,119 @@ function appendAudit(entry) {
   } catch (_) { /* non-fatal */ }
 }
 
+function sha256Hex(value) {
+  return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function normalizeLoopText(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s:]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function classifySystemLoopText(text) {
+  const norm = normalizeLoopText(text);
+  if (!norm) return null;
+
+  const hasCodex = norm.includes('codex');
+  const hasUsageLimit = (
+    norm.includes('subscription usage limit') ||
+    norm.includes('usage limit') ||
+    norm.includes('reached your codex')
+  );
+  const hasResetWindow = (
+    norm.includes('next reset') ||
+    norm.includes('wait until the reset time') ||
+    norm.includes('use another codex account') ||
+    norm.includes('switch to another configured model')
+  );
+
+  if (hasCodex && (hasUsageLimit || hasResetWindow)) {
+    return 'codex_usage_limit';
+  }
+
+  return null;
+}
+
+function buildSystemLoopReply(category) {
+  if (category === 'codex_usage_limit') {
+    return [
+      'Codex cloud quota hit its session limit, so that warning can repeat until the next reset window.',
+      '',
+      'Local Chintu automations on this laptop can still keep running, and I will not echo this quota warning in a loop anymore.',
+      '',
+      'Send "digest" for live local status. I am suppressing repeats of this warning for the next 90 minutes.',
+    ].join('\n');
+  }
+  return '';
+}
+
+function loadLoopGuardState() {
+  try {
+    const raw = fs.readFileSync(loopGuardFile, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed.entries || typeof parsed.entries !== 'object') {
+      return { entries: {} };
+    }
+    return { entries: parsed.entries };
+  } catch (_) {
+    return { entries: {} };
+  }
+}
+
+function saveLoopGuardState(state) {
+  try {
+    if (!fs.existsSync(vaultDir)) fs.mkdirSync(vaultDir, { recursive: true });
+    fs.writeFileSync(loopGuardFile, JSON.stringify(state, null, 2));
+  } catch (_) { /* non-fatal */ }
+}
+
+function pruneLoopGuardState(state, nowMs) {
+  const entries = state && state.entries && typeof state.entries === 'object' ? state.entries : {};
+  const fresh = {};
+
+  for (const [key, value] of Object.entries(entries)) {
+    const seenAtMs = Date.parse(value && value.lastSeenAt || '');
+    if (!Number.isFinite(seenAtMs)) continue;
+    if ((nowMs - seenAtMs) > LOOP_GUARD_TTL_MS) continue;
+    fresh[key] = value;
+  }
+
+  const limited = Object.entries(fresh)
+    .sort((a, b) => Date.parse((b[1] && b[1].lastSeenAt) || 0) - Date.parse((a[1] && a[1].lastSeenAt) || 0))
+    .slice(0, LOOP_GUARD_MAX_ENTRIES);
+
+  state.entries = Object.fromEntries(limited);
+  return state;
+}
+
+function getLoopGuardEntryKey(chatId, category) {
+  return sha256Hex(String(chatId || '') + '::' + String(category || ''));
+}
+
+function shouldSuppressSystemLoopReply(state, chatId, category, nowMs) {
+  if (!category) return false;
+  const entries = state && state.entries && typeof state.entries === 'object' ? state.entries : {};
+  const existing = entries[getLoopGuardEntryKey(chatId, category)];
+  if (!existing) return false;
+  const seenAtMs = Date.parse(existing.lastSeenAt || '');
+  return Number.isFinite(seenAtMs) && (nowMs - seenAtMs) < LOOP_GUARD_TTL_MS;
+}
+
+function rememberSystemLoopReply(state, chatId, category, nowMs) {
+  if (!category) return state;
+  const next = state && state.entries && typeof state.entries === 'object' ? state : { entries: {} };
+  next.entries[getLoopGuardEntryKey(chatId, category)] = {
+    chatIdHash: sha256Hex(String(chatId || '')),
+    category,
+    lastSeenAt: new Date(nowMs).toISOString(),
+  };
+  return pruneLoopGuardState(next, nowMs);
+}
+
 // ── Offset persistence ─────────────────────────────────────────────────────
 function loadOffset() {
   try {
@@ -430,6 +549,51 @@ function runSafeCommand(key) {
     const out = ((e.stdout || '') + (e.stderr || '') + (e.message || '')).slice(0, 480);
     return { ok: false, output: 'FAIL: ' + out };
   }
+}
+
+function summarizeBridgeResults(results) {
+  const list = Array.isArray(results) ? results : [];
+  if (!list.length) return '';
+  return list
+    .map((item) => {
+      const label = item && (item.label || item.action || 'action');
+      const code = item && Number(item.exitCode) === 0 ? 'ok' : ('exit ' + String(item && item.exitCode != null ? item.exitCode : '?'));
+      return label + ': ' + code;
+    })
+    .join(' | ');
+}
+
+function formatBridgeChatReply(bridgeJson) {
+  if (!bridgeJson || typeof bridgeJson !== 'object') {
+    return 'Chintu bridge returned no readable answer.';
+  }
+  const lines = [];
+  lines.push(String(bridgeJson.reply || 'Chintu handled that locally.'));
+  const summary = summarizeBridgeResults(bridgeJson.results);
+  if (summary) {
+    lines.push('');
+    lines.push('Local actions: ' + summary);
+  }
+  if (bridgeJson.nextSuggestedAction) {
+    lines.push('');
+    lines.push('Next: ' + String(bridgeJson.nextSuggestedAction));
+  }
+  return lines.join('\n').slice(0, 3500);
+}
+
+async function replyFromLocalBridge(text) {
+  const bridge = await probeLocalBridge();
+  if (!bridge || bridge.ok !== true || !bridge.port) {
+    return { ok: false, reason: 'bridge_offline', replyText: null, bridgeJson: null };
+  }
+  const bridgeJson = await executeLocalBridgeChat(bridge.port, text);
+  return {
+    ok: true,
+    reason: null,
+    replyText: formatBridgeChatReply(bridgeJson),
+    bridgeJson,
+    port: bridge.port,
+  };
 }
 
 // ── Extract message fields from a Telegram update ─────────────────────────
@@ -598,29 +762,42 @@ async function main() {
 
       log('  Transcript: "' + transcript.slice(0, 60) + (transcript.length > 60 ? '…' : '') + '"');
 
-      // 2. Load conversation history, run Groq tool-use brain
+      // 2. Try the live local bridge first so voice follows the same Chintu brain
+      let bridgeVoiceReply = null;
+      try {
+        bridgeVoiceReply = await replyFromLocalBridge(transcript);
+      } catch (_) {
+        bridgeVoiceReply = null;
+      }
+
+      // 3. Fallback to Groq tool-use/plain chat if the bridge is unavailable
       const history = loadHistory(chatId);
       let groqReply = null;
-
-      if (chatWithGroqTools) {
-        try { groqReply = await chatWithGroqTools(transcript, history); } catch (_) {}
+      if (!bridgeVoiceReply || !bridgeVoiceReply.ok || !bridgeVoiceReply.replyText) {
+        if (chatWithGroqTools) {
+          try { groqReply = await chatWithGroqTools(transcript, history); } catch (_) {}
+        }
+        if (!groqReply) {
+          groqReply = await chatWithGroq(transcript, '', history);
+        }
       }
-      if (!groqReply) {
-        groqReply = await chatWithGroq(transcript, '', history);
-      }
 
-      if (groqReply) {
+      const finalVoiceReply = bridgeVoiceReply && bridgeVoiceReply.ok && bridgeVoiceReply.replyText
+        ? bridgeVoiceReply.replyText
+        : groqReply;
+
+      if (finalVoiceReply) {
         // 3. Save to conversation memory
         appendHistory(chatId, 'user',      '🎙️ ' + transcript);
-        appendHistory(chatId, 'assistant', groqReply);
+        appendHistory(chatId, 'assistant', finalVoiceReply);
 
         // 4. Reply with voice note; fall back to text if TTS fails
-        const voiceSent = await replyWithVoice(chatId, groqReply, token);
+        const voiceSent = await replyWithVoice(chatId, finalVoiceReply, token);
         if (voiceSent) {
-          log('  Voice reply sent (' + groqReply.length + ' chars)');
+          log('  Voice reply sent (' + finalVoiceReply.length + ' chars)');
         } else {
           // TTS or upload failed — send text so founder gets the answer
-          await sendMessage(token, chatId, '🎙️ ' + groqReply);
+          await sendMessage(token, chatId, sanitizeTelegramText('🎙️ ' + finalVoiceReply));
           log('  TTS failed — sent text fallback');
         }
         replied++;
@@ -641,12 +818,32 @@ async function main() {
 
     log('Processing update ' + updateId + ' from ' + senderName + ': "' + text.slice(0, 60) + '"');
     processed++;
+    let replyText = '';
+
+    const systemLoopCategory = classifySystemLoopText(text);
+    if (systemLoopCategory) {
+      const nowMs = Date.now();
+      const loopGuardState = pruneLoopGuardState(loadLoopGuardState(), nowMs);
+      if (shouldSuppressSystemLoopReply(loopGuardState, chatId, systemLoopCategory, nowMs)) {
+        log('  -> suppressed repeated system loop warning: ' + systemLoopCategory);
+        appendAudit({ type: 'system_loop_suppressed', updateId, category: systemLoopCategory });
+        continue;
+      }
+
+      replyText = buildSystemLoopReply(systemLoopCategory);
+      log('  -> stabilized system loop warning: ' + systemLoopCategory);
+      appendAudit({ type: 'system_loop_guard', updateId, category: systemLoopCategory });
+      if (!dryRun) {
+        saveLoopGuardState(rememberSystemLoopReply(loopGuardState, chatId, systemLoopCategory, nowMs));
+      }
+    }
 
     // Resolve command
-    const resolved = resolveCommand(text);
-    let replyText  = '';
+    const resolved = replyText ? null : resolveCommand(text);
 
-    if (resolved.type === 'help') {
+    if (replyText) {
+      // Already handled by a system loop guard.
+    } else if (resolved.type === 'help') {
       replyText = HELP_TEXT;
       log('  -> help requested');
 
@@ -702,44 +899,67 @@ async function main() {
       appendAudit({ type: 'clear_history', updateId });
 
     } else if (resolved.type === 'chat') {
-      // Natural language -> Groq conversational brain (C52)
-      // With rolling conversation history (C53)
+      // Natural language -> live local bridge first, then Groq fallback.
       log('  -> groq chat: "' + text.slice(0, 60) + '"');
       if (dryRun) {
-        replyText = '[DRY-RUN] Would ask Groq: "' + text.slice(0, 60) + '"';
+        replyText = '[DRY-RUN] Would route through local Chintu bridge first: "' + text.slice(0, 60) + '"';
       } else {
-        // Load conversation history for multi-turn context
-        const history = loadHistory(chatId);
-        let groqReply = null;
-
-        // C55: Try tool-use agent first (Groq decides what data to fetch)
-        if (chatWithGroqTools) {
-          try {
-            groqReply = await chatWithGroqTools(text, history);
-            if (groqReply) log('  Groq tools replied (' + groqReply.length + ' chars)');
-          } catch (_) { groqReply = null; }
+        let bridgeReply = null;
+        try {
+          bridgeReply = await replyFromLocalBridge(text);
+        } catch (bridgeErr) {
+          bridgeReply = {
+            ok: false,
+            reason: String(bridgeErr && bridgeErr.message ? bridgeErr.message : bridgeErr),
+            replyText: null,
+            bridgeJson: null,
+          };
         }
 
-        // Fallback: plain Groq chat with pre-built context (C54)
-        if (!groqReply) {
-          const ctxParts = [];
-          try { ctxParts.push('Git status: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
-          try { ctxParts.push('Recent commits: ' + runSafeCommand('git_log').output.slice(0, 200)); } catch (_) {}
-          try { ctxParts.push('BALA files: ' + runSafeCommand('check_bala_files').output.slice(0, 120)); } catch (_) {}
-          try { ctxParts.push('Today commits: ' + runSafeCommand('git_log_today').output.slice(0, 150)); } catch (_) {}
-          const ctx = ctxParts.join('\n');
-          groqReply = await chatWithGroq(text, ctx, history);
-          if (groqReply) log('  Groq plain replied (' + groqReply.length + ' chars)');
-        }
-
-        if (groqReply) {
-          replyText = '🧠 ' + groqReply;
-          // Save to rolling history
-          appendHistory(chatId, 'user', text);
-          appendHistory(chatId, 'assistant', groqReply);
+        if (bridgeReply && bridgeReply.ok && bridgeReply.replyText) {
+          replyText = bridgeReply.replyText;
+          log('  Local bridge replied (' + replyText.length + ' chars, port ' + bridgeReply.port + ')');
+          appendAudit({
+            type: 'bridge_chat',
+            updateId,
+            intent: bridgeReply.bridgeJson && bridgeReply.bridgeJson.intent || null,
+            responseType: bridgeReply.bridgeJson && bridgeReply.bridgeJson.responseType || null,
+            ranLive: Boolean(bridgeReply.bridgeJson && bridgeReply.bridgeJson.ranLive),
+          });
         } else {
-          replyText = '🤔 Groq brain not available (CHINTU_GROQ_API_KEY not set in Task Scheduler).\n\n' + HELP_TEXT;
-          log('  Groq unavailable -- returning fallback');
+          // Load conversation history for multi-turn context
+          const history = loadHistory(chatId);
+          let groqReply = null;
+
+          // C55: Try tool-use agent first (Groq decides what data to fetch)
+          if (chatWithGroqTools) {
+            try {
+              groqReply = await chatWithGroqTools(text, history);
+              if (groqReply) log('  Groq tools replied (' + groqReply.length + ' chars)');
+            } catch (_) { groqReply = null; }
+          }
+
+          // Fallback: plain Groq chat with pre-built context (C54)
+          if (!groqReply) {
+            const ctxParts = [];
+            try { ctxParts.push('Git status: ' + runSafeCommand('git_status').output.slice(0, 250)); } catch (_) {}
+            try { ctxParts.push('Recent commits: ' + runSafeCommand('git_log').output.slice(0, 200)); } catch (_) {}
+            try { ctxParts.push('BALA files: ' + runSafeCommand('check_bala_files').output.slice(0, 120)); } catch (_) {}
+            try { ctxParts.push('Today commits: ' + runSafeCommand('git_log_today').output.slice(0, 150)); } catch (_) {}
+            const ctx = ctxParts.join('\n');
+            groqReply = await chatWithGroq(text, ctx, history);
+            if (groqReply) log('  Groq plain replied (' + groqReply.length + ' chars)');
+          }
+
+          if (groqReply) {
+            replyText = '🧠 ' + groqReply;
+            // Save to rolling history
+            appendHistory(chatId, 'user', text);
+            appendHistory(chatId, 'assistant', groqReply);
+          } else {
+            replyText = '🤔 Chintu bridge is offline and Groq brain is not available right now.\n\n' + HELP_TEXT;
+            log('  Bridge/Groq unavailable -- returning fallback');
+          }
         }
       }
       appendAudit({ type: 'chat', updateId, text: text.slice(0, 80) });
@@ -759,7 +979,7 @@ async function main() {
       console.log('Reply ready but SEND DISABLED. Set CHINTU_TELEGRAM_SEND_ENABLED=1.');
     } else {
       try {
-        await sendMessage(token, chatId, replyText);
+        await sendMessage(token, chatId, sanitizeTelegramText(replyText));
         log('  Replied to update ' + updateId);
         replied++;
         appendAudit({ type: 'reply_sent', updateId, replyLen: replyText.length });
@@ -784,8 +1004,21 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((e) => {
+if (require.main === module) main().catch((e) => {
   const safe = String(e && e.message ? e.message : e).replace(/[A-Za-z0-9_-]{20,}:[A-Za-z0-9_-]{20,}/g, '[REDACTED]');
   console.error('Fatal: ' + safe);
   process.exit(1);
 });
+
+module.exports = {
+  normalizeLoopText,
+  classifySystemLoopText,
+  buildSystemLoopReply,
+  shouldSuppressSystemLoopReply,
+  rememberSystemLoopReply,
+  resolveCommand,
+  runSafeCommand,
+  summarizeBridgeResults,
+  formatBridgeChatReply,
+  replyFromLocalBridge,
+};
