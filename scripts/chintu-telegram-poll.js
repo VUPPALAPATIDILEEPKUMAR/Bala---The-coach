@@ -434,6 +434,26 @@ function isAllowlisted(chatId, senderId, env) {
 
 // ── Telegram HTTP helpers ──────────────────────────────────────────────────
 const TELEGRAM_TIMEOUT_MS = 12000;
+const GET_UPDATES_RETRY_DELAYS_MS = [5000, 10000, 20000];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableTelegramError(err) {
+  const message = String(err && err.message ? err.message : err || '').toLowerCase();
+  if (!message) return false;
+  if (/http 5\d\d/.test(message)) return true;
+  return (
+    message.includes('timed out') ||
+    message.includes('socket hang up') ||
+    message.includes('econnreset') ||
+    message.includes('etimedout') ||
+    message.includes('eai_again') ||
+    message.includes('enotfound') ||
+    message.includes('fetch failed')
+  );
+}
 
 function telegramRequest(token, method, bodyObj) {
   return new Promise((resolve, reject) => {
@@ -470,6 +490,29 @@ async function getUpdates(token, offset, limit) {
     throw new Error('getUpdates failed: HTTP ' + res.statusCode);
   }
   return res.json.result || [];
+}
+
+async function getUpdatesWithRetry(token, offset, limit, options) {
+  const opts = options || {};
+  const getUpdatesFn = opts.getUpdatesFn || getUpdates;
+  const sleepFn = opts.sleepFn || sleep;
+  const logFn = typeof opts.logFn === 'function' ? opts.logFn : null;
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await getUpdatesFn(token, offset, limit);
+    } catch (err) {
+      const retryDelayMs = GET_UPDATES_RETRY_DELAYS_MS[attempt];
+      if (!Number.isFinite(retryDelayMs) || !isRetryableTelegramError(err)) {
+        throw err;
+      }
+      if (logFn) {
+        logFn('getUpdates retry ' + (attempt + 1) + '/' + GET_UPDATES_RETRY_DELAYS_MS.length +
+          ' in ' + retryDelayMs + 'ms (' + redactToken(err.message, token) + ')');
+      }
+      await sleepFn(retryDelayMs);
+    }
+  }
 }
 
 async function sendMessage(token, chatId, text) {
@@ -650,7 +693,7 @@ async function main() {
   // Poll
   let updates;
   try {
-    updates = await getUpdates(token, offset, limit);
+    updates = await getUpdatesWithRetry(token, offset, limit, { logFn: log });
   } catch (e) {
     log('ABORT: getUpdates failed: ' + redactToken(e.message, token));
     console.error('ERROR: ' + redactToken(e.message, token));
@@ -1018,6 +1061,8 @@ module.exports = {
   rememberSystemLoopReply,
   resolveCommand,
   runSafeCommand,
+  isRetryableTelegramError,
+  getUpdatesWithRetry,
   summarizeBridgeResults,
   formatBridgeChatReply,
   replyFromLocalBridge,
