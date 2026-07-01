@@ -38,6 +38,7 @@ const KNOWN_ACTIONS = [
   'bala_ask_skill',
   'bala_weekly_skill',
   'hn_brief_skill',
+  'morning_digest_skill',
   'chintu_git_push',
 ];
 
@@ -588,6 +589,34 @@ const RULES = [
         'Safety footer always included in reply',
         'No medical claims, no diagnosis, no risk predictions',
       ],
+    }),
+  },
+
+  // ---- Morning Digest (C75) -- combines BALA weekly + HN brief. Must come BEFORE
+  // hn_brief so "morning brief" and "morning digest" route here, not to HN-only.
+  {
+    name: 'morning_digest',
+    match: (s) => hasAny(s, [
+      'morning digest', 'morning routine', 'daily digest', 'my morning',
+      'start my day', 'morning report', 'daily brief', 'bala and hn',
+      'hn and bala', 'full brief', 'full digest', 'good morning chintu',
+    ]),
+    build: () => ({
+      intent: 'morning_digest',
+      track: 'both',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['morning_digest_skill'],
+      reply:
+        'Running your morning digest — BALA health signal + top tech stories. One moment.',
+      gates: [
+        'Reads local BALA export only (no upload)',
+        'Fetches HN Algolia (free, public, no key)',
+        'Dry-run output only — Telegram send is human-gated',
+        'No secrets, no paid APIs, no tracking',
+      ],
+      files: ['scripts/chintu-morning-digest-skill.js'],
+      next: 'morning_digest_skill',
     }),
   },
 
