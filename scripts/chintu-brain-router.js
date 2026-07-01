@@ -37,6 +37,7 @@ const KNOWN_ACTIONS = [
   'open_allegro', 'open_bala_local', 'open_bala_public',
   'bala_ask_skill',
   'bala_weekly_skill',
+  'hn_brief_skill',
   'chintu_git_push',
 ];
 
@@ -587,6 +588,33 @@ const RULES = [
         'Safety footer always included in reply',
         'No medical claims, no diagnosis, no risk predictions',
       ],
+    }),
+  },
+
+  // ---- HN Morning Brief (C74) -- fetches top HN headlines, dry-run safe.
+  // Free Algolia API, no key. CHINTU_TELEGRAM_SEND_ENABLED guard in skill itself.
+  {
+    name: 'hn_brief',
+    match: (s) => hasAny(s, [
+      'hn brief', 'hacker news', 'morning news', 'tech news', 'top stories',
+      'hn digest', 'news brief', 'morning brief', 'hn today', 'hn headlines',
+      'what is trending', 'trending tech', 'top hn', 'news today',
+    ]),
+    build: () => ({
+      intent: 'hn_brief',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['hn_brief_skill'],
+      reply:
+        'Fetching top HN stories now — I\'ll format the morning brief for you.',
+      gates: [
+        'Reads from Algolia HN API only (free, public, no key)',
+        'Dry-run output only — Telegram send is human-gated',
+        'No secrets, no paid APIs, no tracking',
+      ],
+      files: ['scripts/chintu-hn-skill.js'],
+      next: 'hn_brief_skill',
     }),
   },
 
