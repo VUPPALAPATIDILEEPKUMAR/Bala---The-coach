@@ -30,12 +30,13 @@ const KNOWN_ACTIONS = [
   'status', 'git_status', 'git_log',
   'release_guard', 'validate_app', 'run_validator_dry_run',
   'connector_readiness', 'connector_status',
-  'github_status', 'github_repo_summary',
-  'prompt_xml_bala', 'prompt_xml_chintu', 'prompt_costar_both', 'prompt_acr_both',
-  'action_packet_bala_sprint', 'action_packet_connector_check',
-  'agent_orchestrator_dry_run',
+  'github_status', 'github_repo_summary', 'runtime_snapshot', 'os_snapshot', 'creator_pack_latest_trip', 'trip_video_draft', 'youtube_episode_pack_latest', 'trip_video_review',
+  'prompt_xml_bala', 'prompt_xml_chintu', 'prompt_costar_both', 'prompt_acr_both', 'prompt_founder_beast_both', 'prompt_overnight_beast_both',
+  'action_packet_bala_sprint', 'action_packet_connector_check', 'action_packet_overnight_beast',
+  'agent_orchestrator_dry_run', 'morning_operator_report',
   'open_allegro', 'open_bala_local', 'open_bala_public',
   'bala_ask_skill',
+  'bala_weekly_skill',
   'chintu_git_push',
 ];
 
@@ -46,6 +47,11 @@ const KNOWN_SEQUENCES = {
   bala_health_check: ['validate_app', 'release_guard'],
   chintu_health_check: ['git_status', 'connector_status', 'connector_readiness'],
   next_sprint: ['action_packet_bala_sprint', 'prompt_xml_bala'],
+  creator_story_sweep: ['creator_pack_latest_trip', 'trip_video_draft', 'youtube_episode_pack_latest', 'trip_video_review'],
+  founder_beast_stack: ['validate_app', 'connector_readiness', 'agent_orchestrator_dry_run', 'action_packet_bala_sprint', 'prompt_founder_beast_both'],
+  agent_parallel_wave: ['run_validator_dry_run', 'connector_readiness', 'validate_app', 'prompt_xml_bala'],
+  agent_release_wave: ['release_guard'],
+  overnight_beast_stack: ['validate_app', 'github_repo_summary', 'connector_readiness', 'agent_orchestrator_dry_run', 'action_packet_overnight_beast', 'prompt_overnight_beast_both'],
 };
 
 // Response types.
@@ -117,8 +123,9 @@ const RULES = [
   {
     name: 'capabilities',
     match: (s) =>
-      hasAny(s, ['what can you do', 'what do you do', 'what can u do', 'help me', 'your commands',
-        'list commands', 'what are you', 'how do you work', 'capabilities']) ||
+      (hasAny(s, ['what can you do', 'what do you do', 'what can u do', 'help me', 'your commands',
+        'list commands', 'what are you', 'how do you work', 'capabilities']) &&
+        !hasAny(s, ['what are you doing', 'what are u doing', 'what is chintu doing', 'what is going on', 'whats going on', 'status update', 'live status', 'report me'])) ||
       s === 'help' || s === 'commands' || s === '?',
     build: () => ({
       intent: 'capabilities',
@@ -142,6 +149,43 @@ const RULES = [
   // ---- Improve score (BALA score explanation focus). Must come BEFORE
   //      next_sprint so "improve Bala score" routes to score clarity, not a
   //      generic sprint.
+  {
+    name: 'runtime_snapshot',
+    match: (s) =>
+      hasAny(s, ['what are you doing', 'what are u doing', 'what are you checking', 'what is going on',
+        'whats going on', 'what is chintu doing', 'status update', 'live status', 'report me', 'current status']),
+    build: () => ({
+      intent: 'runtime_snapshot',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['runtime_snapshot'],
+      reply:
+        'Pulling the live runtime brief now. I will read the local bridge truth, the latest live agent wave, the automation lane, and the most recent founder-safe action so you can see what Chintu is actually doing on this machine.',
+      files: ['scripts/chintu-runtime-brief.js', 'scripts/chintu-local-bridge.js', 'CHINTU_AGENT_RUNS/latest_agent_wave_summary.json'],
+      gates: ['Local-only runtime truth', 'No fake green checks', 'No secrets printed'],
+      next: 'agent_parallel_wave',
+    }),
+  },
+
+  {
+    name: 'os_snapshot',
+    match: (s) =>
+      hasAny(s, ['os snapshot', 'chintu os', 'agent os', 'system snapshot', 'show the os snapshot']),
+    build: () => ({
+      intent: 'os_snapshot',
+      track: 'chintu',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['os_snapshot'],
+      reply:
+        'Pulling the Chintu OS snapshot now. I will summarize the live local action count, workflow count, automation scripts, connector gate state, and creator lane readiness from this machine only.',
+      files: ['scripts/chintu-os-snapshot.js', 'CHINTU_OUTBOX/latest_os_snapshot.json', 'scripts/chintu-local-bridge.js'],
+      gates: ['Local-only summary', 'No secrets printed', 'No fake readiness'],
+      next: 'creator_pack_latest_trip',
+    }),
+  },
+
   {
     name: 'improve_score',
     match: (s) => hasAny(s, ['improve bala score', 'improve score', 'better score', 'fix score',
@@ -184,6 +228,180 @@ const RULES = [
       files: ['BALA_NEXT_SAFE_SPRINT_PLAN.md', 'BALA_PRODUCT_POLISH_QUEUE.md', 'index.html', 'app.js'],
       gates: ['No medical diagnosis copy', 'Health data stays local', 'Disclaimer on new screens'],
       next: 'validate_app',
+    }),
+  },
+
+  {
+    name: 'morning_operator_report',
+    match: (s) =>
+      hasAny(s, ['morning operator', 'morning report', 'send morning report', 'wake-up report',
+        'wake up report', 'founder report now', 'run morning report']),
+    build: () => ({
+      intent: 'morning_operator_report',
+      track: 'chintu',
+      risk: RISK.LOCAL,
+      type: TYPE.SINGLE,
+      actions: ['morning_operator_report'],
+      reply:
+        'Running the morning operator now. I will refresh the live founder brief, run the local operator waves, write the report artifact, and send the founder update through the already-gated Telegram lane.',
+      files: ['scripts/chintu-morning-operator.js', 'CHINTU_OUTBOX/latest_morning_operator_report.json', 'CHINTU_OUTBOX/latest_founder_message.md'],
+      gates: ['No secrets printed', 'Report links must stay local and real', 'BALA stays health-awareness only'],
+      next: 'release_guard',
+    }),
+  },
+
+  {
+    name: 'creator_story_sweep',
+    match: (s) =>
+      hasAny(s, ['go to that album', 'use that album', 'scan that album', 'full trip album',
+        'search each photo', 'each photo', 'use all trip photos', 'use all photos',
+        'all 449 items', 'all 469 items', 'why only 24 sec', 'why only 26 sec',
+        'why only 24 second', 'why only 26 second', 'longer video', 'full trip video']),
+    build: () => ({
+      intent: 'creator_story_sweep',
+      track: 'chintu',
+      risk: RISK.LOCAL,
+      type: TYPE.SEQUENCE,
+      sequence: 'creator_story_sweep',
+      actions: KNOWN_SEQUENCES.creator_story_sweep.slice(),
+      reply:
+        'Sweeping the full local trip album window now. I will rebuild the creator pack from the Apple photo-library index, write the album inventory, render a longer private draft, and refresh the episode pack plus review cut so you are not stuck with a tiny 24-second slice.',
+      files: ['scripts/chintu-private-media.js', 'scripts/chintu-creator-pack.js', 'scripts/chintu-trip-video-draft.js', 'scripts/chintu-youtube-episode-pack.js'],
+      gates: ['Local media only', 'No upload happens here', 'No personal data leaves this machine'],
+      next: 'trip_video_review',
+    }),
+  },
+
+  {
+    name: 'creator_pack_latest_trip',
+    match: (s) =>
+      hasAny(s, ['creator pack', 'youtube pack', 'trip pack', 'latest trip pack', 'build creator pack', 'make youtube pack']),
+    build: () => ({
+      intent: 'creator_pack_latest_trip',
+      track: 'chintu',
+      risk: RISK.LOCAL,
+      type: TYPE.SINGLE,
+      actions: ['creator_pack_latest_trip'],
+      reply:
+        'Building the latest trip creator pack now. I will sweep the wider local Apple photo-library timeline, write the full trip inventory, generate stronger title ideas, a story-first shot order, a voiceover starter, and a free-tool edit stack for the founder review loop.',
+      files: ['scripts/chintu-creator-pack.js', 'CHINTU_OUTBOX/latest_creator_pack.json', 'enhancements/06272026'],
+      gates: ['Local media only', 'No upload happens here', 'Telegram send stays a separate explicit step'],
+      next: 'os_snapshot',
+    }),
+  },
+
+  {
+    name: 'youtube_episode_pack_latest',
+    match: (s) =>
+      hasAny(s, ['episode pack', 'release pack', 'youtube episode pack', 'upload pack', 'publish pack']),
+    build: () => ({
+      intent: 'youtube_episode_pack_latest',
+      track: 'chintu',
+      risk: RISK.LOCAL,
+      type: TYPE.SINGLE,
+      actions: ['youtube_episode_pack_latest'],
+      reply:
+        'Building the latest YouTube episode pack now. I will turn the local draft plus creator pack into a release-ready upload plan with visibility guidance, the title, thumbnail direction, and the exact next move.',
+      files: ['scripts/chintu-youtube-episode-pack.js', 'CHINTU_OUTBOX/latest_youtube_episode_pack.json', 'CHINTU_OUTBOX/latest_trip_video_draft.json'],
+      gates: ['Local files only', 'No upload happens here', 'Visibility guidance must stay real'],
+      next: 'trip_video_draft',
+    }),
+  },
+
+  {
+    name: 'trip_video_draft',
+    match: (s) =>
+      hasAny(s, ['trip video', 'video draft', 'build the video', 'make the video', 'draft video']),
+    build: () => ({
+      intent: 'trip_video_draft',
+      track: 'chintu',
+      risk: RISK.LOCAL,
+      type: TYPE.SINGLE,
+      actions: ['trip_video_draft'],
+      reply:
+        'Building the private trip video draft now. I will use a wider local trip image sweep, render a longer vertical MP4 locally with ffmpeg, and write a voiceover guide so you can record your narration on top of a real draft without the selfie-heavy noise.',
+      files: ['scripts/chintu-trip-video-draft.js', 'CHINTU_OUTBOX/latest_trip_video_draft.json', 'CHINTU_OUTBOX/latest_trip_voiceover.txt'],
+      gates: ['Private local render only', 'No upload happens here', 'No personal data leaves this machine'],
+      next: 'creator_pack_latest_trip',
+    }),
+  },
+
+  {
+    name: 'trip_video_review',
+    match: (s) =>
+      hasAny(s, ['review video', 'polish the video', 'final review cut', 'creator review cut', 'go beyond video']),
+    build: () => ({
+      intent: 'trip_video_review',
+      track: 'chintu',
+      risk: RISK.LOCAL,
+      type: TYPE.SINGLE,
+      actions: ['trip_video_review'],
+      reply:
+        'Polishing the review video now. I will take the local wider trip draft, burn in a cleaner review overlay, and leave you with a real watchable cut for the morning review loop.',
+      files: ['scripts/chintu-trip-video-review.js', 'CHINTU_OUTBOX/latest_trip_review_video.json', 'CHINTU_OUTBOX/trip-video-draft'],
+      gates: ['Local render only', 'No upload happens here', 'Review copy stays honest'],
+      next: 'youtube_episode_pack_latest',
+    }),
+  },
+
+  {
+    name: 'founder_beast_mode',
+    match: (s) =>
+      hasAny(s, ['founder beast mode', 'beast mode', 'jarvis mode', 'local jarvis', 'one single prompt',
+        'single prompt', 'ultra mode', 'go beyond', 'work parallel']),
+    build: () => ({
+      intent: 'founder_beast_mode',
+      track: 'both',
+      risk: RISK.LOCAL,
+      type: TYPE.SEQUENCE,
+      sequence: 'founder_beast_stack',
+      actions: KNOWN_SEQUENCES.founder_beast_stack.slice(),
+      reply:
+        'Switching into founder beast mode. I will run the live local validation stack first, then generate ' +
+        'the stronger both-track founder prompt so you have one real prompt for execution, verification, and ' +
+        'the next move. Everything stays local and approval-gated. No fake green checks.',
+      files: ['CHINTU_ALLEGRO.html', 'scripts/chintu-local-bridge.js', 'scripts/chintu-prompt-engine.js', 'index.html', 'app.js'],
+      gates: ['No fake green checks', 'No secrets printed', 'BALA stays health-awareness only'],
+      next: 'prompt_founder_beast_both',
+    }),
+  },
+
+  {
+    name: 'agent_parallel_wave',
+    match: (s) =>
+      hasAny(s, ['run agent wave', 'parallel wave', 'run parallel wave', 'run agent board wave']) || s === 'run agent board',
+    build: () => ({
+      intent: 'agent_parallel_wave',
+      track: 'both',
+      risk: RISK.LOCAL,
+      type: TYPE.SEQUENCE,
+      sequence: 'agent_parallel_wave',
+      actions: KNOWN_SEQUENCES.agent_parallel_wave.slice(),
+      reply:
+        'Running the local parallel agent wave: validator signal, connector readiness, BALA validation, and prompt generation. ' +
+        'This is still local-only and dry-run-safe. Release decisions stay in a separate human review wave.',
+      files: ['CHINTU_AGENT_RUNS/latest_orchestrator_summary.json', 'scripts/chintu-local-bridge.js', 'CHINTU_ALLEGRO.html'],
+      gates: ['No auto-push', 'No real connector send', 'BALA stays health-awareness only'],
+      next: 'release_guard',
+    }),
+  },
+
+  {
+    name: 'overnight_beast_mode',
+    match: (s) =>
+      hasAny(s, ['overnight beast', 'night shift', 'while i sleep', 'before i wake up', 'morning review pack', 'overnight sweep']),
+    build: () => ({
+      intent: 'overnight_beast_mode',
+      track: 'both',
+      risk: RISK.LOCAL,
+      type: TYPE.SEQUENCE,
+      sequence: 'overnight_beast_stack',
+      actions: KNOWN_SEQUENCES.overnight_beast_stack.slice(),
+      reply:
+        'Switching into overnight beast mode. I will run the safe night-shift sweep: validator signal, repo summary, connector readiness, agent board, overnight packet, and the overnight founder prompt. Morning review stays honest: blockers first, real artifacts only, no fake completion.',
+      files: ['CHINTU_ALLEGRO.html', 'scripts/chintu-local-bridge.js', 'scripts/chintu-brain-router.js', 'scripts/chintu-prompt-engine.js', 'scripts/chintu-action-packet.js', 'app.js'],
+      gates: ['No auto-push', 'No secret printing', 'No real send while sleeping', 'BALA stays health-awareness only'],
+      next: 'prompt_overnight_beast_both',
     }),
   },
 
@@ -343,6 +561,35 @@ const RULES = [
   },
 
   // ---- BALA health-awareness questions (Stage 37)
+
+  // ---- BALA weekly digest (C73) -- reads local bala-export.json, returns 7-day summary.
+  // Must come BEFORE bala_ask so "my health this week" / "bala digest" routes here.
+  // Pure local file-read skill — no network, no Telegram call, no secrets.
+  {
+    name: 'bala_weekly',
+    match: (s) => hasAny(s, [
+      'bala digest', 'weekly digest', 'my health this week', 'this week',
+      'health this week', 'weekly summary', 'bala summary', 'week summary',
+      'how was my week', 'how did i do this week', 'my week', 'my bala week',
+      'weekly report', 'bala report', 'bala status', 'health status',
+    ]),
+    build: () => ({
+      intent: 'bala_weekly',
+      track: 'bala',
+      risk: RISK.READ,
+      type: TYPE.SINGLE,
+      actions: ['bala_weekly_skill'],
+      reply:
+        'Reading your local BALA data now — I\'ll send your 7-day digest in a moment.',
+      gates: [
+        'Reads local bala-export.json only — no network, no external API',
+        'Health data never leaves your device',
+        'Safety footer always included in reply',
+        'No medical claims, no diagnosis, no risk predictions',
+      ],
+    }),
+  },
+
   // Handles user queries about their health signals — routed to bala_ask_skill
   // in the Telegram runner which calls respondToBALAQuery() for a safe reply.
   // Must come AFTER improve_score / next_sprint / validate_bala so those more
