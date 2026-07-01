@@ -7621,3 +7621,131 @@ b63InitDemoTrust();
   window.renderBALAMoodCard = renderMoodCard;
 })();
 // End B74
+
+// ─────────────────────────────────────────────────────────────────────
+// B75 — BALA Hydration Tracker
+// Daily water intake log, goal progress, 7-day avg, nudge card.
+// Local-only — zero network calls.
+// ─────────────────────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  var HYDRATION_KEY   = 'bala-hydration-v1';
+  var DEFAULT_GOAL    = 8;
+  var ML_PER_GLASS    = 250;
+  var MAX_GLASSES_DAY = 30;
+  var HISTORY_MAX     = 90;
+
+  function todayISO() {
+    var d = new Date(), p = function (x) { return String(x).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function loadHydration() {
+    try {
+      var raw = localStorage.getItem(HYDRATION_KEY);
+      var data = raw ? JSON.parse(raw) : null;
+      if (!data || typeof data !== 'object') return { goal: DEFAULT_GOAL, log: [] };
+      return {
+        goal: typeof data.goal === 'number' ? data.goal : DEFAULT_GOAL,
+        log:  Array.isArray(data.log) ? data.log : []
+      };
+    } catch (_) { return { goal: DEFAULT_GOAL, log: [] }; }
+  }
+
+  function saveHydration(data) {
+    try { localStorage.setItem(HYDRATION_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  function addGlass(n) {
+    n = parseFloat(n) || 1;
+    if (n <= 0) return;
+    var data = loadHydration();
+    var day  = todayISO();
+    var idx  = data.log.findIndex(function (e) { return e.date === day; });
+    if (idx >= 0) {
+      data.log[idx].glasses = Math.min(MAX_GLASSES_DAY, data.log[idx].glasses + n);
+    } else {
+      data.log.push({ date: day, glasses: Math.min(MAX_GLASSES_DAY, n), ts: Date.now() });
+    }
+    data.log.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    data.log = data.log.slice(-HISTORY_MAX);
+    saveHydration(data);
+    renderBALAHydrationCard();
+  }
+
+  function getTodayGlasses() {
+    var data  = loadHydration();
+    var entry = data.log.find(function (e) { return e.date === todayISO(); });
+    return { glasses: entry ? entry.glasses : 0, goal: data.goal };
+  }
+
+  function getWeeklyAvg() {
+    var data = loadHydration();
+    var last = data.log.slice(-7);
+    if (!last.length) return null;
+    var sum = last.reduce(function (s, e) { return s + e.glasses; }, 0);
+    return Math.round((sum / last.length) * 10) / 10;
+  }
+
+  function renderBALAHydrationCard() {
+    var el = document.getElementById('bala-hydration-card');
+    if (!el) return;
+
+    var cur   = getTodayGlasses();
+    var g     = cur.glasses;
+    var goal  = cur.goal;
+    var pct   = Math.min(100, Math.round((g / goal) * 100));
+    var ml    = Math.round(g * ML_PER_GLASS);
+    var avg   = getWeeklyAvg();
+    var met   = g >= goal;
+
+    var nudge = '';
+    if (met) {
+      nudge = 'Hydration goal met! Great job listening to your body.';
+    } else {
+      var rem = Math.max(0, goal - g);
+      if (pct >= 75) {
+        nudge = 'Almost there — ' + rem + ' more glass' + (rem !== 1 ? 'es' : '') + ' to go.';
+      } else if (pct >= 50) {
+        nudge = 'Halfway there! ' + rem + ' more glass' + (rem !== 1 ? 'es' : '') + ' to go.';
+      } else {
+        nudge = 'Remember to hydrate — ' + rem + ' glass' + (rem !== 1 ? 'es' : '') + ' left today.';
+      }
+    }
+
+    el.innerHTML =
+      '<div class="bala-card bala-hydration-card">' +
+        '<div class="bala-card-header">' +
+          '<span class="bala-card-icon">💧</span>' +
+          '<span class="bala-card-title">Hydration Today</span>' +
+        '</div>' +
+        '<div class="bala-hydration-main">' +
+          '<span class="bala-hydration-count">' + g + '</span>' +
+          '<span class="bala-hydration-unit">/ ' + goal + ' glasses</span>' +
+        '</div>' +
+        '<div class="bala-progress-bar-wrap">' +
+          '<div class="bala-progress-bar" style="width:' + pct + '%;background:' +
+            (met ? '#22c55e' : pct >= 50 ? '#38bdf8' : '#94a3b8') + '"></div>' +
+        '</div>' +
+        '<div class="bala-hydration-ml">' + ml + ' ml · ' + pct + '% of goal</div>' +
+        (avg !== null ? '<div class="bala-hydration-avg">7-day avg: ' + avg + ' glasses</div>' : '') +
+        '<div class="bala-hydration-nudge">' + nudge + '</div>' +
+        '<div class="bala-hydration-btns">' +
+          '<button class="bala-hydration-btn" onclick="window.balaAddGlass(1)" aria-label="Add 1 glass">' +
+            '+ 1 glass</button>' +
+          '<button class="bala-hydration-btn bala-hydration-btn--half" onclick="window.balaAddGlass(0.5)" aria-label="Add half glass">' +
+            '+ ½ glass</button>' +
+          '<button class="bala-hydration-btn bala-hydration-btn--2" onclick="window.balaAddGlass(2)" aria-label="Add 2 glasses">' +
+            '+ 2 glasses</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  window.balaAddGlass = addGlass;
+  window.renderBALAHydrationCard = renderBALAHydrationCard;
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', renderBALAHydrationCard);
+  }
+}());
