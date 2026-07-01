@@ -7749,3 +7749,129 @@ b63InitDemoTrust();
     document.addEventListener('DOMContentLoaded', renderBALAHydrationCard);
   }
 }());
+
+// ─────────────────────────────────────────────────────────────────────
+// B76 — BALA Breathing & Stress Check-in Card
+// Guided breathing exercise selector + subjective stress log (1–5).
+// Local-only. Safe language — no diagnosis, no medical claims.
+// ─────────────────────────────────────────────────────────────────────
+(function () {
+  'use strict';
+
+  var BREATHING_KEY = 'bala-breathing-v1';
+  var HISTORY_MAX   = 90;
+
+  var EXERCISES = {
+    '478': { name: '4-7-8 Calm',    steps: ['Breathe in — 4 counts', 'Hold — 7 counts', 'Breathe out — 8 counts'], rounds: 4 },
+    'box': { name: 'Box Breathing', steps: ['In — 4', 'Hold — 4', 'Out — 4', 'Hold — 4'], rounds: 4 },
+    'deep':{ name: 'Deep Breath',   steps: ['In slowly through nose', 'Out slowly through mouth'], rounds: 6 }
+  };
+
+  var STRESS_EMOJIS = ['','😌','🙂','😐','😤','😰'];
+  var STRESS_LABELS = ['','Very calm','Calm','Neutral','A bit tense','Very tense'];
+
+  function todayISO() {
+    var d = new Date(), p = function (x) { return String(x).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function loadLog() {
+    try {
+      var data = JSON.parse(localStorage.getItem(BREATHING_KEY));
+      return (data && Array.isArray(data.log)) ? data.log : [];
+    } catch (_) { return []; }
+  }
+
+  function saveLog(log) {
+    try { localStorage.setItem(BREATHING_KEY, JSON.stringify({ log: log })); } catch (_) {}
+  }
+
+  function logSession(stress, exKey) {
+    var s   = Math.max(1, Math.min(5, parseInt(stress, 10) || 3));
+    var ex  = EXERCISES[exKey] ? exKey : 'deep';
+    var day = todayISO();
+    var log = loadLog();
+    var idx = log.findIndex(function (e) { return e.date === day; });
+    if (idx >= 0) {
+      log[idx].stress = s; log[idx].exercise = ex;
+      log[idx].sessions = (log[idx].sessions || 1) + 1;
+    } else {
+      log.push({ date: day, stress: s, exercise: ex, sessions: 1 });
+    }
+    log.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    saveLog(log.slice(-HISTORY_MAX));
+    renderBALABreathingCard();
+  }
+
+  function avgStress7() {
+    var log  = loadLog().slice(-7);
+    if (!log.length) return null;
+    var sum  = log.reduce(function (s, e) { return s + (parseInt(e.stress, 10) || 0); }, 0);
+    return Math.round((sum / log.length) * 10) / 10;
+  }
+
+  function renderBALABreathingCard() {
+    var el = document.getElementById('bala-breathing-card');
+    if (!el) return;
+    var log   = loadLog();
+    var today = log.find(function (e) { return e.date === todayISO(); }) || null;
+    var avg   = avgStress7();
+    var exKey = (today && today.exercise) || 'deep';
+    var ex    = EXERCISES[exKey];
+
+    var nudge = today
+      ? (today.stress >= 4
+          ? 'Take a moment — a few slow breaths can help your body settle.'
+          : 'Good check-in. Keep listening to your body.')
+      : 'Take a moment to breathe — even one minute can help your body settle.';
+
+    var stressButtons = [1,2,3,4,5].map(function (v) {
+      var active = today && today.stress === v ? ' bala-btn--active' : '';
+      return '<button class="bala-stress-btn' + active + '" onclick="window.balaLogBreathing(' + v + ')" aria-label="Stress level ' + v + '">' +
+        STRESS_EMOJIS[v] + '<span>' + STRESS_LABELS[v] + '</span></button>';
+    }).join('');
+
+    var exTabs = Object.keys(EXERCISES).map(function (k) {
+      var active = exKey === k ? ' bala-tab--active' : '';
+      return '<button class="bala-ex-tab' + active + '" onclick="window.balaSetBreathingEx(\'' + k + '\')">' +
+        EXERCISES[k].name + '</button>';
+    }).join('');
+
+    var stepsList = ex.steps.map(function (s) { return '<li>' + s + '</li>'; }).join('');
+
+    el.innerHTML =
+      '<div class="bala-card bala-breathing-card">' +
+        '<div class="bala-card-header">' +
+          '<span class="bala-card-icon">🌬️</span>' +
+          '<span class="bala-card-title">Breathing Check-in</span>' +
+        '</div>' +
+        '<div class="bala-breathing-tabs">' + exTabs + '</div>' +
+        '<div class="bala-breathing-steps"><ol>' + stepsList + '</ol>' +
+          '<span class="bala-breathing-rounds">× ' + ex.rounds + ' rounds</span></div>' +
+        '<div class="bala-breathing-stress-label">How do you feel right now?</div>' +
+        '<div class="bala-breathing-stress-row">' + stressButtons + '</div>' +
+        (avg !== null ? '<div class="bala-breathing-avg">7-day avg stress: ' + avg + ' / 5</div>' : '') +
+        '<div class="bala-breathing-nudge">' + nudge + '</div>' +
+      '</div>';
+  }
+
+  window.balaLogBreathing = function (stress) {
+    var log   = loadLog();
+    var today = log.find(function (e) { return e.date === todayISO(); });
+    var exKey = (today && today.exercise) || 'deep';
+    logSession(stress, exKey);
+  };
+
+  window.balaSetBreathingEx = function (key) {
+    var log   = loadLog();
+    var today = log.find(function (e) { return e.date === todayISO(); });
+    var stress = (today && today.stress) || 3;
+    logSession(stress, key);
+  };
+
+  window.renderBALABreathingCard = renderBALABreathingCard;
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', renderBALABreathingCard);
+  }
+}());
