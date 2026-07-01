@@ -7486,3 +7486,138 @@ b63InitDemoTrust();
   window.renderBALAWeeklyDigest = renderWeeklyDigest;
 })();
 // End B73
+
+
+// =============================================================================
+// B74 -- BALA Mood & Energy Quick Log
+// Tap 1-5 emoji buttons to log how you feel + energy level today.
+// Stored in localStorage (key: bala-mood-log-v1). Zero network calls.
+// Renders card into #bala-mood-log container.
+// Safe language only — wellness awareness, not mood diagnosis.
+// =============================================================================
+(function () {
+  'use strict';
+
+  var MOOD_KEY    = 'bala-mood-log-v1';
+  var MOOD_EMOJIS = ['', '😔', '😐', '🙂', '😊', '😄'];
+  var NRG_EMOJIS  = ['', '🪫', '😴', '⚡', '🔋', '✨'];
+  var MOOD_LABELS = ['', 'Low', 'Fair', 'OK', 'Good', 'Great'];
+  var NRG_LABELS  = ['', 'Drained', 'Tired', 'OK', 'Energised', 'Vibrant'];
+
+  function todayISO() {
+    var d = new Date(), p = function (x) { return String(x).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function loadLog() {
+    try { var r = JSON.parse(localStorage.getItem(MOOD_KEY)); return Array.isArray(r) ? r : []; }
+    catch (_) { return []; }
+  }
+
+  function saveLog(entries) {
+    try { localStorage.setItem(MOOD_KEY, JSON.stringify(entries)); return true; }
+    catch (_) { return false; }
+  }
+
+  function saveMoodToday(mood, energy) {
+    var day     = todayISO();
+    var entries = loadLog();
+    var idx     = entries.findIndex(function (e) { return e.date === day; });
+    var entry   = { date: day, mood: mood, energy: energy, ts: Date.now() };
+    if (idx >= 0) { entries[idx] = entry; } else { entries.push(entry); }
+    entries.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    saveLog(entries.slice(-90));
+    return entry;
+  }
+
+  function getTodayEntry() {
+    return loadLog().find(function (e) { return e.date === todayISO(); }) || null;
+  }
+
+  function getWeekAvg() {
+    var e = loadLog().slice(-7);
+    if (!e.length) return null;
+    var mAvg = e.reduce(function (s, x) { return s + x.mood; }, 0) / e.length;
+    var nAvg = e.reduce(function (s, x) { return s + x.energy; }, 0) / e.length;
+    return { mood: Math.round(mAvg * 10) / 10, energy: Math.round(nAvg * 10) / 10 };
+  }
+
+  function renderButtons(container, values, labels, emojis, selected, onSelect) {
+    container.innerHTML = '';
+    values.forEach(function (v) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.val = v;
+      btn.style.cssText = [
+        'background:' + (selected === v ? 'var(--warm-teal,#5A9E8E)' : 'rgba(255,255,255,0.06)'),
+        'border:1px solid ' + (selected === v ? 'var(--warm-teal,#5A9E8E)' : 'rgba(255,255,255,0.1)'),
+        'border-radius:10px', 'padding:6px 10px', 'cursor:pointer',
+        'font-size:1.2rem', 'line-height:1', 'transition:background 0.15s',
+        'min-width:44px', 'min-height:44px'
+      ].join(';');
+      btn.title = labels[v];
+      btn.textContent = emojis[v];
+      btn.addEventListener('click', function () { onSelect(v); });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderMoodCard() {
+    var el = document.getElementById('bala-mood-log');
+    if (!el || el.dataset.b74bound) return;
+    el.dataset.b74bound = '1';
+
+    var today   = getTodayEntry();
+    var selMood = today ? today.mood   : null;
+    var selNrg  = today ? today.energy : null;
+    var avg     = getWeekAvg();
+
+    el.innerHTML =
+      '<div style="background:var(--card-bg,#1A2733);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px 20px;">' +
+      '<div style="font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:#8A9BA8;margin-bottom:10px;">How are you feeling today?</div>' +
+      '<div style="margin-bottom:10px;">' +
+        '<div style="font-size:0.75rem;color:#8A9BA8;margin-bottom:6px;">Mood</div>' +
+        '<div id="bala-mood-btns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<div style="font-size:0.75rem;color:#8A9BA8;margin-bottom:6px;">Energy</div>' +
+        '<div id="bala-nrg-btns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>' +
+      '</div>' +
+      (avg ? '<div style="font-size:0.72rem;color:#8A9BA8;">7-day avg — Mood: <strong>' + avg.mood + '</strong>  Energy: <strong>' + avg.energy + '</strong></div>' : '') +
+      '<div id="bala-mood-saved" style="font-size:0.75rem;color:var(--warm-teal,#5A9E8E);margin-top:8px;min-height:16px;"></div>' +
+      '</div>';
+
+    var vals = [1, 2, 3, 4, 5];
+
+    function refresh() {
+      renderButtons(document.getElementById('bala-mood-btns'), vals, MOOD_LABELS, MOOD_EMOJIS, selMood, function (v) {
+        selMood = v;
+        if (selMood !== null && selNrg !== null) commit();
+        else refresh();
+      });
+      renderButtons(document.getElementById('bala-nrg-btns'),  vals, NRG_LABELS,  NRG_EMOJIS,  selNrg,  function (v) {
+        selNrg = v;
+        if (selMood !== null && selNrg !== null) commit();
+        else refresh();
+      });
+    }
+
+    function commit() {
+      saveMoodToday(selMood, selNrg);
+      refresh();
+      var saved = document.getElementById('bala-mood-saved');
+      if (saved) { saved.textContent = 'Logged ' + MOOD_EMOJIS[selMood] + ' mood + ' + NRG_EMOJIS[selNrg] + ' energy for today.'; }
+    }
+
+    refresh();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMoodCard);
+  } else {
+    renderMoodCard();
+  }
+
+  window.renderBALAMoodCard = renderMoodCard;
+})();
+// End B74
