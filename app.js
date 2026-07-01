@@ -7242,6 +7242,82 @@ b63InitDemoTrust();
 // End B68
 
 // =============================================================================
+// B72 -- BALA Auto-Push to Chintu Bridge
+// Silently POSTs today's health snapshot to Chintu's local bridge on page load.
+// Chintu reads the file for the morning health brief and 'check health' command.
+// Offline-safe: no-ops silently if bridge is not running.
+// No user action required. No download. Health data stays on this device.
+// =============================================================================
+(function () {
+  'use strict';
+
+  var BRIDGE_SNAPSHOT_URL = 'http://127.0.0.1:18791/bala-snapshot';
+  var AUTO_PUSH_DELAY_MS = 3000; // wait for score ring to fully render
+
+  function buildAutoSnapshot() {
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('bala-local-health-v1')); } catch (e) {}
+    if (!stored) return null;
+
+    var history = Array.isArray(stored.history) ? stored.history : [];
+    var latest  = history.length ? history[history.length - 1] : stored;
+    if (!latest || !latest.date) return null;
+
+    var scoreEl = document.querySelector('.score-ring strong');
+    var score   = scoreEl ? parseInt(scoreEl.textContent, 10) : null;
+    if (isNaN(score)) score = null;
+
+    return {
+      date:       latest.date || new Date().toISOString().slice(0, 10),
+      score:      score,
+      scoreDelta: null,
+      trend:      score != null ? 'stable' : 'building baseline',
+      hrv:        latest.hrv      != null ? Math.round(latest.hrv)              : null,
+      rhr:        latest.rhr      != null ? Math.round(latest.rhr)              : null,
+      sleep:      latest.sleep    != null ? parseFloat(latest.sleep.toFixed(1)) : null,
+      steps:      latest.steps    != null ? Math.round(latest.steps)            : null,
+      spo2:       latest.spo2     != null ? Math.round(latest.spo2)             : null,
+      exercise:   latest.exercise != null ? Math.round(latest.exercise)         : null,
+      source:     latest.source   || 'manual',
+      exportedAt: new Date().toISOString(),
+      note:       'BALA health awareness data -- not a medical record, for personal use only',
+    };
+  }
+
+  function autoPushToBridge() {
+    try {
+      var snap = buildAutoSnapshot();
+      if (!snap) return; // no data yet -- skip silently
+      if (typeof fetch !== 'function') return;
+      var opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snap) };
+      if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+        opts.signal = AbortSignal.timeout(3000);
+      }
+      fetch(BRIDGE_SNAPSHOT_URL, opts).then(function (r) {
+        if (r && r.ok) {
+          console.log('[BALA B72] Snapshot pushed to Chintu bridge (score=' + snap.score + ' date=' + snap.date + ')');
+        }
+      }).catch(function () {
+        // Bridge offline or not running -- normal when Chintu is not active.
+      });
+    } catch (_) {
+      // Never surface errors to user -- bridge push is fully optional.
+    }
+  }
+
+  // Auto-push on page load, after score ring renders.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(autoPushToBridge, AUTO_PUSH_DELAY_MS); });
+  } else {
+    setTimeout(autoPushToBridge, AUTO_PUSH_DELAY_MS);
+  }
+
+  window.autoPushBALASnapshot = autoPushToBridge;
+})();
+// End B72
+
+
+// =============================================================================
 // B69 -- BALA Score Delta
 // Shows +/- change vs previous check-in beneath the BALA score ring.
 // Colour-coded: teal=improving, coral=declining, grey=stable/building.
@@ -7285,3 +7361,128 @@ b63InitDemoTrust();
   }
 })();
 // End B69
+
+
+// =============================================================================
+// B73 -- BALA Weekly Digest Panel
+// Shows a 7-day summary: avg BALA score, best day, signal trend arrows, headline.
+// Renders into #bala-weekly-digest container. Zero network calls. Local-only.
+// Safe language only: no medical claims, no predictions, no diagnosis.
+// =============================================================================
+(function () {
+  'use strict';
+
+  var DIGEST_DAYS = 7;
+  var DIGEST_MIN  = 2;
+
+  function getLastNDays(history, n) {
+    if (!Array.isArray(history) || n <= 0) return [];
+    var sorted = history
+      .filter(function (e) { return e && e.date; })
+      .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    return sorted.slice(-n);
+  }
+
+  function computeAvg(entries, field) {
+    var vals = entries.map(function (e) { return parseFloat(e[field]); }).filter(function (v) { return !isNaN(v) && v > 0; });
+    if (!vals.length) return null;
+    return Math.round((vals.reduce(function (s, v) { return s + v; }, 0) / vals.length) * 10) / 10;
+  }
+
+  function findBestDay(entries, key) {
+    if (!entries.length) return null;
+    var best = null;
+    entries.forEach(function (e) {
+      var s = parseFloat(e[key]);
+      if (!isNaN(s) && (best === null || s > best.score)) best = { date: e.date, score: s };
+    });
+    return best;
+  }
+
+  function trendDir(entries, field) {
+    var vals = entries.map(function (e) { return parseFloat(e[field]); }).filter(function (v) { return !isNaN(v) && v > 0; });
+    if (vals.length < 2) return 'stable';
+    var mid = Math.ceil(vals.length / 2);
+    var avgA = vals.slice(0, mid).reduce(function (s, v) { return s + v; }, 0) / mid;
+    var b    = vals.slice(Math.floor(vals.length / 2));
+    var avgB = b.reduce(function (s, v) { return s + v; }, 0) / b.length;
+    return Math.abs(avgB - avgA) < 2 ? 'stable' : avgB > avgA ? 'improving' : 'declining';
+  }
+
+  function fmtDate(ds) {
+    if (!ds) return '';
+    var p = ds.split('-');
+    var mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return (mo[parseInt(p[1], 10) - 1] || p[1]) + ' ' + parseInt(p[2], 10);
+  }
+
+  function arrow(t) { return t === 'improving' ? '↑' : t === 'declining' ? '↓' : '→'; }
+  function arrowColor(t) { return t === 'improving' ? 'var(--warm-teal,#5A9E8E)' : t === 'declining' ? 'var(--warm-primary,#E8845A)' : '#8A9BA8'; }
+
+  function renderWeeklyDigest() {
+    var el = document.getElementById('bala-weekly-digest');
+    if (!el) return;
+
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('bala-local-health-v1')); } catch (_) {}
+    var history = (stored && Array.isArray(stored.history)) ? stored.history : [];
+    var entries = getLastNDays(history, DIGEST_DAYS);
+
+    if (entries.length < DIGEST_MIN) {
+      el.innerHTML = '<p style="color:#8A9BA8;font-size:0.85rem;text-align:center;padding:12px 0;">Check in for ' + DIGEST_MIN + ' days to unlock your weekly digest.</p>';
+      return;
+    }
+
+    var avgScore = computeAvg(entries, 'balaScore');
+    var best     = findBestDay(entries, 'balaScore');
+    var trends   = { sleep: trendDir(entries, 'sleepHours'), steps: trendDir(entries, 'steps'), hrv: trendDir(entries, 'hrv') };
+    var impCount = Object.keys(trends).filter(function (k) { return trends[k] === 'improving'; }).length;
+
+    var headline;
+    if (avgScore !== null && avgScore >= 80) headline = 'Great week — your body signals look strong.';
+    else if (avgScore !== null && avgScore >= 60) headline = 'Solid week — keep listening to your body signals.';
+    else if (impCount >= 2) headline = 'Your signals are trending upward — keep going.';
+    else headline = 'Your body is talking — check in more this week.';
+
+    var scoreHTML = avgScore !== null
+      ? '<div style="font-size:2rem;font-weight:700;color:var(--warm-teal,#5A9E8E);line-height:1;">' + avgScore + '</div><div style="font-size:0.7rem;color:#8A9BA8;margin-top:2px;">7-day avg score</div>'
+      : '';
+
+    var bestHTML = best
+      ? '<div style="margin-top:10px;font-size:0.78rem;color:#8A9BA8;">Best day: <strong style="color:#E8C87A;">' + fmtDate(best.date) + '</strong> &nbsp;(' + best.score + ')</div>'
+      : '';
+
+    var trendsHTML = ['sleep','steps','hrv'].map(function (k) {
+      var t = trends[k];
+      var label = k === 'sleep' ? 'Sleep' : k === 'steps' ? 'Steps' : 'HRV';
+      return '<span style="color:' + arrowColor(t) + ';font-size:0.8rem;">' + label + '&nbsp;' + arrow(t) + '</span>';
+    }).join('<span style="color:#3A4A5A;margin:0 6px;">·</span>');
+
+    el.innerHTML =
+      '<div style="background:var(--card-bg,#1A2733);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px 20px;">' +
+      '<div style="font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;color:#8A9BA8;margin-bottom:8px;">Your 7-Day Digest</div>' +
+      '<div style="font-size:0.9rem;color:#C8D8E8;margin-bottom:12px;line-height:1.4;">' + headline + '</div>' +
+      '<div style="display:flex;align-items:center;gap:20px;">' +
+      '<div style="text-align:center;">' + scoreHTML + '</div>' +
+      '<div style="flex:1;">' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + trendsHTML + '</div>' +
+      bestHTML +
+      '</div></div></div>';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderWeeklyDigest);
+  } else {
+    renderWeeklyDigest();
+  }
+
+  // Re-render when dashboard updates with new data
+  var _origUD = window.updateDashboard;
+  if (typeof _origUD === 'function' && !renderWeeklyDigest._hooked) {
+    renderWeeklyDigest._hooked = true;
+    window.updateDashboard = function (data) { _origUD(data); setTimeout(renderWeeklyDigest, 60); };
+  }
+
+  window.renderBALAWeeklyDigest = renderWeeklyDigest;
+})();
+// End B73
